@@ -66,7 +66,7 @@ const heroTitleFrames = heroTitleFrameSteps.reduce<TimedHeroTitleFrame[]>((frame
 export default function Home() {
   return (
     <main className="teaser-shell" aria-labelledby="teaser-title">
-      <section className="terminal-frame" box-="square">
+      <section className="terminal-frame" box-="round">
         <span className="terminal-badge">Hiking Society &gt;&gt;</span>
 
         <div className="teaser-content">
@@ -96,7 +96,7 @@ export default function Home() {
 
           <p className="teaser-kicker text-2xl">Coming soon...</p>
 
-          <button className="basecamp-button" size-="large" type="button">
+          <button className="basecamp-button" size-="large" type="button" variant-="lavender">
             Enter Basecamp
           </button>
         </div>

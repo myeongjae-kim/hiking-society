@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-webtui-theme="dark" className="h-full antialiased">
+    <html lang="en" data-webtui-theme="catppuccin-mocha" className="h-full antialiased">
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

@@ -31,35 +31,30 @@
 @import "@webtui/css/components/typography.css";
 
 /* below should be last */
+@import "@webtui/theme-catppuccin";
 @import "@webtui/plugin-nf";
 
 :root {
-  --background: #1e1e2e;
-  --foreground: #cdd6f4;
-  --terminal-muted: #a6adc8;
-  --terminal-dim: #6c7086;
-  --terminal-accent: #f5c2e7;
-  --terminal-button: #b4befe;
   --font-family: "_neodgm_pro", "Symbols Nerd Font", monospace;
   --font-family-mono: "_neodgm", "Symbols Nerd Font", monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--background0);
+  --color-foreground: var(--foreground0);
   --font-sans: var(--font-family);
   --font-mono: var(--font-family);
 }
 
 html {
   min-height: 100%;
-  background: var(--background);
+  background: var(--background0);
 }
 
 body {
   min-height: 100%;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background0);
+  color: var(--foreground0);
   font-family: var(--font-family);
   word-break: normal;
 }
@@ -72,12 +67,12 @@ button,
 .teaser-shell {
   min-height: 100svh;
   padding: 1.25rem 0.75rem;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background0);
+  color: var(--foreground0);
 }
 
 .terminal-frame {
-  --box-border-color: var(--terminal-dim);
+  --box-border-color: var(--overlay0);
   --box-border-width: 1px;
   min-height: calc(100svh - 5rem);
   display: grid;
@@ -91,8 +86,8 @@ button,
   left: 2ch;
   display: inline-block;
   padding: 0 1ch;
-  color: var(--background);
-  background: var(--terminal-accent);
+  color: var(--background0);
+  background: var(--peach);
   line-height: 1lh;
 }
 
@@ -111,7 +106,7 @@ button,
   display: grid;
   place-items: center;
   margin: 0;
-  background: linear-gradient(90deg, #89b4fa, #a6e3a1);
+  background: linear-gradient(90deg, var(--blue), var(--green));
   background-clip: text;
   color: transparent;
   font-family: var(--font-family);
@@ -127,7 +122,7 @@ button,
 .hero-title-reserve,
 .hero-title-frame {
   grid-area: 1 / 1;
-  background: linear-gradient(90deg, #89b4fa, #a6e3a1);
+  background: linear-gradient(90deg, var(--blue), var(--green));
   background-clip: text;
   color: transparent;
   -webkit-background-clip: text;
@@ -154,8 +149,8 @@ button,
 .hero-title-cursor {
   display: inline-block;
   background: none;
-  color: var(--terminal-accent);
-  -webkit-text-fill-color: var(--terminal-accent);
+  color: var(--pink);
+  -webkit-text-fill-color: var(--pink);
   animation: hero-title-cursor 720ms step-end infinite;
 }
 
@@ -191,16 +186,11 @@ button,
 
 .teaser-kicker {
   max-width: 32ch;
-  color: var(--terminal-muted);
+  color: var(--foreground1);
 }
 
 .teaser-copy p {
-  color: var(--foreground);
-}
-
-.basecamp-button {
-  --button-primary: var(--terminal-button);
-  --button-secondary: var(--background);
+  color: var(--foreground0);
 }
 
 .sr-only {
