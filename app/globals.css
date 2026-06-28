@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "_neodgm_pro";
+  src: url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff2") format("woff2"), url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff") format("woff"), url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: normal;
+}
+
 @layer base, utils, components;
 
 @import "@webtui/css";
