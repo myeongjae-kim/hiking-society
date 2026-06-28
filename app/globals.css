@@ -139,6 +139,10 @@ button,
   animation-delay: var(--delay);
 }
 
+.hero-title-line {
+  display: block;
+}
+
 .hero-title-frame-final {
   animation-name: hero-title-frame-final;
   animation-duration: 1ms;

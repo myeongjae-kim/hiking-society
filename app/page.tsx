@@ -14,8 +14,16 @@ type TimedHeroTitleFrame = HeroTitleFrame & {
   duration: number;
 };
 
+type HeroTitleLine = {
+  afterCursor?: string;
+  beforeCursor: string;
+  showCursor?: boolean;
+};
+
 const heroTitleFrameDuration = 90;
 const heroTitleEditFrameDuration = 120;
+const studentBreak = '대학생';
+const studentWithMarkerBreak = '대학생(?)';
 
 const heroTitleFrameSteps: HeroTitleFrame[] = [
   { before: 'ㄷ' },
@@ -63,7 +71,80 @@ const heroTitleFrames = heroTitleFrameSteps.reduce<TimedHeroTitleFrame[]>((frame
   return frames;
 }, []);
 
+function getHeroTitleBreakIndex(frame: HeroTitleFrame) {
+  const after = frame.after ?? '';
+  const fullText = `${frame.before}${after}`;
+
+  if (fullText.startsWith(studentWithMarkerBreak)) {
+    return studentWithMarkerBreak.length;
+  }
+
+  if (frame.before.startsWith('대학생(')) {
+    return frame.before.length;
+  }
+
+  if (fullText.startsWith(`${studentBreak}등`) || (frame.before === studentBreak && after)) {
+    return studentBreak.length;
+  }
+
+  return undefined;
+}
+
+function getHeroTitleLines(frame: HeroTitleFrame): HeroTitleLine[] {
+  const after = frame.after ?? '';
+  const fullText = `${frame.before}${after}`;
+  const breakIndex = getHeroTitleBreakIndex(frame);
+  const cursorIndex = frame.final ? undefined : frame.before.length;
+
+  if (breakIndex === undefined) {
+    return [
+      {
+        afterCursor: after,
+        beforeCursor: frame.before,
+        showCursor: !frame.final,
+      },
+    ];
+  }
+
+  if (cursorIndex !== undefined && cursorIndex <= breakIndex) {
+    return [
+      {
+        afterCursor: fullText.slice(cursorIndex, breakIndex),
+        beforeCursor: fullText.slice(0, cursorIndex),
+        showCursor: true,
+      },
+      {
+        beforeCursor: fullText.slice(breakIndex),
+      },
+    ];
+  }
+
+  if (cursorIndex !== undefined) {
+    return [
+      {
+        beforeCursor: fullText.slice(0, breakIndex),
+      },
+      {
+        afterCursor: fullText.slice(cursorIndex),
+        beforeCursor: fullText.slice(breakIndex, cursorIndex),
+        showCursor: true,
+      },
+    ];
+  }
+
+  return [
+    {
+      beforeCursor: fullText.slice(0, breakIndex),
+    },
+    {
+      beforeCursor: fullText.slice(breakIndex),
+    },
+  ];
+}
+
 export default function Home() {
+  const finalHeroTitleLines = getHeroTitleLines({ before: finalHeroTitle, final: true });
+
   return (
     <main className="teaser-shell" aria-labelledby="teaser-title">
       <section className="terminal-frame" box-="round">
@@ -71,7 +152,13 @@ export default function Home() {
 
         <div className="teaser-content">
           <p className="hero-title" aria-hidden="true">
-            <span className="hero-title-reserve">{finalHeroTitle}</span>
+            <span className="hero-title-reserve">
+              {finalHeroTitleLines.map((line, index) => (
+                <span className="hero-title-line" key={`${index}-${line.beforeCursor}`}>
+                  {line.beforeCursor}
+                </span>
+              ))}
+            </span>
             {heroTitleFrames.map((frame, index) => (
               <span
                 className={`hero-title-frame ${frame.final ? 'hero-title-frame-final' : ''}`}
@@ -83,9 +170,16 @@ export default function Home() {
                   } as CSSProperties
                 }
               >
-                <span>{frame.before}</span>
-                {!frame.final && <span className="hero-title-cursor">|</span>}
-                {frame.after && <span>{frame.after}</span>}
+                {getHeroTitleLines(frame).map((line, lineIndex) => (
+                  <span
+                    className="hero-title-line"
+                    key={`${lineIndex}-${line.beforeCursor}-${line.afterCursor ?? ''}`}
+                  >
+                    <span>{line.beforeCursor}</span>
+                    {line.showCursor && <span className="hero-title-cursor">|</span>}
+                    {line.afterCursor && <span>{line.afterCursor}</span>}
+                  </span>
+                ))}
               </span>
             ))}
           </p>
