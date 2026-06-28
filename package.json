@@ -12,6 +12,7 @@
     "find-deadcode": "bash scripts/find-deadcode.sh"
   },
   "dependencies": {
+    "@webtui/css": "^0.1.9",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "next": "16.2.9",
