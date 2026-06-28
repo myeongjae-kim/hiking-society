@@ -1,10 +1,28 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "_neodgm_pro";
-  src: url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff2") format("woff2"), url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff") format("woff"), url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.ttf") format("truetype");
+  font-family: "_neodgm";
+  src:
+    url("https://cdn.myeongjae.kim/fonts/neodgm_code.woff2") format("woff2"),
+    url("https://cdn.myeongjae.kim/fonts/neodgm_code.woff") format("woff"),
+    url("https://cdn.myeongjae.kim/fonts/neodgm_code.ttf") format("truetype");
   font-style: normal;
   font-weight: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "_neodgm_pro";
+  src:
+    url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff2")
+      format("woff2"),
+    url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.woff")
+      format("woff"),
+    url("https://cdn.myeongjae.kim/fonts/NeoDunggeunmoPro-Regular.ttf")
+      format("truetype");
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
 }
 
 @layer base, utils, components;
@@ -22,13 +40,15 @@
   --terminal-dim: #6c7086;
   --terminal-accent: #f5c2e7;
   --terminal-button: #b4befe;
+  --font-family: "_neodgm_pro", "Symbols Nerd Font", monospace;
+  --font-family-mono: "_neodgm", "Symbols Nerd Font", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-family);
+  --font-mono: var(--font-family);
 }
 
 html {
@@ -40,7 +60,7 @@ body {
   min-height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-mono), "Symbols Nerd Font", monospace;
+  font-family: var(--font-family);
   word-break: normal;
 }
 
@@ -99,6 +119,7 @@ button,
   padding: 0;
   background: transparent;
   color: var(--terminal-accent);
+  font-family: var(--font-family-mono);
   font-size: 5px;
   line-height: 1.12;
   letter-spacing: 0;
