@@ -90,8 +90,8 @@ button,
 
 .terminal-badge {
   position: absolute;
-  top: 0.5lh;
-  left: 1ch;
+  top: 0.2ch;
+  left: 2ch;
   display: inline-block;
   padding: 0 1ch;
   color: var(--background);
@@ -100,7 +100,6 @@ button,
 }
 
 .teaser-content {
-  width: min(100%, 74ch);
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -112,11 +111,8 @@ button,
 }
 
 .hero-title {
-  --hero-frame-count: 24;
-  --hero-frame-duration: 90ms;
   display: grid;
   place-items: center;
-  max-width: 100%;
   margin: 0;
   background: linear-gradient(90deg, #89b4fa, #a6e3a1);
   background-clip: text;
@@ -145,15 +141,25 @@ button,
 }
 
 .hero-title-frame {
+  display: inline-block;
   opacity: 0;
-  animation: hero-title-frame var(--hero-frame-duration) step-end;
-  animation-delay: calc(var(--frame) * var(--hero-frame-duration));
+  animation: hero-title-frame var(--duration) step-end;
+  animation-delay: var(--delay);
 }
 
 .hero-title-frame-final {
   animation-name: hero-title-frame-final;
   animation-duration: 1ms;
+  animation-delay: var(--delay);
   animation-fill-mode: forwards;
+}
+
+.hero-title-cursor {
+  display: inline-block;
+  background: none;
+  color: var(--terminal-accent);
+  -webkit-text-fill-color: var(--terminal-accent);
+  animation: hero-title-cursor 720ms step-end infinite;
 }
 
 @keyframes hero-title-frame {
@@ -174,19 +180,21 @@ button,
   }
 }
 
+@keyframes hero-title-cursor {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
 .teaser-kicker {
   max-width: 32ch;
   color: var(--terminal-muted);
-}
-
-.teaser-copy {
-  --box-border-color: var(--terminal-dim);
-  --box-border-width: 1px;
-  width: min(100%, 58ch);
-  min-width: 0;
-  max-width: 100%;
-  text-align: left;
-  overflow-wrap: break-word;
 }
 
 .teaser-copy p {
@@ -238,5 +246,9 @@ button,
 
   .hero-title-frame-final {
     opacity: 1;
+  }
+
+  .hero-title-cursor {
+    display: none;
   }
 }
