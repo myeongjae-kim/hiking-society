@@ -112,7 +112,11 @@ button,
 }
 
 .hero-title {
-  max-width: 12ch;
+  --hero-frame-count: 24;
+  --hero-frame-duration: 90ms;
+  display: grid;
+  place-items: center;
+  max-width: 100%;
   margin: 0;
   background: linear-gradient(90deg, #89b4fa, #a6e3a1);
   background-clip: text;
@@ -125,6 +129,49 @@ button,
   text-wrap: balance;
   word-break: keep-all;
   -webkit-background-clip: text;
+}
+
+.hero-title-reserve,
+.hero-title-frame {
+  grid-area: 1 / 1;
+  background: linear-gradient(90deg, #89b4fa, #a6e3a1);
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+}
+
+.hero-title-reserve {
+  visibility: hidden;
+}
+
+.hero-title-frame {
+  opacity: 0;
+  animation: hero-title-frame var(--hero-frame-duration) step-end;
+  animation-delay: calc(var(--frame) * var(--hero-frame-duration));
+}
+
+.hero-title-frame-final {
+  animation-name: hero-title-frame-final;
+  animation-duration: 1ms;
+  animation-fill-mode: forwards;
+}
+
+@keyframes hero-title-frame {
+  0%,
+  99% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hero-title-frame-final {
+  from,
+  to {
+    opacity: 1;
+  }
 }
 
 .teaser-kicker {
@@ -180,5 +227,16 @@ button,
 
   .hero-title {
     font-size: 5.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-title-frame {
+    animation: none;
+    opacity: 0;
+  }
+
+  .hero-title-frame-final {
+    opacity: 1;
   }
 }
