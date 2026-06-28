@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
+@layer base, utils, components;
+
+@import "@webtui/css";
+@import "@webtui/css/components/typography.css";
+
+/* below should be last */
+@import "@webtui/plugin-nf";
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1e1e2e;
+  --foreground: #cdd6f4;
+  --terminal-muted: #a6adc8;
+  --terminal-dim: #6c7086;
+  --terminal-accent: #f5c2e7;
+  --terminal-button: #b4befe;
 }
 
 @theme inline {
@@ -12,23 +24,132 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  min-height: 100%;
+  background: var(--background);
 }
 
 body {
+  min-height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif, "Symbols Nerd Font";
+  font-family: var(--font-geist-mono), "Symbols Nerd Font", monospace;
+  word-break: normal;
 }
 
-@layer base, utils, components;
+button,
+[is-~="button"] {
+  cursor: pointer;
+}
 
-@import '@webtui/css';
-@import '@webtui/css/components/typography.css';
+.teaser-shell {
+  min-height: 100svh;
+  padding: 1.25rem 0.75rem;
+  background:
+    linear-gradient(rgba(205, 214, 244, 0.03) 1px, transparent 1px),
+    var(--background);
+  background-size: 100% 1lh;
+  color: var(--foreground);
+}
 
-/*  below should be last */
-@import '@webtui/plugin-nf';
+.terminal-frame {
+  --box-border-color: var(--terminal-dim);
+  --box-border-width: 1px;
+  min-height: calc(100svh - 5rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.terminal-badge {
+  position: absolute;
+  top: 0.5lh;
+  left: 1ch;
+  display: inline-block;
+  padding: 0 1ch;
+  color: var(--background);
+  background: var(--terminal-accent);
+  line-height: 1lh;
+}
+
+.teaser-content {
+  width: min(100%, 74ch);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2lh;
+  padding: 5lh 1ch 3lh;
+  text-align: center;
+  overflow: hidden;
+}
+
+.wordmark {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+  color: var(--terminal-accent);
+  font-size: 5px;
+  line-height: 1.12;
+  letter-spacing: 0;
+  white-space: pre;
+}
+
+.teaser-kicker {
+  max-width: 32ch;
+  color: var(--terminal-muted);
+}
+
+.teaser-copy {
+  --box-border-color: var(--terminal-dim);
+  --box-border-width: 1px;
+  width: min(100%, 58ch);
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
+.teaser-copy p {
+  color: var(--foreground);
+}
+
+.basecamp-button {
+  --button-primary: var(--terminal-button);
+  --button-secondary: var(--background);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 640px) {
+  .wordmark {
+    font-size: 11px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .teaser-shell {
+    padding: 2rem;
+  }
+
+  .terminal-frame {
+    min-height: calc(100svh - 4rem);
+  }
+
+  .wordmark {
+    font-size: 14px;
+  }
+}
