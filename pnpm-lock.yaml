@@ -11,6 +11,9 @@ importers:
       '@webtui/css':
         specifier: ^0.1.9
         version: 0.1.9
+      '@webtui/plugin-nf':
+        specifier: ^0.1.2
+        version: 0.1.2
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -727,6 +730,9 @@ packages:
 
   '@webtui/css@0.1.9':
     resolution: {integrity: sha512-frEwcxRihw3VlmUxLzu5gsvp2KaPtETJvKKgCFHq+9KJ/kqZrgGoil9W56SOgW3T6/9CMtRG8fciU4yixGwPOg==}
+
+  '@webtui/plugin-nf@0.1.2':
+    resolution: {integrity: sha512-jLvg6ay1T6oXgaVR2qqBUNFIRxgajY0CruGfYww9d1a7myDnCbkKgUjKlOD7NDnrlQhTvl/ul0J45AUHNC3UDg==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2831,6 +2837,8 @@ snapshots:
     optional: true
 
   '@webtui/css@0.1.9': {}
+
+  '@webtui/plugin-nf@0.1.2': {}
 
   acorn-jsx@5.3.2(acorn@8.17.0):
     dependencies:
