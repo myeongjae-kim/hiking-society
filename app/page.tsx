@@ -1,11 +1,3 @@
-const wordmark = String.raw`
- _   _ ___ _  _____ _   _  ____   ____   ___   ____ ___ _____ _______   __
-| | | |_ _| |/ /_ _| \ | |/ ___| / ___| / _ \ / ___|_ _| ____|_   _\ \ / /
-| |_| || || ' / | ||  \| | |  _  \___ \| | | | |    | ||  _|   | |  \ V /
-|  _  || || . \ | || |\  | |_| |  ___) | |_| | |___ | || |___  | |   | |
-|_| |_|___|_|\_\___|_| \_|\____| |____/ \___/ \____|___|_____| |_|   |_|
-`;
-
 export default function Home() {
   return (
     <main className="teaser-shell" aria-labelledby="teaser-title">
@@ -13,12 +5,12 @@ export default function Home() {
         <span className="terminal-badge">Hiking Society &gt;&gt;</span>
 
         <div className="teaser-content">
-          <pre className="wordmark" aria-label="Hiking Society">
-            {wordmark}
-          </pre>
+          <p className="hero-title" aria-hidden="true">
+            대학생(?)등산동아리
+          </p>
 
           <h1 id="teaser-title" className="sr-only">
-            Hiking Society
+            대학생(?)등산동아리
           </h1>
 
           <p className="teaser-kicker">A quiet signal for people who prefer the long way up.</p>

@@ -111,19 +111,20 @@ button,
   overflow: hidden;
 }
 
-.wordmark {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  padding: 0;
-  background: transparent;
-  color: var(--terminal-accent);
-  font-family: var(--font-family-mono);
-  font-size: 5px;
-  line-height: 1.12;
+.hero-title {
+  max-width: 12ch;
+  margin: 0;
+  background: linear-gradient(90deg, #89b4fa, #a6e3a1);
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-family);
+  font-size: 2.5rem;
+  line-height: 1.08;
   letter-spacing: 0;
-  white-space: pre;
+  text-align: center;
+  text-wrap: balance;
+  word-break: keep-all;
+  -webkit-background-clip: text;
 }
 
 .teaser-kicker {
@@ -163,8 +164,8 @@ button,
 }
 
 @media (min-width: 640px) {
-  .wordmark {
-    font-size: 11px;
+  .hero-title {
+    font-size: 4rem;
   }
 }
 
@@ -177,7 +178,7 @@ button,
     min-height: calc(100svh - 4rem);
   }
 
-  .wordmark {
-    font-size: 14px;
+  .hero-title {
+    font-size: 5.5rem;
   }
 }
