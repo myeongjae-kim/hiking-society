@@ -72,10 +72,7 @@ button,
 .teaser-shell {
   min-height: 100svh;
   padding: 1.25rem 0.75rem;
-  background:
-    linear-gradient(rgba(205, 214, 244, 0.03) 1px, transparent 1px),
-    var(--background);
-  background-size: 100% 1lh;
+  background: var(--background);
   color: var(--foreground);
 }
 
