@@ -74,12 +74,12 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
         {photos.map((photo, index) => (
           <figure
-            className="m-0 min-w-0 border border-[var(--overlay0)] bg-[var(--surface0)]"
+            className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
             key={`${articleId}-${photo.order}`}
           >
             <Dialog.Trigger asChild>
               <button
-                className="group block w-full text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                 onClick={() => {
                   setSelectedIndex(index);
                 }}
