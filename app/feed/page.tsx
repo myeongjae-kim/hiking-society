@@ -201,7 +201,7 @@ function ArticlePanel({ article, comments }: { article: Article; comments: reado
 
   return (
     <article
-      className={`grid min-w-0 gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] p-4 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
+      className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
       box-="round"
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -281,7 +281,7 @@ function StatusRow({ label, value }: { label: string; value: ReactNode }) {
 function StatusPanel({ groupCount, sort }: { groupCount: number; sort: FeedSort }) {
   return (
     <aside
-      className={`grid gap-3 self-start bg-[var(--surface0)] p-4 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
+      className={`grid gap-4 self-start bg-[var(--surface0)] !p-5 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
       box-="round"
       aria-label="피드 상태"
     >
