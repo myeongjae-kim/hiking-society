@@ -12,6 +12,7 @@
     "find-deadcode": "bash scripts/find-deadcode.sh"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.18",
     "@webtui/css": "^0.1.9",
     "@webtui/plugin-nf": "^0.1.2",
     "@webtui/theme-catppuccin": "^0.0.5",

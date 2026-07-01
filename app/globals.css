@@ -376,35 +376,6 @@ button,
   background: var(--surface0);
 }
 
-.feed-photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  gap: 0.75rem;
-}
-
-.feed-photo-frame {
-  min-width: 0;
-  margin: 0;
-  border: 1px solid var(--overlay0);
-  background: var(--surface0);
-}
-
-.feed-photo-frame img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  image-rendering: auto;
-}
-
-.feed-photo-frame figcaption {
-  padding: 0.35rem 0.5rem;
-  color: var(--subtext0);
-  font-family: var(--font-family-mono);
-  font-size: 0.8125rem;
-  line-height: 1.35;
-}
-
 .feed-article-body {
   margin: 0;
   color: var(--foreground0);

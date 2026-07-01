@@ -4,6 +4,7 @@ import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';
+import { PhotoViewer } from './photo-viewer';
 
 type FeedSort = 'hiking' | 'article';
 
@@ -183,16 +184,7 @@ function ArticlePanel({ article, comments }: { article: Article; comments: reado
         </div>
       </header>
 
-      <div className="feed-photo-grid">
-        {article.photos.map((photo) => (
-          <figure className="feed-photo-frame" key={`${article.id}-${photo.order}`}>
-            <img alt={`${article.authorName}의 산행 사진 ${photo.order}`} src={photo.url} />
-            <figcaption>
-              photo {photo.order}/{article.photos.length} order={photo.order}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
+      <PhotoViewer articleId={article.id} authorName={article.authorName} photos={article.photos} />
 
       <p className="feed-article-body">{article.body}</p>
 
