@@ -1,4 +1,5 @@
 import type { Article } from '@/core/article/domain';
+import type { Comment } from '@/core/comment/domain';
 import type {
   AuthorName,
   IsoDateString,
@@ -7,7 +8,6 @@ import type {
   Longitude,
   Timezone,
 } from '@/core/common/domain';
-import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 
 const timezone = 'Asia/Seoul' as Timezone;
@@ -17,17 +17,17 @@ export const mockHikings: readonly Hiking[] = [
   {
     id: 'hiking-1' as Hiking['id'],
     mountainName: '북한산',
-    hikingDate: '2026-06-20' as IsoDateString,
+    hikingDate: '2026-07-01' as IsoDateString,
     timezone,
     latitude: 37.6584 as Latitude,
     longitude: 126.977 as Longitude,
-    startedAt: '2026-06-20T08:10:00+09:00' as IsoDateTimeString,
-    completedAt: '2026-06-20T14:35:00+09:00' as IsoDateTimeString,
+    startedAt: '2026-07-01T08:10:00+09:00' as IsoDateTimeString,
+    completedAt: '2026-07-01T14:35:00+09:00' as IsoDateTimeString,
     participantsCsv: '민재,서연,지훈,나래',
     restaurantAddress: '서울 은평구 진관동 278-8',
     authorName: '민재' as AuthorName,
-    createdAt: '2026-06-20T20:10:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T20:10:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T20:10:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T20:10:00+09:00' as IsoDateTimeString,
   },
   {
     id: 'hiking-2' as Hiking['id'],
@@ -123,8 +123,8 @@ export const mockArticles: readonly Article[] = [
     photos: [{ url: thumbnailUrl, order: 1 }],
     body: '정상 사진보다 김밥 사진이 더 많은 산행.',
     authorName: '지훈' as AuthorName,
-    createdAt: '2026-06-20T20:48:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T20:48:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T20:48:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T20:48:00+09:00' as IsoDateTimeString,
     deletedAt: null,
     edited: false,
   },
@@ -422,8 +422,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: null,
     body: '김밥 사진 피드 따로 열어야 해.',
     authorName: '서연' as AuthorName,
-    createdAt: '2026-06-20T21:21:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:21:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:21:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:21:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -432,8 +432,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: 'comment-1-3-1' as Comment['id'],
     body: '등산보다 도시락 기획이 더 탄탄했다.',
     authorName: '지훈' as AuthorName,
-    createdAt: '2026-06-20T21:22:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:22:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:22:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:22:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -442,8 +442,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: 'comment-1-3-1' as Comment['id'],
     body: '다음엔 라면 금지인지 허용인지 정하자.',
     authorName: '민재' as AuthorName,
-    createdAt: '2026-06-20T21:23:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:23:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:23:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:23:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -452,8 +452,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: null,
     body: '사진 보니까 또 배고프네.',
     authorName: '나래' as AuthorName,
-    createdAt: '2026-06-20T21:24:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:24:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:24:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:24:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -462,8 +462,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: null,
     body: '정상 인증도 충분히 했다.',
     authorName: '도윤' as AuthorName,
-    createdAt: '2026-06-20T21:25:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:25:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:25:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:25:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -472,8 +472,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: null,
     body: '다음 산행 메뉴 투표 필요.',
     authorName: '하린' as AuthorName,
-    createdAt: '2026-06-20T21:26:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:26:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:26:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:26:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {
@@ -482,8 +482,8 @@ export const mockComments: readonly Comment[] = [
     parentCommentId: null,
     body: '이런 기록이 제일 오래 남을 듯.',
     authorName: '유진' as AuthorName,
-    createdAt: '2026-06-20T21:27:00+09:00' as IsoDateTimeString,
-    updatedAt: '2026-06-20T21:27:00+09:00' as IsoDateTimeString,
+    createdAt: '2026-07-01T21:27:00+09:00' as IsoDateTimeString,
+    updatedAt: '2026-07-01T21:27:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
   {

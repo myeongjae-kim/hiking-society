@@ -16,6 +16,7 @@
     "@webtui/css": "^0.1.9",
     "@webtui/plugin-nf": "^0.1.2",
     "@webtui/theme-catppuccin": "^0.0.5",
+    "dayjs": "^1.11.21",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "next": "16.2.9",

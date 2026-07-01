@@ -4,6 +4,7 @@ import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';
+import { DateTimeLabel } from './date-time-label';
 import { PhotoViewer } from './photo-viewer';
 
 type FeedGroup = {
@@ -92,7 +93,7 @@ function getArticleComments(commentsByArticleId: Map<ArticleId, Comment[]>, arti
 function getArticleMeta(article: Article, commentCount: number) {
   return [
     `@${article.authorName}`,
-    formatTimeLabel(article.createdAt),
+    <DateTimeLabel key={`${article.id}-created-at`} value={article.createdAt} />,
     `${article.photos.length} photos`,
     `${commentCount} comments`,
     ...(article.edited ? ['edited'] : []),
@@ -108,11 +109,11 @@ function Command({ children }: { children: ReactNode }) {
   );
 }
 
-function InlineMeta({ items }: { items: readonly string[] }) {
+function InlineMeta({ items }: { items: readonly ReactNode[] }) {
   return (
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm leading-[1.45] text-[var(--subtext0)]">
       {items.map((item, index) => (
-        <span className="inline-flex items-center gap-x-2" key={`${item}-${index}`}>
+        <span className="inline-flex items-center gap-x-2" key={index}>
           {index > 0 ? (
             <span aria-hidden="true" className="text-[var(--overlay1)]">
               ·
@@ -197,13 +198,25 @@ function CommentLine({
 }) {
   return (
     <div
-      className={`grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-2 text-[0.95rem] leading-[1.45] ${
+      className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2 text-[0.95rem] leading-[1.45] ${
         reply ? 'ml-4 text-[var(--subtext0)]' : 'text-[var(--foreground1)]'
       }`}
     >
       <span className="font-mono text-[var(--green)]">{prompt}</span>
-      <span className="whitespace-nowrap text-[var(--pink)]">{comment.authorName}</span>
-      <span className="min-w-0 [overflow-wrap:anywhere]">{comment.body}</span>
+      <p className="m-0 min-w-0 [overflow-wrap:anywhere]">
+        <span className="whitespace-nowrap text-[var(--pink)]">{comment.authorName}</span>
+        <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
+          ·
+        </span>
+        <DateTimeLabel
+          className="font-mono text-[0.8125rem] whitespace-nowrap text-[var(--subtext0)]"
+          value={comment.createdAt}
+        />
+        <span aria-hidden="true" className="mx-2 text-[var(--overlay1)]">
+          :
+        </span>
+        <span>{comment.body}</span>
+      </p>
     </div>
   );
 }
