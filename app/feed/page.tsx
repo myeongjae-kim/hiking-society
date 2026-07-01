@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import type { Article, ArticleId } from '@/core/article/domain';
@@ -7,86 +6,29 @@ import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';
 import { PhotoViewer } from './photo-viewer';
 
-type FeedSort = 'hiking' | 'article';
-
-type SearchParams = Promise<{
-  sort?: string | string[];
-}>;
-
 type FeedGroup = {
   articles: Article[];
   hiking: Hiking;
 };
 
-const sortLabels = {
-  article: '게시글',
-  hiking: '등산',
-} satisfies Record<FeedSort, string>;
-
-const sortOptions: FeedSort[] = ['hiking', 'article'];
-
 const commandClassName = 'm-0 font-mono text-sm leading-[1.4] text-[var(--mauve)]';
-const sortLinkBaseClassName = 'inline-flex min-h-7 items-center border px-3 no-underline';
-const sortLinkInactiveClassName =
-  'border-[var(--overlay0)] bg-[var(--surface0)] text-[var(--foreground1)]';
-const sortLinkActiveClassName = 'border-[var(--green)] bg-[var(--green)] text-[var(--background0)]';
 const gridStackClassName = 'grid min-w-0 gap-4';
 const boxBorderClassName = '[--box-border-color:var(--overlay0)] [--box-border-width:1px]';
-
-function normalizeSort(sort: string | string[] | undefined): FeedSort {
-  const sortValue = Array.isArray(sort) ? sort[0] : sort;
-
-  return sortValue === 'article' ? 'article' : 'hiking';
-}
 
 function compareDesc(left: string, right: string) {
   return right.localeCompare(left);
 }
 
-function createIndexById<T extends { id: string }>(items: readonly T[]) {
-  return new Map(items.map((item) => [item.id, item]));
-}
-
-function getFeedGroups(sort: FeedSort): FeedGroup[] {
-  const hikingById = createIndexById(mockHikings);
-
-  if (sort === 'hiking') {
-    return [...mockHikings]
-      .sort((left, right) => compareDesc(left.hikingDate, right.hikingDate))
-      .map((hiking) => ({
-        articles: mockArticles
-          .filter((article) => article.hikingId === hiking.id)
-          .sort((left, right) => compareDesc(left.createdAt, right.createdAt)),
-        hiking,
-      }))
-      .filter((group) => group.articles.length > 0);
-  }
-
-  const groups: FeedGroup[] = [];
-
-  for (const article of [...mockArticles].sort((left, right) =>
-    compareDesc(left.createdAt, right.createdAt),
-  )) {
-    const hiking = hikingById.get(article.hikingId);
-
-    if (!hiking) {
-      continue;
-    }
-
-    const lastGroup = groups.at(-1);
-
-    if (lastGroup?.hiking.id === hiking.id) {
-      lastGroup.articles.push(article);
-      continue;
-    }
-
-    groups.push({
-      articles: [article],
+function getFeedGroups(): FeedGroup[] {
+  return [...mockHikings]
+    .sort((left, right) => compareDesc(left.hikingDate, right.hikingDate))
+    .map((hiking) => ({
+      articles: mockArticles
+        .filter((article) => article.hikingId === hiking.id)
+        .sort((left, right) => compareDesc(left.createdAt, right.createdAt)),
       hiking,
-    });
-  }
-
-  return groups;
+    }))
+    .filter((group) => group.articles.length > 0);
 }
 
 function getCommentsByArticleId() {
@@ -144,22 +86,6 @@ function getHikingMeta(hiking: Hiking) {
 function getArticleComments(commentsByArticleId: Map<ArticleId, Comment[]>, articleId: ArticleId) {
   return [...(commentsByArticleId.get(articleId) ?? [])].sort((left, right) =>
     left.createdAt.localeCompare(right.createdAt),
-  );
-}
-
-function SortLink({ activeSort, sort }: { activeSort: FeedSort; sort: FeedSort }) {
-  const isActive = activeSort === sort;
-
-  return (
-    <Link
-      aria-current={isActive ? 'page' : undefined}
-      className={`${sortLinkBaseClassName} ${
-        isActive ? sortLinkActiveClassName : sortLinkInactiveClassName
-      }`}
-      href={sort === 'hiking' ? '/feed' : `/feed?sort=${sort}`}
-    >
-      {sortLabels[sort]}
-    </Link>
   );
 }
 
@@ -278,7 +204,7 @@ function StatusRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function StatusPanel({ groupCount, sort }: { groupCount: number; sort: FeedSort }) {
+function StatusPanel({ groupCount }: { groupCount: number }) {
   return (
     <aside
       className={`grid gap-4 self-start bg-[var(--surface0)] !p-5 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
@@ -287,7 +213,6 @@ function StatusPanel({ groupCount, sort }: { groupCount: number; sort: FeedSort 
     >
       <Command>status --mock</Command>
       <dl className="m-0 grid gap-2">
-        <StatusRow label="sort" value={sortLabels[sort]} />
         <StatusRow label="groups" value={groupCount} />
         <StatusRow label="hikings" value={mockHikings.length} />
         <StatusRow label="articles" value={mockArticles.length} />
@@ -297,9 +222,8 @@ function StatusPanel({ groupCount, sort }: { groupCount: number; sort: FeedSort 
   );
 }
 
-export default async function FeedPage({ searchParams }: { searchParams: SearchParams }) {
-  const sort = normalizeSort((await searchParams).sort);
-  const groups = getFeedGroups(sort);
+export default function FeedPage() {
+  const groups = getFeedGroups();
   const commentsByArticleId = getCommentsByArticleId();
 
   return (
@@ -308,11 +232,6 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
         <div>
           <Command>Hiking Society /feed</Command>
         </div>
-        <nav className="inline-flex min-w-0 items-center gap-2" aria-label="피드 정렬">
-          {sortOptions.map((sortOption) => (
-            <SortLink activeSort={sort} key={sortOption} sort={sortOption} />
-          ))}
-        </nav>
       </header>
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
@@ -337,7 +256,7 @@ export default async function FeedPage({ searchParams }: { searchParams: SearchP
           ))}
         </section>
 
-        <StatusPanel groupCount={groups.length} sort={sort} />
+        <StatusPanel groupCount={groups.length} />
       </div>
     </main>
   );
