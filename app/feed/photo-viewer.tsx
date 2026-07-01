@@ -2,7 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import type { PointerEvent } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ArticlePhoto } from '@/core/article/domain';
 
@@ -12,33 +12,170 @@ type PhotoViewerProps = {
   photos: readonly ArticlePhoto[];
 };
 
+type DragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+};
+
 const photoControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
+const swipeThresholdPx = 48;
+const horizontalSwipeRatio = 1.25;
+const dragFeedbackMaxOffsetPx = 96;
+const dragFeedbackMinOpacity = 0.86;
 
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps) {
+  const dragStateRef = useRef<DragState | null>(null);
+  const selectedPhotoImageRef = useRef<HTMLImageElement>(null);
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultiplePhotos = photos.length > 1;
   const selectedPhoto = photos[selectedIndex] ?? photos[0];
 
-  const showPhoto = useCallback(
-    (index: number) => {
-      setSelectedIndex(getWrappedIndex(index, photos.length));
-    },
-    [photos.length],
-  );
-
   const showPreviousPhoto = useCallback(() => {
-    showPhoto(selectedIndex - 1);
-  }, [selectedIndex, showPhoto]);
+    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex - 1, photos.length));
+  }, [photos.length]);
 
   const showNextPhoto = useCallback(() => {
-    showPhoto(selectedIndex + 1);
-  }, [selectedIndex, showPhoto]);
+    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, photos.length));
+  }, [photos.length]);
+
+  const resetPhotoDragFeedback = useCallback((withTransition: boolean) => {
+    const selectedPhotoImage = selectedPhotoImageRef.current;
+
+    if (!selectedPhotoImage) {
+      return;
+    }
+
+    const canAnimate =
+      withTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    selectedPhotoImage.style.transition = canAnimate
+      ? 'transform 160ms ease-out, opacity 160ms ease-out'
+      : '';
+    selectedPhotoImage.style.transform = '';
+    selectedPhotoImage.style.opacity = '';
+
+    if (!canAnimate) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      if (selectedPhotoImageRef.current !== selectedPhotoImage) {
+        return;
+      }
+
+      selectedPhotoImage.style.transition = '';
+    }, 180);
+  }, []);
+
+  const updatePhotoDragFeedback = useCallback((deltaX: number) => {
+    const selectedPhotoImage = selectedPhotoImageRef.current;
+
+    if (!selectedPhotoImage) {
+      return;
+    }
+
+    const offsetX = clamp(deltaX, -dragFeedbackMaxOffsetPx, dragFeedbackMaxOffsetPx);
+    const dragProgress = Math.min(Math.abs(offsetX) / dragFeedbackMaxOffsetPx, 1);
+    const opacity = 1 - (1 - dragFeedbackMinOpacity) * dragProgress;
+
+    selectedPhotoImage.style.transition = '';
+    selectedPhotoImage.style.transform = `translateX(${offsetX}px)`;
+    selectedPhotoImage.style.opacity = String(opacity);
+  }, []);
+
+  const startPhotoDrag = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!hasMultiplePhotos) {
+        return;
+      }
+
+      if (event.pointerType === 'mouse' && event.button !== 0) {
+        return;
+      }
+
+      if (event.pointerType && !['mouse', 'pen', 'touch'].includes(event.pointerType)) {
+        return;
+      }
+
+      dragStateRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+      };
+      resetPhotoDragFeedback(false);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [hasMultiplePhotos, resetPhotoDragFeedback],
+  );
+
+  const resetPhotoDrag = useCallback(
+    (event: PointerEvent<HTMLDivElement>, withTransition = true) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      dragStateRef.current = null;
+      resetPhotoDragFeedback(withTransition);
+    },
+    [resetPhotoDragFeedback],
+  );
+
+  const updatePhotoDrag = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      const dragState = dragStateRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      updatePhotoDragFeedback(event.clientX - dragState.startX);
+    },
+    [updatePhotoDragFeedback],
+  );
+
+  const finishPhotoDrag = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      const dragState = dragStateRef.current;
+
+      if (!dragState || dragState.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const deltaX = event.clientX - dragState.startX;
+      const deltaY = event.clientY - dragState.startY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+      const isSwipe =
+        absDeltaX >= swipeThresholdPx && absDeltaX >= absDeltaY * horizontalSwipeRatio;
+
+      resetPhotoDrag(event, !isSwipe);
+
+      if (!isSwipe) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (deltaX > 0) {
+        showPreviousPhoto();
+        return;
+      }
+
+      showNextPhoto();
+    },
+    [resetPhotoDrag, showNextPhoto, showPreviousPhoto],
+  );
 
   const closeOnBackdropPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const target = event.target;
@@ -147,10 +284,19 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
               <span aria-hidden="true" className="size-0 sm:size-14" />
             )}
 
-            <div className="grid min-h-0 place-items-center" data-photo-modal-surface>
+            <div
+              className="grid min-h-0 touch-pan-y place-items-center select-none"
+              data-photo-modal-surface
+              onPointerCancel={resetPhotoDrag}
+              onPointerDown={startPhotoDrag}
+              onPointerMove={updatePhotoDrag}
+              onPointerUp={finishPhotoDrag}
+            >
               <img
                 alt={`${authorName}의 산행 사진 ${selectedPhoto.order}`}
-                className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain"
+                className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
+                draggable={false}
+                ref={selectedPhotoImageRef}
                 src={selectedPhoto.url}
               />
             </div>
