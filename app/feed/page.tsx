@@ -198,13 +198,12 @@ function CommentLine({
 }) {
   return (
     <div
-      className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-2 text-[0.95rem] leading-[1.45] ${
+      className={`min-w-0 items-baseline gap-2 text-[0.95rem] leading-[1.45] ${
         reply ? 'ml-4 text-[var(--subtext0)]' : 'text-[var(--foreground1)]'
       }`}
     >
-      <span className="font-mono text-[var(--green)]">{prompt}</span>
-      <p className="m-0 min-w-0 [overflow-wrap:anywhere]">
-        <span className="whitespace-nowrap text-[var(--pink)]">{comment.authorName}</span>
+      <div>
+        <span className="font-mono text-[var(--green)]">{prompt}</span>
         <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
           ·
         </span>
@@ -212,11 +211,16 @@ function CommentLine({
           className="font-mono text-[0.8125rem] whitespace-nowrap text-[var(--subtext0)]"
           value={comment.createdAt}
         />
-        <span aria-hidden="true" className="mx-2 text-[var(--overlay1)]">
-          :
-        </span>
-        <span>{comment.body}</span>
-      </p>
+      </div>
+      <div>
+        <p className="m-0 min-w-0 [overflow-wrap:anywhere]">
+          <span className="whitespace-nowrap text-[var(--pink)]">{comment.authorName}</span>
+          <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
+            :
+          </span>
+          <span>{comment.body}</span>
+        </p>
+      </div>
     </div>
   );
 }
