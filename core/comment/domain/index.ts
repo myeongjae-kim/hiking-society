@@ -1,0 +1,45 @@
+import type {
+  AuthorName,
+  Brand,
+  IsoDateTimeString,
+} from '@/core/common/domain';
+import type { ArticleId } from '@/core/article/domain';
+
+export type CommentId = Brand<string, 'CommentId'>;
+
+type CommentBase = {
+  readonly id: CommentId;
+  readonly articleId: ArticleId;
+  readonly body: string;
+  readonly authorName: AuthorName;
+  readonly createdAt: IsoDateTimeString;
+  readonly updatedAt: IsoDateTimeString;
+  readonly deletedAt: IsoDateTimeString | null;
+};
+
+export type TopLevelComment = CommentBase & {
+  readonly parentCommentId: null;
+};
+
+export type ReplyComment = CommentBase & {
+  readonly parentCommentId: CommentId;
+};
+
+export type Comment = TopLevelComment | ReplyComment;
+
+export type CreateCommentInput = {
+  readonly articleId: ArticleId;
+  readonly body: string;
+  readonly authorName: AuthorName;
+};
+
+export type CreateReplyInput = {
+  readonly articleId: ArticleId;
+  readonly parentCommentId: CommentId;
+  readonly body: string;
+  readonly authorName: AuthorName;
+};
+
+export type UpdateCommentInput = {
+  readonly body?: string;
+};
