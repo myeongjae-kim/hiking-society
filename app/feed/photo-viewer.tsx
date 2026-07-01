@@ -249,6 +249,13 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
 
   const handlePhotoStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (!shouldSuppressStageClickRef.current) {
+      if (event.target === selectedPhotoImageRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
       return;
     }
 
