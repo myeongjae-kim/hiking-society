@@ -4,6 +4,7 @@ import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';
+import Link from 'next/link';
 import { DateTimeLabel } from './date-time-label';
 import { PhotoViewer } from './photo-viewer';
 
@@ -259,7 +260,9 @@ function FeedTopbar() {
   return (
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <Command>Hiking Society /feed</Command>
+        <Command>
+          <Link href="/">Hiking Society</Link> /feed
+        </Command>
         <p className="m-0 font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
           theme: catppuccin-mocha / webtui
         </p>

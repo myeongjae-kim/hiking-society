@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
 const finalHeroTitle = '대학생(?)등산동아리';
@@ -201,9 +202,11 @@ export default function Home() {
 
           <p className="max-w-[32ch] text-2xl text-[var(--foreground1)]">Coming soon...</p>
 
-          <button className="basecamp-button" size-="large" type="button" variant-="lavender">
-            Enter Basecamp
-          </button>
+          <Link href={'/feed'}>
+            <button className="basecamp-button" size-="large" type="button" variant-="lavender">
+              Enter Basecamp
+            </button>
+          </Link>
         </div>
       </section>
     </main>
