@@ -1,7 +1,7 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { PointerEvent } from 'react';
+import type { MouseEvent, PointerEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ArticlePhoto } from '@/core/article/domain';
@@ -177,10 +177,12 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
     [resetPhotoDrag, showNextPhoto, showPreviousPhoto],
   );
 
-  const closeOnBackdropPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+  const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target;
 
     if (target instanceof Element && !target.closest('[data-photo-modal-surface]')) {
+      event.preventDefault();
+      event.stopPropagation();
       setOpen(false);
     }
   };
@@ -244,7 +246,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
         <Dialog.Content
           aria-describedby={`photo-viewer-description-${articleId}`}
           className="fixed inset-0 z-50 grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
-          onPointerDown={closeOnBackdropPointerDown}
+          onClick={closeOnBackdropClick}
         >
           <Dialog.Title className="sr-only">{authorName}의 산행 사진</Dialog.Title>
           <Dialog.Description className="sr-only" id={`photo-viewer-description-${articleId}`}>
