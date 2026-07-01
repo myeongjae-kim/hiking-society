@@ -24,6 +24,7 @@ const swipeThresholdPx = 48;
 const horizontalSwipeRatio = 1.25;
 const dragFeedbackMaxOffsetPx = 96;
 const dragFeedbackMinOpacity = 0.86;
+const dragClickSuppressThresholdPx = 8;
 
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
@@ -35,7 +36,10 @@ function clamp(value: number, min: number, max: number) {
 
 export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps) {
   const dragStateRef = useRef<DragState | null>(null);
+  const isPinchGestureRef = useRef(false);
   const selectedPhotoImageRef = useRef<HTMLImageElement>(null);
+  const shouldSuppressStageClickRef = useRef(false);
+  const touchPointerIdsRef = useRef<Set<number>>(new Set());
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultiplePhotos = photos.length > 1;
@@ -108,13 +112,36 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
         return;
       }
 
+      if (event.pointerType === 'touch') {
+        touchPointerIdsRef.current.add(event.pointerId);
+
+        if (touchPointerIdsRef.current.size > 1) {
+          const dragState = dragStateRef.current;
+
+          isPinchGestureRef.current = true;
+          shouldSuppressStageClickRef.current = true;
+          dragStateRef.current = null;
+          resetPhotoDragFeedback(false);
+
+          if (dragState && event.currentTarget.hasPointerCapture(dragState.pointerId)) {
+            event.currentTarget.releasePointerCapture(dragState.pointerId);
+          }
+
+          return;
+        }
+      }
+
       dragStateRef.current = {
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
       };
+      shouldSuppressStageClickRef.current = false;
       resetPhotoDragFeedback(false);
-      event.currentTarget.setPointerCapture(event.pointerId);
+
+      if (event.pointerType !== 'touch') {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
     },
     [hasMultiplePhotos, resetPhotoDragFeedback],
   );
@@ -123,6 +150,14 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
     (event: PointerEvent<HTMLDivElement>, withTransition = true) => {
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      if (event.pointerType === 'touch') {
+        touchPointerIdsRef.current.delete(event.pointerId);
+
+        if (touchPointerIdsRef.current.size === 0) {
+          isPinchGestureRef.current = false;
+        }
       }
 
       dragStateRef.current = null;
@@ -135,11 +170,25 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
 
+      if (event.pointerType === 'touch' && isPinchGestureRef.current) {
+        return;
+      }
+
       if (!dragState || dragState.pointerId !== event.pointerId) {
         return;
       }
 
-      updatePhotoDragFeedback(event.clientX - dragState.startX);
+      const deltaX = event.clientX - dragState.startX;
+      const deltaY = event.clientY - dragState.startY;
+
+      if (
+        Math.abs(deltaX) >= dragClickSuppressThresholdPx ||
+        Math.abs(deltaY) >= dragClickSuppressThresholdPx
+      ) {
+        shouldSuppressStageClickRef.current = true;
+      }
+
+      updatePhotoDragFeedback(deltaX);
     },
     [updatePhotoDragFeedback],
   );
@@ -147,6 +196,23 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
   const finishPhotoDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
+      const wasPinchGesture =
+        event.pointerType === 'touch' &&
+        (isPinchGestureRef.current || touchPointerIdsRef.current.size > 1);
+
+      if (event.pointerType === 'touch') {
+        touchPointerIdsRef.current.delete(event.pointerId);
+
+        if (touchPointerIdsRef.current.size === 0) {
+          isPinchGestureRef.current = false;
+        }
+      }
+
+      if (wasPinchGesture) {
+        dragStateRef.current = null;
+        resetPhotoDragFeedback(false);
+        return;
+      }
 
       if (!dragState || dragState.pointerId !== event.pointerId) {
         return;
@@ -158,6 +224,10 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
       const absDeltaY = Math.abs(deltaY);
       const isSwipe =
         absDeltaX >= swipeThresholdPx && absDeltaX >= absDeltaY * horizontalSwipeRatio;
+
+      if (absDeltaX >= dragClickSuppressThresholdPx || absDeltaY >= dragClickSuppressThresholdPx) {
+        shouldSuppressStageClickRef.current = true;
+      }
 
       resetPhotoDrag(event, !isSwipe);
 
@@ -174,8 +244,18 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
 
       showNextPhoto();
     },
-    [resetPhotoDrag, showNextPhoto, showPreviousPhoto],
+    [resetPhotoDrag, resetPhotoDragFeedback, showNextPhoto, showPreviousPhoto],
   );
+
+  const handlePhotoStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    if (!shouldSuppressStageClickRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    shouldSuppressStageClickRef.current = false;
+  }, []);
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target;
@@ -287,8 +367,9 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             )}
 
             <div
-              className="grid min-h-0 touch-pan-y place-items-center select-none"
+              className="grid h-full min-h-0 w-full [touch-action:pan-y_pinch-zoom] place-items-center select-none"
               data-photo-modal-surface
+              onClick={handlePhotoStageClick}
               onPointerCancel={resetPhotoDrag}
               onPointerDown={startPhotoDrag}
               onPointerMove={updatePhotoDrag}
