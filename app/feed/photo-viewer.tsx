@@ -12,6 +12,9 @@ type PhotoViewerProps = {
   photos: readonly ArticlePhoto[];
 };
 
+const photoControlClassName =
+  'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
+
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
 }
@@ -121,7 +124,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             <Dialog.Close asChild>
               <button
                 aria-label="사진 닫기"
-                className="grid size-10 place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] text-2xl leading-none text-[var(--foreground0)] hover:bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className={`${photoControlClassName} !size-10 text-2xl`}
                 type="button"
               >
                 ×
@@ -133,7 +136,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             {hasMultiplePhotos ? (
               <button
                 aria-label="이전 사진"
-                className="grid size-11 place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] font-mono text-2xl text-[var(--foreground0)] hover:bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] sm:size-14"
+                className={`${photoControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
                 data-photo-modal-surface
                 onClick={showPreviousPhoto}
                 type="button"
@@ -155,7 +158,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             {hasMultiplePhotos ? (
               <button
                 aria-label="다음 사진"
-                className="grid size-11 place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] font-mono text-2xl text-[var(--foreground0)] hover:bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] sm:size-14"
+                className={`${photoControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
                 data-photo-modal-surface
                 onClick={showNextPhoto}
                 type="button"
