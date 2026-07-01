@@ -10,6 +10,12 @@ January 2026
 > may also find it useful, but guidance here is optimized for automation  
 > and consistency by AI-assisted workflows.
 
+## Project-Specific Guidance
+
+In this repository, use native HTML `<img>` elements instead of `next/image`
+unless the user explicitly asks otherwise. Do not introduce `next/image` while
+creating or refactoring React/Next.js UI.
+
 ---
 
 ## Abstract
