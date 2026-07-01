@@ -146,12 +146,23 @@ export default function Home() {
   const finalHeroTitleLines = getHeroTitleLines({ before: finalHeroTitle, final: true });
 
   return (
-    <main className="teaser-shell" aria-labelledby="teaser-title">
-      <section className="terminal-frame" box-="round">
-        <span className="terminal-badge">Hiking Society &gt;&gt;</span>
+    <main
+      className="min-h-svh bg-[var(--background0)] px-3 py-5 text-[var(--foreground0)] lg:p-8"
+      aria-labelledby="teaser-title"
+    >
+      <section
+        className="grid min-h-[calc(100svh-5rem)] place-items-center overflow-hidden [--box-border-color:var(--overlay0)] [--box-border-width:1px] lg:min-h-[calc(100svh-4rem)]"
+        box-="round"
+      >
+        <span className="absolute top-[0.2ch] left-[2ch] inline-block bg-[var(--peach)] px-[1ch] leading-[1lh] text-[var(--background0)]">
+          Hiking Society &gt;&gt;
+        </span>
 
-        <div className="teaser-content">
-          <p className="hero-title" aria-hidden="true">
+        <div className="flex min-w-0 flex-col items-center gap-[2lh] overflow-hidden px-[1ch] pt-[5lh] pb-[3lh] text-center">
+          <p
+            className="hero-title m-0 grid place-items-center bg-linear-to-r from-[var(--blue)] to-[var(--green)] bg-clip-text font-sans text-[2.5rem] leading-[1.08] tracking-normal text-balance break-keep text-transparent sm:text-[4rem] lg:text-[5.5rem]"
+            aria-hidden="true"
+          >
             <span className="hero-title-reserve">
               {finalHeroTitleLines.map((line, index) => (
                 <span className="hero-title-line" key={`${index}-${line.beforeCursor}`}>
@@ -188,7 +199,7 @@ export default function Home() {
             {finalHeroTitle}
           </h1>
 
-          <p className="teaser-kicker text-2xl">Coming soon...</p>
+          <p className="max-w-[32ch] text-2xl text-[var(--foreground1)]">Coming soon...</p>
 
           <button className="basecamp-button" size-="large" type="button" variant-="lavender">
             Enter Basecamp
