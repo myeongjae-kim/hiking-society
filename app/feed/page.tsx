@@ -153,15 +153,17 @@ function SortLink({ activeSort, sort }: { activeSort: FeedSort; sort: FeedSort }
 
 function HikingHeader({ hiking }: { hiking: Hiking }) {
   return (
-    <header className="feed-hiking-header">
-      <div className="feed-hiking-title-row">
+    <>
+      <header className="feed-hiking-sticky">
         <h2>{hiking.mountainName}</h2>
         <span>{formatDateLabel(hiking.hikingDate)}</span>
+      </header>
+      <div className="feed-hiking-details">
+        <p className="feed-hiking-meta">{getHikingMeta(hiking).join('  ')}</p>
+        <p className="feed-hiking-meta">members={hiking.participantsCsv}</p>
+        <p className="feed-hiking-meta">restaurant={hiking.restaurantAddress ?? 'null'}</p>
       </div>
-      <p className="feed-hiking-meta">{getHikingMeta(hiking).join('  ')}</p>
-      <p className="feed-hiking-meta">members={hiking.participantsCsv}</p>
-      <p className="feed-hiking-meta">restaurant={hiking.restaurantAddress ?? 'null'}</p>
-    </header>
+    </>
   );
 }
 
