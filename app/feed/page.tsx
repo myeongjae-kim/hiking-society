@@ -89,11 +89,38 @@ function getArticleComments(commentsByArticleId: Map<ArticleId, Comment[]>, arti
   );
 }
 
+function getArticleMeta(article: Article, commentCount: number) {
+  return [
+    `@${article.authorName}`,
+    formatTimeLabel(article.createdAt),
+    `${article.photos.length} photos`,
+    `${commentCount} comments`,
+    ...(article.edited ? ['edited'] : []),
+  ];
+}
+
 function Command({ children }: { children: ReactNode }) {
   return (
     <p className={commandClassName}>
       <span className="text-[var(--peach)]">$ </span>
       {children}
+    </p>
+  );
+}
+
+function InlineMeta({ items }: { items: readonly string[] }) {
+  return (
+    <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-sm leading-[1.45] text-[var(--subtext0)]">
+      {items.map((item, index) => (
+        <span className="inline-flex items-center gap-x-2" key={`${item}-${index}`}>
+          {index > 0 ? (
+            <span aria-hidden="true" className="text-[var(--overlay1)]">
+              ·
+            </span>
+          ) : null}
+          <span className={index === 0 ? 'text-[var(--pink)]' : undefined}>{item}</span>
+        </span>
+      ))}
     </p>
   );
 }
@@ -130,23 +157,9 @@ function ArticlePanel({ article, comments }: { article: Article; comments: reado
       className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
       box-="round"
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Command>article.open {article.id}</Command>
-          <h3 className="mt-1 mb-0 text-xl leading-[1.2] tracking-normal text-[var(--foreground0)]">
-            {article.authorName}
-          </h3>
-        </div>
-        <div className="flex flex-wrap justify-end gap-1.5 font-mono text-sm text-[var(--subtext0)]">
-          <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2">
-            {formatTimeLabel(article.createdAt)}
-          </span>
-          {article.edited ? (
-            <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2">
-              edited
-            </span>
-          ) : null}
-        </div>
+      <header className="grid gap-1">
+        <Command>article.open {article.id}</Command>
+        <InlineMeta items={getArticleMeta(article, comments.length)} />
       </header>
 
       <PhotoViewer articleId={article.id} authorName={article.authorName} photos={article.photos} />
@@ -207,12 +220,15 @@ function StatusRow({ label, value }: { label: string; value: ReactNode }) {
 function StatusPanel({ groupCount }: { groupCount: number }) {
   return (
     <aside
-      className={`grid gap-4 self-start bg-[var(--surface0)] !p-5 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
+      className={`grid gap-3 self-start bg-[var(--surface0)] !p-4 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
       box-="round"
       aria-label="피드 상태"
     >
       <Command>status --mock</Command>
       <dl className="m-0 grid gap-2">
+        <StatusRow label="access" value="invite" />
+        <StatusRow label="mode" value="photo-log" />
+        <StatusRow label="theme" value="mocha" />
         <StatusRow label="groups" value={groupCount} />
         <StatusRow label="hikings" value={mockHikings.length} />
         <StatusRow label="articles" value={mockArticles.length} />
@@ -222,17 +238,39 @@ function StatusPanel({ groupCount }: { groupCount: number }) {
   );
 }
 
+function FeedTopbar() {
+  return (
+    <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <Command>Hiking Society /feed</Command>
+        <p className="m-0 font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
+          theme: catppuccin-mocha / webtui
+        </p>
+      </div>
+    </header>
+  );
+}
+
+function FeedFooter() {
+  return (
+    <footer className="mx-auto w-[min(100%,78rem)] px-4 pb-6 font-mono text-sm leading-[1.45] text-[var(--subtext0)] lg:px-5">
+      <div className="border-t border-[var(--overlay0)] pt-3 text-center">
+        <p className="m-0 text-[var(--mauve)]">~ EOF ~</p>
+        <p className="m-0 mt-1 [overflow-wrap:anywhere]">
+          hikings={mockHikings.length} articles={mockArticles.length} comments={mockComments.length}
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 export default function FeedPage() {
   const groups = getFeedGroups();
   const commentsByArticleId = getCommentsByArticleId();
 
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-2">
-        <div>
-          <Command>Hiking Society /feed</Command>
-        </div>
-      </header>
+      <FeedTopbar />
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
         <section className={gridStackClassName} aria-label="산행 게시글 피드">
@@ -258,6 +296,7 @@ export default function FeedPage() {
 
         <StatusPanel groupCount={groups.length} />
       </div>
+      <FeedFooter />
     </main>
   );
 }
