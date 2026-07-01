@@ -41,6 +41,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-webtui-theme="catppuccin-mocha" className="h-full antialiased">
+      <head>
+        <link href="https://cdn.myeongjae.kim/fonts/suit/SUIT.css" rel="stylesheet" />
+      </head>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
