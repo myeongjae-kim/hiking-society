@@ -1,8 +1,12 @@
-import type { User } from '@/lib/db/schema';
+import type { UserRole } from './roles';
 
-export type AuthenticatedUser = Pick<
-  User,
-  'displayName' | 'email' | 'id' | 'lastLoginAt' | 'name' | 'profileImageUrl' | 'role'
-> & {
+export type AuthenticatedUser = {
+  displayName: string | null;
+  email: string;
+  id: number;
+  lastLoginAt: Date | null;
+  name: string | null;
   provider: string | null;
+  profileImageUrl: string | null;
+  role: UserRole;
 };

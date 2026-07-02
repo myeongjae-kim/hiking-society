@@ -1,34 +1,8 @@
-import { db } from '@/lib/db/drizzle';
-import { socialAccountTable, userTable } from '@/lib/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
 import { NextResponse, type NextRequest } from 'next/server';
 import { applicationContext } from './core/config/applicationContext';
 
 const { accessTokenCookieName, accessTokenMaxAgeSeconds, refreshTokenCookieName } =
   applicationContext().get('CookieConfig');
-
-async function getSessionSnapshot(userId: number) {
-  const [row] = await db
-    .select({
-      email: userTable.email,
-      provider: socialAccountTable.provider,
-      role: userTable.role,
-      userId: userTable.id,
-    })
-    .from(userTable)
-    .leftJoin(
-      socialAccountTable,
-      and(eq(socialAccountTable.userId, userTable.id), isNull(socialAccountTable.deletedAt)),
-    )
-    .where(and(eq(userTable.id, userId), isNull(userTable.deletedAt)))
-    .limit(1);
-
-  if (!row?.email || !row.provider) {
-    return null;
-  }
-
-  return row;
-}
 
 export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get(accessTokenCookieName)?.value;
@@ -49,25 +23,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const session = await getSessionSnapshot(refreshPayload.userId);
+  const session = await applicationContext()
+    .get('AuthQueryPort')
+    .getSessionSnapshotByUserId(refreshPayload.userId);
 
   if (!session) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   const response = NextResponse.next();
-  const email = session.email;
-  const provider = session.provider;
-
-  if (!email || !provider) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
 
   const { accessToken: nextAccessToken } = await applicationContext()
     .get('CreateSessionTokenUseCase')
     .create({
-      email,
-      provider,
+      email: session.email,
+      provider: session.provider,
       role: session.role,
       userId: session.userId,
     });

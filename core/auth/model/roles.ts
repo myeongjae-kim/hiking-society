@@ -1,4 +1,4 @@
-import type { UserRole } from '@/lib/db/schema';
+export type UserRole = 'admin' | 'member' | 'associate';
 
 export const mutableRoles = ['associate', 'member', 'admin'] as const satisfies readonly UserRole[];
 

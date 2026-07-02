@@ -1,4 +1,4 @@
-import { UserRole } from '@/lib/db/schema';
+import type { UserRole } from './roles';
 
 type TokenBase = {
   exp: number;

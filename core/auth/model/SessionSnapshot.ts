@@ -1,6 +1,6 @@
 import type { UserRole } from './roles';
 
-export type SessionTokensInput = {
+export type SessionSnapshot = {
   email: string;
   provider: string;
   role: UserRole;

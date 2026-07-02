@@ -1,4 +1,4 @@
-import type { UserRole } from '@/lib/db/schema';
+import type { UserRole } from './roles';
 
 export const roleLabels: Record<UserRole, string> = {
   admin: '관리자',

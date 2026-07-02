@@ -1,7 +1,7 @@
 import { Autowired } from '@/core/config/Autowired';
 import { jwtVerify, type JWTPayload } from 'jose';
 import { AccessTokenPayload, RefreshTokenPayload } from '../model/TokenPayload';
-import { VerifyAccessTokenUseCase } from './port/in/VerifyAccesTokenUseCase';
+import { VerifyAccessTokenUseCase } from './port/in/VerifyAccessTokenUseCase';
 import { VerifyRefreshTokenUseCase } from './port/in/VerifyRefreshTokenUseCase';
 
 export class VerifyTokenService implements VerifyAccessTokenUseCase, VerifyRefreshTokenUseCase {

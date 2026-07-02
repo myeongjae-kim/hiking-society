@@ -4,7 +4,7 @@ import { CreateSessionTokenService } from '../auth/application/CreateSessionToke
 import { GetCookieOptionsService } from '../auth/application/GetCookieOptionsService';
 import { CreateSessionTokenUseCase } from '../auth/application/port/in/CreateSessionTokenUseCase';
 import { GetCookieOptionsUseCase } from '../auth/application/port/in/GetCookieOptionsUseCase';
-import { VerifyAccessTokenUseCase } from '../auth/application/port/in/VerifyAccesTokenUseCase';
+import { VerifyAccessTokenUseCase } from '../auth/application/port/in/VerifyAccessTokenUseCase';
 import { VerifyRefreshTokenUseCase } from '../auth/application/port/in/VerifyRefreshTokenUseCase';
 import { AuthQueryPort } from '../auth/application/port/out/AuthQueryPort';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';

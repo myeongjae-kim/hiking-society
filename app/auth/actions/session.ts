@@ -1,8 +1,8 @@
 'use server';
 
 import { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
+import { type UserRole } from '@/core/auth/model/roles';
 import { applicationContext } from '@/core/config/applicationContext';
-import { type UserRole } from '@/lib/db/schema';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
