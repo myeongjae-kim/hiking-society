@@ -32,6 +32,10 @@ export function CommentLine({
 }: CommentLineProps) {
   const isDeleted = comment.deletedAt !== null;
   const shouldShowDeletedPlaceholder = isDeleted && replies.length > 0;
+  const runMenuAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+    event.currentTarget.closest('details')?.removeAttribute('open');
+    action();
+  };
 
   if (isDeleted && !shouldShowDeletedPlaceholder) {
     return null;
@@ -70,12 +74,31 @@ export function CommentLine({
                   <ActionButton onClick={() => onReply(comment.id)}>답글</ActionButton>
                 ) : null}
                 {canEdit ? (
-                  <>
-                    <ActionButton onClick={() => onEdit(comment.id)}>수정</ActionButton>
-                    <ActionButton onClick={() => onDelete(comment)} tone="danger">
-                      삭제
-                    </ActionButton>
-                  </>
+                  <details className="relative" is-="popover" position-="bottom left">
+                    <summary
+                      aria-label="댓글 관리 메뉴"
+                      className="inline-flex !h-auto !min-h-[1.75rem] min-w-[2.25rem] cursor-pointer list-none items-center justify-center !border !border-[var(--overlay0)] !bg-[var(--surface0)] !bg-none px-2 py-1 font-mono !text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] [&::-webkit-details-marker]:hidden"
+                      title="댓글 관리 메뉴"
+                    >
+                      ⋮
+                    </summary>
+                    <div className="grid min-w-24 gap-1 border border-[var(--overlay0)] bg-[var(--background1)] p-1 shadow-[0_0.35rem_0_var(--background0)]">
+                      <button
+                        className="!h-auto !min-h-0 w-full appearance-none !border-0 !bg-transparent !bg-none px-3 py-1.5 text-left font-mono text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                        onClick={(event) => runMenuAction(event, () => onEdit(comment.id))}
+                        type="button"
+                      >
+                        수정
+                      </button>
+                      <button
+                        className="!h-auto !min-h-0 w-full appearance-none !border-0 !bg-transparent !bg-none px-3 py-1.5 text-left font-mono text-sm leading-[1.2] whitespace-nowrap !text-[var(--red)] hover:!bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                        onClick={(event) => runMenuAction(event, () => onDelete(comment))}
+                        type="button"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </details>
                 ) : null}
               </div>
             ) : null}
@@ -84,20 +107,16 @@ export function CommentLine({
             {isDeleted ? (
               <span className="text-[var(--subtext0)]">삭제된 댓글</span>
             ) : (
-              <div className="flex">
-                <div className="flex shrink-0 items-start">
-                  <AuthorBadge
-                    name={comment.authorName}
-                    profileImageUrl={comment.authorProfileImageUrl}
-                  />
-                  <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
-                    :
-                  </span>
-                </div>
-                <div className="min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
-                  {comment.body}
-                </div>
-              </div>
+              <>
+                <AuthorBadge
+                  name={comment.authorName}
+                  profileImageUrl={comment.authorProfileImageUrl}
+                />
+                <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
+                  :
+                </span>
+                <span className="min-w-0 [overflow-wrap:anywhere]">{comment.body}</span>
+              </>
             )}
           </p>
         </>
