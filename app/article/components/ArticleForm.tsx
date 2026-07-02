@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 import { useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
@@ -30,8 +30,16 @@ type ArticleFormProps = {
   onSubmit: (values: ArticleFormValues) => void;
 };
 
+function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
+  return photos.map((photo, index) => ({
+    ...photo,
+    order: index + 1,
+  }));
+}
+
 export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormProps) {
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
+  const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
 
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
@@ -51,13 +59,67 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
 
       return {
         ...currentValues,
-        photos: appendedPhotos.map((photo, index) => ({
-          ...photo,
-          order: index + 1,
-        })),
+        photos: reorderDraftPhotos(appendedPhotos),
       };
     });
     input.value = '';
+  };
+
+  const movePhoto = (fromOrder: number, toOrder: number) => {
+    if (fromOrder === toOrder) {
+      return;
+    }
+
+    setValues((currentValues) => {
+      const fromIndex = currentValues.photos.findIndex((photo) => photo.order === fromOrder);
+      const toIndex = currentValues.photos.findIndex((photo) => photo.order === toOrder);
+
+      if (fromIndex === -1 || toIndex === -1) {
+        return currentValues;
+      }
+
+      const reorderedPhotos = [...currentValues.photos];
+      const [movedPhoto] = reorderedPhotos.splice(fromIndex, 1);
+
+      if (!movedPhoto) {
+        return currentValues;
+      }
+
+      reorderedPhotos.splice(toIndex, 0, movedPhoto);
+
+      return {
+        ...currentValues,
+        photos: reorderDraftPhotos(reorderedPhotos),
+      };
+    });
+  };
+
+  const handlePhotoDragStart = (event: DragEvent<HTMLLIElement>, order: number) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(order));
+    setDraggedPhotoOrder(order);
+  };
+
+  const handlePhotoDragOver = (event: DragEvent<HTMLLIElement>, order: number) => {
+    if (draggedPhotoOrder === null || draggedPhotoOrder === order) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handlePhotoDrop = (event: DragEvent<HTMLLIElement>, order: number) => {
+    event.preventDefault();
+
+    const transferOrder = Number(event.dataTransfer.getData('text/plain'));
+    const fromOrder = draggedPhotoOrder ?? transferOrder;
+
+    if (Number.isFinite(fromOrder)) {
+      movePhoto(fromOrder, order);
+    }
+
+    setDraggedPhotoOrder(null);
   };
 
   const removePhoto = (order: number) => {
@@ -116,13 +178,26 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
           {values.photos.map((photo: DraftPhoto) => {
             const duplicateKey = getPhotoDuplicateKey(photo);
             const isDuplicate = duplicateKey !== null && duplicatePhotoKeys.has(duplicateKey);
+            const isDragged = draggedPhotoOrder === photo.order;
+            const canMoveUp = photo.order > 1;
+            const canMoveDown = photo.order < values.photos.length;
 
             return (
               <li
-                className={`grid w-full min-w-0 overflow-hidden bg-[var(--background0)] sm:w-[16rem] ${
+                aria-label={`선택한 게시글 사진 ${photo.order}번째`}
+                className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
                   isDuplicate ? 'border-2 border-[var(--peach)]' : 'border border-[var(--overlay0)]'
+                } ${
+                  isDragged
+                    ? '!border-[var(--blue)] !bg-[var(--surface1)] opacity-70'
+                    : 'hover:border-[var(--blue)]'
                 }`}
+                draggable
                 key={`${photo.fileName}-${photo.order}`}
+                onDragEnd={() => setDraggedPhotoOrder(null)}
+                onDragOver={(event) => handlePhotoDragOver(event, photo.order)}
+                onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
+                onDrop={(event) => handlePhotoDrop(event, photo.order)}
               >
                 <img
                   alt={`선택한 게시글 사진 ${photo.order}`}
@@ -138,9 +213,23 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
                       동일한 사진이 선택되었습니다.
                     </span>
                   ) : null}
-                  <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
-                    제거
-                  </ActionButton>
+                  <div className="grid grid-cols-3 gap-2">
+                    <ActionButton
+                      disabled={!canMoveUp}
+                      onClick={() => movePhoto(photo.order, photo.order - 1)}
+                    >
+                      위로
+                    </ActionButton>
+                    <ActionButton
+                      disabled={!canMoveDown}
+                      onClick={() => movePhoto(photo.order, photo.order + 1)}
+                    >
+                      아래로
+                    </ActionButton>
+                    <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
+                      제거
+                    </ActionButton>
+                  </div>
                 </div>
               </li>
             );
