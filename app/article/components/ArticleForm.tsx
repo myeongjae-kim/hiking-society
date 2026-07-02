@@ -16,7 +16,7 @@ import type { Article } from '@/core/article/domain';
 
 import type { ArticleFormValues, DraftPhoto } from './articleFormTypes';
 import {
-  createDraftPhoto,
+  createCompressedDraftPhoto,
   getArticleFormDefaults,
   getDuplicatePhotoKeys,
   getPhotoDuplicateKey,
@@ -71,7 +71,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
     event.dataTransfer.setDragImage(previewCard, offsetX, offsetY);
   };
 
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const files = Array.from(input.files ?? []);
 
@@ -79,12 +79,19 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
       return;
     }
 
+    input.value = '';
+
+    const compressedPhotos = await Promise.all(
+      files.map((file, index) => createCompressedDraftPhoto(file, index + 1)),
+    );
+
     setValues((currentValues) => {
       const appendedPhotos = [
         ...currentValues.photos,
-        ...files.map((file, index) =>
-          createDraftPhoto(file, currentValues.photos.length + index + 1),
-        ),
+        ...compressedPhotos.map((photo, index) => ({
+          ...photo,
+          order: currentValues.photos.length + index + 1,
+        })),
       ];
 
       return {
@@ -92,7 +99,6 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
         photos: reorderDraftPhotos(appendedPhotos),
       };
     });
-    input.value = '';
   };
 
   const movePhoto = (fromOrder: number, toOrder: number) => {
