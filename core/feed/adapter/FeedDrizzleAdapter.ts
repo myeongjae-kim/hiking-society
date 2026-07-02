@@ -89,7 +89,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         })
         .from(hikingTable)
         .innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
-        .where(isNull(userTable.deletedAt)),
+        .where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
       db
         .select({
           authorUserId: articleTable.authorUserId,
@@ -216,7 +216,13 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
     const [updated] = await db
       .update(hikingTable)
       .set({ ...input.values, updatedAt: new Date() })
-      .where(and(eq(hikingTable.id, hikingId), eq(hikingTable.authorUserId, input.userId)))
+      .where(
+        and(
+          eq(hikingTable.id, hikingId),
+          eq(hikingTable.authorUserId, input.userId),
+          isNull(hikingTable.deletedAt),
+        ),
+      )
       .returning({ id: hikingTable.id });
 
     if (!updated) {
@@ -231,7 +237,13 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       const [hiking] = await tx
         .select({ id: hikingTable.id })
         .from(hikingTable)
-        .where(and(eq(hikingTable.id, hikingId), eq(hikingTable.authorUserId, input.userId)))
+        .where(
+          and(
+            eq(hikingTable.id, hikingId),
+            eq(hikingTable.authorUserId, input.userId),
+            isNull(hikingTable.deletedAt),
+          ),
+        )
         .limit(1);
 
       if (!hiking) {
@@ -248,7 +260,10 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('게시글이 있는 산행은 삭제할 수 없습니다.');
       }
 
-      await tx.delete(hikingTable).where(eq(hikingTable.id, hikingId));
+      await tx
+        .update(hikingTable)
+        .set({ deletedAt: new Date(), updatedAt: new Date() })
+        .where(eq(hikingTable.id, hikingId));
     });
   }
 
@@ -257,7 +272,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       const [hiking] = await tx
         .select({ id: hikingTable.id })
         .from(hikingTable)
-        .where(eq(hikingTable.id, toNumericId(input.hikingId)))
+        .where(and(eq(hikingTable.id, toNumericId(input.hikingId)), isNull(hikingTable.deletedAt)))
         .limit(1);
 
       if (!hiking) {
