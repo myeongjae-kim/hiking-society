@@ -12,6 +12,7 @@ export type HikingId = Brand<string, 'HikingId'>;
 
 export type Hiking = {
   readonly id: HikingId;
+  readonly authorUserId?: number;
   readonly mountainName: string;
   readonly hikingDate: IsoDateString;
   readonly timezone: Timezone;
@@ -27,6 +28,7 @@ export type Hiking = {
 };
 
 export type CreateHikingInput = {
+  readonly authorUserId: number;
   readonly mountainName: string;
   readonly hikingDate: IsoDateString;
   readonly timezone: Timezone;
@@ -36,7 +38,6 @@ export type CreateHikingInput = {
   readonly completedAt: IsoDateTimeString;
   readonly participantsCsv: string;
   readonly restaurantAddress: string | null;
-  readonly authorName: AuthorName;
 };
 
 export type UpdateHikingInput = {

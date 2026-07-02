@@ -15,6 +15,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1078.0",
     "@radix-ui/react-dialog": "^1.1.18",
     "@react-oauth/google": "^0.13.5",
     "@webtui/css": "^0.1.9",

@@ -1,10 +1,13 @@
 import {
+  AnyPgColumn,
   boolean,
+  doublePrecision,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   serial,
+  text,
   timestamp,
   uniqueIndex,
   varchar,
@@ -47,6 +50,72 @@ export const socialAccountTable = pgTable(
     uniqueIndex('social_account_provider_user_id_unique').on(table.provider, table.providerUserId),
   ],
 );
+
+export const hikingTable = pgTable('hiking', {
+  id: serial('id').primaryKey(),
+  mountainName: varchar('mountain_name', { length: 120 }).notNull(),
+  hikingDate: varchar('hiking_date', { length: 10 }).notNull(),
+  timezone: varchar('timezone', { length: 80 }).notNull(),
+  latitude: doublePrecision('latitude').notNull(),
+  longitude: doublePrecision('longitude').notNull(),
+  startedAt: varchar('started_at', { length: 40 }).notNull(),
+  completedAt: varchar('completed_at', { length: 40 }).notNull(),
+  participantsCsv: text('participants_csv').notNull(),
+  restaurantAddress: text('restaurant_address'),
+  authorUserId: integer('author_user_id')
+    .notNull()
+    .references(() => userTable.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const articleTable = pgTable('article', {
+  id: serial('id').primaryKey(),
+  hikingId: integer('hiking_id')
+    .notNull()
+    .references(() => hikingTable.id),
+  body: text('body').notNull(),
+  authorUserId: integer('author_user_id')
+    .notNull()
+    .references(() => userTable.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+export const articlePhotoTable = pgTable(
+  'article_photo',
+  {
+    id: serial('id').primaryKey(),
+    articleId: integer('article_id')
+      .notNull()
+      .references(() => articleTable.id),
+    url: varchar('url', { length: 2048 }).notNull(),
+    objectKey: varchar('object_key', { length: 1024 }).notNull(),
+    order: integer('order').notNull(),
+    contentType: varchar('content_type', { length: 120 }).notNull(),
+    byteSize: integer('byte_size').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('article_photo_article_id_order_unique').on(table.articleId, table.order),
+  ],
+);
+
+export const commentTable = pgTable('comment', {
+  id: serial('id').primaryKey(),
+  articleId: integer('article_id')
+    .notNull()
+    .references(() => articleTable.id),
+  parentCommentId: integer('parent_comment_id').references((): AnyPgColumn => commentTable.id),
+  body: text('body').notNull(),
+  authorUserId: integer('author_user_id')
+    .notNull()
+    .references(() => userTable.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
+});
 
 export type User = typeof userTable.$inferSelect;
 export type UserRole = (typeof userRoleEnum.enumValues)[number];

@@ -1,5 +1,5 @@
 import { requireCurrentUser } from '@/app/auth/actions/session';
-import { mockArticles, mockComments, mockHikings } from '@/core/mock';
+import { applicationContext } from '@/core/config/applicationContext';
 import { AssociateFeedNotice } from './components/AssociateFeedNotice';
 import { FeedCrudClient } from './components/FeedCrudClient';
 
@@ -10,12 +10,9 @@ export default async function FeedPage() {
     return <AssociateFeedNotice user={user} />;
   }
 
+  const { articles, comments, hikings } = await applicationContext().get('ListFeedUseCase').list();
+
   return (
-    <FeedCrudClient
-      articles={mockArticles}
-      comments={mockComments}
-      currentUser={user}
-      hikings={mockHikings}
-    />
+    <FeedCrudClient articles={articles} comments={comments} currentUser={user} hikings={hikings} />
   );
 }

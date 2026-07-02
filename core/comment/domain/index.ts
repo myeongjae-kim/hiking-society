@@ -1,14 +1,11 @@
-import type {
-  AuthorName,
-  Brand,
-  IsoDateTimeString,
-} from '@/core/common/domain';
+import type { AuthorName, Brand, IsoDateTimeString } from '@/core/common/domain';
 import type { ArticleId } from '@/core/article/domain';
 
 export type CommentId = Brand<string, 'CommentId'>;
 
 type CommentBase = {
   readonly id: CommentId;
+  readonly authorUserId?: number;
   readonly articleId: ArticleId;
   readonly body: string;
   readonly authorName: AuthorName;
@@ -29,15 +26,15 @@ export type Comment = TopLevelComment | ReplyComment;
 
 export type CreateCommentInput = {
   readonly articleId: ArticleId;
+  readonly authorUserId: number;
   readonly body: string;
-  readonly authorName: AuthorName;
 };
 
 export type CreateReplyInput = {
   readonly articleId: ArticleId;
+  readonly authorUserId: number;
   readonly parentCommentId: CommentId;
   readonly body: string;
-  readonly authorName: AuthorName;
 };
 
 export type UpdateCommentInput = {

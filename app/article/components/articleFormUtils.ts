@@ -9,6 +9,7 @@ export function getArticleFormDefaults(article?: Article) {
       article?.photos.map((photo) => ({
         ...photo,
         fileName: photo.url.split('/').at(-1) ?? `photo-${photo.order}`,
+        fileSize: photo.byteSize,
       })) ?? [],
   };
 }
@@ -16,6 +17,7 @@ export function getArticleFormDefaults(article?: Article) {
 export function createDraftPhoto(file: File, order: number): DraftPhoto {
   return {
     fileName: file.name,
+    file,
     fileSize: file.size,
     lastModified: file.lastModified,
     order,

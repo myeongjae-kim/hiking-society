@@ -1,4 +1,8 @@
 import { BeanConfig } from 'inversify-typesafe-spring-like';
+import { S3PhotoStorageAdapter } from '../article/adapter/S3PhotoStorageAdapter';
+import { ArticleCommandService } from '../article/application/ArticleCommandService';
+import { ArticleCommandUseCase } from '../article/application/port/in/ArticleCommandUseCase';
+import { PhotoStoragePort } from '../article/application/port/out/PhotoStoragePort';
 import { AuthCommandAdapter } from '../auth/adapter/AuthCommandAdapter';
 import { AuthQueryAdapter } from '../auth/adapter/AuthQueryAdapter';
 import { GoogleOAuthAdapter } from '../auth/adapter/GoogleOAuthAdapter';
@@ -15,6 +19,15 @@ import { AuthQueryPort } from '../auth/application/port/out/AuthQueryPort';
 import { GoogleOAuthPort } from '../auth/application/port/out/GoogleOAuthPort';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';
 import { CookieConfig } from '../auth/config/CookieConfig';
+import { CommentCommandService } from '../comment/application/CommentCommandService';
+import { CommentCommandUseCase } from '../comment/application/port/in/CommentCommandUseCase';
+import { FeedDrizzleAdapter } from '../feed/adapter/FeedDrizzleAdapter';
+import { ListFeedService } from '../feed/application/ListFeedService';
+import { ListFeedUseCase } from '../feed/application/port/in/ListFeedUseCase';
+import { FeedCommandPort } from '../feed/application/port/out/FeedCommandPort';
+import { FeedQueryPort } from '../feed/application/port/out/FeedQueryPort';
+import { HikingCommandService } from '../hiking/application/HikingCommandService';
+import { HikingCommandUseCase } from '../hiking/application/port/in/HikingCommandUseCase';
 import { MemberCommandAdapter } from '../member/adapter/MemberCommandAdapter';
 import { MemberQueryAdapter } from '../member/adapter/MemberQueryAdapter';
 import { ListMembersService } from '../member/application/ListMembersService';
@@ -26,10 +39,17 @@ import { UpdateMemberRoleService } from '../member/application/UpdateMemberRoleS
 import { env } from './env';
 
 export type Beans = {
+  ArticleCommandUseCase: ArticleCommandUseCase;
   AuthCommandPort: AuthCommandPort;
   AuthQueryPort: AuthQueryPort;
+  CommentCommandUseCase: CommentCommandUseCase;
+  FeedCommandPort: FeedCommandPort;
+  FeedQueryPort: FeedQueryPort;
   GoogleOAuthPort: GoogleOAuthPort;
+  HikingCommandUseCase: HikingCommandUseCase;
+  ListFeedUseCase: ListFeedUseCase;
   LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
+  PhotoStoragePort: PhotoStoragePort;
   VerifyAccessTokenUseCase: VerifyAccessTokenUseCase;
   VerifyRefreshTokenUseCase: VerifyRefreshTokenUseCase;
   CreateSessionTokenUseCase: CreateSessionTokenUseCase;
@@ -47,10 +67,17 @@ export type Beans = {
 };
 
 export const beanConfig: BeanConfig<Beans> = {
+  ArticleCommandUseCase: (bind) => bind().to(ArticleCommandService),
   AuthCommandPort: (bind) => bind().to(AuthCommandAdapter),
   AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
+  CommentCommandUseCase: (bind) => bind().to(CommentCommandService),
+  FeedCommandPort: (bind) => bind().to(FeedDrizzleAdapter),
+  FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
   GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
+  HikingCommandUseCase: (bind) => bind().to(HikingCommandService),
+  ListFeedUseCase: (bind) => bind().to(ListFeedService),
   LoginWithGoogleCodeUseCase: (bind) => bind().to(LoginWithGoogleCodeService),
+  PhotoStoragePort: (bind) => bind().to(S3PhotoStorageAdapter),
   VerifyAccessTokenUseCase: (bind) => bind().to(VerifyTokenService),
   VerifyRefreshTokenUseCase: (bind) => bind().to(VerifyTokenService),
   CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),

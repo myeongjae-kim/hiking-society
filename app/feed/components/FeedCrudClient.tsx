@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { ArticleForm } from '@/app/article/components/ArticleForm';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
@@ -19,17 +20,24 @@ import { HikingHeader } from '@/app/hiking/components/HikingHeader';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
-import type { IsoDateString, Latitude, Longitude, Timezone } from '@/core/common/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
+import {
+  createArticle as createArticleAction,
+  createComment as createCommentAction,
+  createHiking as createHikingAction,
+  deleteArticle as deleteArticleAction,
+  deleteComment as deleteCommentAction,
+  deleteHiking as deleteHikingAction,
+  updateArticle as updateArticleAction,
+  updateComment as updateCommentAction,
+  updateHiking as updateHikingAction,
+} from '../actions';
 
 import {
   getArticleComments,
   getAuthorName,
   getCommentsByArticleId,
   getFeedGroups,
-  isOwn,
-  makeDateTime,
-  nowIso,
 } from '../utils/feed-crud-utils';
 
 type FeedCrudClientProps = {
@@ -39,18 +47,15 @@ type FeedCrudClientProps = {
   hikings: readonly Hiking[];
 };
 
-const thumbnailUrl = '/thumbnail.webp';
-
 export function FeedCrudClient({
   articles: initialArticles,
   comments: initialComments,
   currentUser,
   hikings: initialHikings,
 }: FeedCrudClientProps) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
-  const [articles, setArticles] = useState<Article[]>(() => [...initialArticles]);
-  const [comments, setComments] = useState<Comment[]>(() => [...initialComments]);
-  const [hikings, setHikings] = useState<Hiking[]>(() => [...initialHikings]);
   const [newHikingOpen, setNewHikingOpen] = useState(false);
   const [editingHikingId, setEditingHikingId] = useState<HikingId | null>(null);
   const [articleFormHikingId, setArticleFormHikingId] = useState<HikingId | null>(null);
@@ -60,10 +65,18 @@ export function FeedCrudClient({
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 
-  const groups = useMemo(() => getFeedGroups(hikings, articles), [articles, hikings]);
-  const commentsByArticleId = useMemo(() => getCommentsByArticleId(comments), [comments]);
-  const visibleArticleCount = articles.filter((article) => article.deletedAt === null).length;
-  const visibleCommentCount = getVisibleCommentCount(comments);
+  const groups = useMemo(
+    () => getFeedGroups(initialHikings, initialArticles),
+    [initialArticles, initialHikings],
+  );
+  const commentsByArticleId = useMemo(
+    () => getCommentsByArticleId(initialComments),
+    [initialComments],
+  );
+  const visibleArticleCount = initialArticles.filter(
+    (article) => article.deletedAt === null,
+  ).length;
+  const visibleCommentCount = getVisibleCommentCount(initialComments);
 
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
@@ -79,71 +92,91 @@ export function FeedCrudClient({
     });
   };
 
-  const createHiking = (values: HikingFormValues) => {
-    const latitude = Number(values.latitude);
-    const longitude = Number(values.longitude);
+  const runAction = (
+    action: () => Promise<{ error?: string; ok: boolean }>,
+    options: { errorKey: string; onSuccess?: () => void },
+  ) => {
+    startTransition(async () => {
+      const result = await action();
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      setError('hiking-new', '위도와 경도는 숫자로 입력해야 합니다.');
-      return;
+      if (!result.ok) {
+        setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
+        return;
+      }
+
+      options.onSuccess?.();
+      setError(options.errorKey, null);
+      router.refresh();
+    });
+  };
+
+  const createHikingFormData = (values: HikingFormValues) => {
+    const formData = new FormData();
+
+    for (const [key, value] of Object.entries(values)) {
+      formData.set(key, value);
     }
 
-    const createdAt = nowIso();
-    const hiking: Hiking = {
-      authorName: currentAuthorName,
-      completedAt: makeDateTime(values.hikingDate, values.completedTime, values.timezone),
-      createdAt,
-      hikingDate: values.hikingDate as IsoDateString,
-      id: `hiking-local-${crypto.randomUUID()}` as HikingId,
-      latitude: latitude as Latitude,
-      longitude: longitude as Longitude,
-      mountainName: values.mountainName,
-      participantsCsv: values.participantsCsv,
-      restaurantAddress: values.restaurantAddress.trim() || null,
-      startedAt: makeDateTime(values.hikingDate, values.startedTime, values.timezone),
-      timezone: values.timezone as Timezone,
-      updatedAt: createdAt,
-    };
+    return formData;
+  };
 
-    setHikings((currentHikings) => [hiking, ...currentHikings]);
-    setNewHikingOpen(false);
-    setError('hiking-new', null);
+  const createArticleFormData = (
+    values: ArticleFormValues,
+    identifiers: { articleId?: ArticleId; hikingId?: HikingId },
+  ) => {
+    const formData = new FormData();
+    const existingPhotos = values.photos
+      .filter((photo) => !photo.file)
+      .map((photo) => ({
+        byteSize: photo.byteSize,
+        contentType: photo.contentType,
+        objectKey: photo.objectKey,
+        order: photo.order,
+        url: photo.url,
+      }));
+
+    if (identifiers.articleId) {
+      formData.set('articleId', identifiers.articleId);
+    }
+
+    if (identifiers.hikingId) {
+      formData.set('hikingId', identifiers.hikingId);
+    }
+
+    formData.set('body', values.body);
+    formData.set('existingPhotos', JSON.stringify(existingPhotos));
+
+    for (const photo of values.photos) {
+      if (!photo.file) {
+        continue;
+      }
+
+      formData.append('photos', photo.file);
+      formData.append('photoOrders', String(photo.order));
+    }
+
+    return formData;
+  };
+
+  const createHiking = (values: HikingFormValues) => {
+    runAction(() => createHikingAction(createHikingFormData(values)), {
+      errorKey: 'hiking-new',
+      onSuccess: () => setNewHikingOpen(false),
+    });
   };
 
   const updateHiking = (hikingId: HikingId, values: HikingFormValues) => {
-    const latitude = Number(values.latitude);
-    const longitude = Number(values.longitude);
+    const formData = createHikingFormData(values);
+    formData.set('hikingId', hikingId);
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      setError(`hiking-edit-${hikingId}`, '위도와 경도는 숫자로 입력해야 합니다.');
-      return;
-    }
-
-    setHikings((currentHikings) =>
-      currentHikings.map((hiking) =>
-        hiking.id === hikingId
-          ? {
-              ...hiking,
-              completedAt: makeDateTime(values.hikingDate, values.completedTime, values.timezone),
-              hikingDate: values.hikingDate as IsoDateString,
-              latitude: latitude as Latitude,
-              longitude: longitude as Longitude,
-              mountainName: values.mountainName,
-              participantsCsv: values.participantsCsv,
-              restaurantAddress: values.restaurantAddress.trim() || null,
-              startedAt: makeDateTime(values.hikingDate, values.startedTime, values.timezone),
-              timezone: values.timezone as Timezone,
-              updatedAt: nowIso(),
-            }
-          : hiking,
-      ),
-    );
-    setEditingHikingId(null);
-    setError(`hiking-edit-${hikingId}`, null);
+    runAction(() => updateHikingAction(formData), {
+      errorKey: `hiking-edit-${hikingId}`,
+      onSuccess: () => setEditingHikingId(null),
+    });
   };
 
   const requestDeleteHiking = (hiking: Hiking) => {
-    const hasArticles = articles.some(
+    const hasArticles = initialArticles.some(
       (article) => article.hikingId === hiking.id && article.deletedAt === null,
     );
 
@@ -156,8 +189,12 @@ export function FeedCrudClient({
       body: `${hiking.mountainName} 산행 기록을 삭제합니다.`,
       confirmLabel: '삭제',
       onConfirm: () => {
-        setHikings((currentHikings) => currentHikings.filter((item) => item.id !== hiking.id));
-        setConfirmState(null);
+        const formData = new FormData();
+        formData.set('hikingId', hiking.id);
+        runAction(() => deleteHikingAction(formData), {
+          errorKey: `hiking-${hiking.id}`,
+          onSuccess: () => setConfirmState(null),
+        });
       },
       title: '산행 삭제',
     });
@@ -169,25 +206,10 @@ export function FeedCrudClient({
       return;
     }
 
-    const createdAt = nowIso();
-    const article: Article = {
-      authorName: currentAuthorName,
-      body: values.body,
-      createdAt,
-      deletedAt: null,
-      edited: false,
-      hikingId,
-      id: `article-local-${crypto.randomUUID()}` as ArticleId,
-      photos:
-        values.photos.length > 0
-          ? [values.photos[0], ...values.photos.slice(1)]
-          : [{ order: 1, url: thumbnailUrl }],
-      updatedAt: createdAt,
-    };
-
-    setArticles((currentArticles) => [article, ...currentArticles]);
-    setArticleFormHikingId(null);
-    setError(`article-new-${hikingId}`, null);
+    runAction(() => createArticleAction(createArticleFormData(values, { hikingId })), {
+      errorKey: `article-new-${hikingId}`,
+      onSuccess: () => setArticleFormHikingId(null),
+    });
   };
 
   const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
@@ -196,24 +218,10 @@ export function FeedCrudClient({
       return;
     }
 
-    setArticles((currentArticles) =>
-      currentArticles.map((article) =>
-        article.id === articleId
-          ? {
-              ...article,
-              body: values.body,
-              edited: true,
-              photos:
-                values.photos.length > 0
-                  ? [values.photos[0], ...values.photos.slice(1)]
-                  : article.photos,
-              updatedAt: nowIso(),
-            }
-          : article,
-      ),
-    );
-    setEditingArticleId(null);
-    setError(`article-edit-${articleId}`, null);
+    runAction(() => updateArticleAction(createArticleFormData(values, { articleId })), {
+      errorKey: `article-edit-${articleId}`,
+      onSuccess: () => setEditingArticleId(null),
+    });
   };
 
   const requestDeleteArticle = (article: Article) => {
@@ -221,42 +229,41 @@ export function FeedCrudClient({
       body: '게시글은 피드에서 숨겨지고 삭제 시각만 남습니다.',
       confirmLabel: '삭제',
       onConfirm: () => {
-        setArticles((currentArticles) =>
-          currentArticles.map((item) =>
-            item.id === article.id ? { ...item, deletedAt: nowIso() } : item,
-          ),
-        );
-        setConfirmState(null);
+        const formData = new FormData();
+        formData.set('articleId', article.id);
+        runAction(() => deleteArticleAction(formData), {
+          errorKey: `article-${article.id}`,
+          onSuccess: () => setConfirmState(null),
+        });
       },
       title: '게시글 삭제',
     });
   };
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    const createdAt = nowIso();
-    const comment = {
-      articleId,
-      authorName: currentAuthorName,
-      body,
-      createdAt,
-      deletedAt: null,
-      id: `comment-local-${crypto.randomUUID()}` as CommentId,
-      parentCommentId,
-      updatedAt: createdAt,
-    } as Comment;
+    const formData = new FormData();
+    formData.set('articleId', articleId);
+    formData.set('body', body);
 
-    setComments((currentComments) => [...currentComments, comment]);
-    setReplyingCommentId(null);
-    setError(`comment-new-${articleId}`, null);
+    if (parentCommentId) {
+      formData.set('parentCommentId', parentCommentId);
+    }
+
+    runAction(() => createCommentAction(formData), {
+      errorKey: `comment-new-${articleId}`,
+      onSuccess: () => setReplyingCommentId(null),
+    });
   };
 
   const updateComment = (commentId: CommentId, body: string) => {
-    setComments((currentComments) =>
-      currentComments.map((comment) =>
-        comment.id === commentId ? { ...comment, body, updatedAt: nowIso() } : comment,
-      ),
-    );
-    setEditingCommentId(null);
+    const formData = new FormData();
+    formData.set('commentId', commentId);
+    formData.set('body', body);
+
+    runAction(() => updateCommentAction(formData), {
+      errorKey: `comment-edit-${commentId}`,
+      onSuccess: () => setEditingCommentId(null),
+    });
   };
 
   const requestDeleteComment = (comment: Comment) => {
@@ -264,12 +271,12 @@ export function FeedCrudClient({
       body: '댓글은 대화 맥락이 필요하면 자리표시자로 남습니다.',
       confirmLabel: '삭제',
       onConfirm: () => {
-        setComments((currentComments) =>
-          currentComments.map((item) =>
-            item.id === comment.id ? { ...item, deletedAt: nowIso(), body: '삭제된 댓글' } : item,
-          ),
-        );
-        setConfirmState(null);
+        const formData = new FormData();
+        formData.set('commentId', comment.id);
+        runAction(() => deleteCommentAction(formData), {
+          errorKey: `comment-${comment.id}`,
+          onSuccess: () => setConfirmState(null),
+        });
       },
       title: '댓글 삭제',
     });
@@ -286,7 +293,7 @@ export function FeedCrudClient({
             box-="round"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <Command>feed.crud --mock</Command>
+              <Command>feed.crud --db</Command>
               <ActionButton onClick={() => setNewHikingOpen((open) => !open)}>
                 산행 등록
               </ActionButton>
@@ -310,7 +317,7 @@ export function FeedCrudClient({
               aria-labelledby={`hiking-${group.hiking.id}`}
             >
               <HikingHeader
-                canManageHiking={isOwn(group.hiking.authorName, currentAuthorName)}
+                canManageHiking={group.hiking.authorUserId === currentUser.id}
                 error={errorByKey[`hiking-${group.hiking.id}`]}
                 hiking={group.hiking}
                 onAddArticle={() => setArticleFormHikingId(group.hiking.id)}
@@ -343,9 +350,9 @@ export function FeedCrudClient({
                   group.articles.map((article) => (
                     <ArticlePanel
                       article={article}
-                      canEdit={isOwn(article.authorName, currentAuthorName)}
+                      canEdit={article.authorUserId === currentUser.id}
                       comments={getArticleComments(commentsByArticleId, article.id)}
-                      currentAuthorName={currentAuthorName}
+                      currentUserId={currentUser.id}
                       editingArticleId={editingArticleId}
                       editingCommentId={editingCommentId}
                       errorByKey={errorByKey}
@@ -378,13 +385,13 @@ export function FeedCrudClient({
           commentCount={visibleCommentCount}
           currentAuthorName={currentAuthorName}
           groupCount={groups.length}
-          hikingCount={hikings.length}
+          hikingCount={initialHikings.length}
         />
       </div>
       <FeedFooter
         articleCount={visibleArticleCount}
         commentCount={visibleCommentCount}
-        hikingCount={hikings.length}
+        hikingCount={initialHikings.length}
       />
       <ConfirmDialog
         confirmState={confirmState}

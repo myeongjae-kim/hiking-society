@@ -8,7 +8,6 @@ import { InlineMeta } from '@/app/common/components/InlineMeta';
 import { boxBorderClassName } from '@/app/common/components/styles';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
-import type { AuthorName } from '@/core/common/domain';
 
 import { ArticleForm } from './ArticleForm';
 import type { ArticleFormValues } from './articleFormTypes';
@@ -18,7 +17,7 @@ type ArticlePanelProps = {
   article: Article;
   canEdit: boolean;
   comments: readonly Comment[];
-  currentAuthorName: AuthorName;
+  currentUserId: number;
   editingArticleId: ArticleId | null;
   editingCommentId: CommentId | null;
   errorByKey: Record<string, string>;
@@ -38,7 +37,7 @@ export function ArticlePanel({
   article,
   canEdit,
   comments,
-  currentAuthorName,
+  currentUserId,
   editingArticleId,
   editingCommentId,
   errorByKey,
@@ -109,7 +108,7 @@ export function ArticlePanel({
         {topLevelComments.map((comment) => (
           <div className="grid min-w-0 gap-2" key={comment.id}>
             <CommentLine
-              canEdit={comment.authorName === currentAuthorName}
+              canEdit={comment.authorUserId === currentUserId}
               comment={comment}
               editingCommentId={editingCommentId}
               onDelete={onDeleteComment}
@@ -135,7 +134,7 @@ export function ArticlePanel({
               .filter((reply) => reply.deletedAt === null)
               .map((reply) => (
                 <CommentLine
-                  canEdit={reply.authorName === currentAuthorName}
+                  canEdit={reply.authorUserId === currentUserId}
                   comment={reply}
                   editingCommentId={editingCommentId}
                   key={reply.id}
