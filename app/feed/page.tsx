@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
-import { canManageMembers, roleLabels } from '@/core/auth/roles';
-import { requireCurrentUser, type AuthenticatedUser } from '@/core/auth/session';
 import type { Article, ArticleId } from '@/core/article/domain';
+import { roleLabels } from '@/core/auth/roles';
+import { requireCurrentUser, type AuthenticatedUser } from '@/core/auth/session';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';
@@ -272,11 +272,6 @@ function FeedTopbar({ user }: { user: AuthenticatedUser }) {
           <Link is-="button" size-="small" variant-="foreground1" href="/me">
             마이페이지
           </Link>
-          {canManageMembers(user.role) ? (
-            <Link is-="button" size-="small" variant-="foreground1" href="/members">
-              회원 관리
-            </Link>
-          ) : null}
         </nav>
       </div>
     </header>

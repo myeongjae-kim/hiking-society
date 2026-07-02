@@ -16,8 +16,14 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+function getProfileInitial(value: string) {
+  return value.trim().charAt(0).toUpperCase() || '?';
+}
+
 export default async function MyPage() {
   const user = await requireCurrentUser();
+  const displayName = user.displayName ?? user.name ?? user.email ?? '회원';
+  const profileInitial = getProfileInitial(displayName);
 
   return (
     <main className="min-h-svh bg-[var(--background0)] p-4 text-[var(--foreground0)] lg:p-8">
@@ -26,9 +32,25 @@ export default async function MyPage() {
         box-="round"
       >
         <header className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="m-0 font-mono text-sm text-[var(--mauve)]">$ profile.show</p>
-            <h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">마이페이지</h1>
+          <div className="flex min-w-0 items-center gap-4">
+            {user.profileImageUrl ? (
+              <img
+                src={user.profileImageUrl}
+                alt={`${displayName} 프로필 사진`}
+                className="size-20 rounded-full border border-[var(--overlay0)] object-cover"
+              />
+            ) : (
+              <div
+                className="grid size-20 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] text-3xl text-[var(--blue)]"
+                aria-label={`${displayName} 프로필 사진 없음`}
+              >
+                <span className="place-self-center">{profileInitial}</span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="m-0 font-mono text-sm text-[var(--mauve)]">$ profile.show</p>
+              <h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">마이페이지</h1>
+            </div>
           </div>
           <nav className="flex flex-wrap gap-2">
             <Link is-="button" size-="small" variant-="foreground1" href="/feed">
@@ -43,7 +65,7 @@ export default async function MyPage() {
         </header>
 
         <dl className="m-0 grid gap-3">
-          <Row label="이름" value={user.displayName ?? user.name ?? 'null'} />
+          <Row label="이름" value={displayName} />
           <Row label="이메일" value={user.email ?? 'null'} />
           <Row label="권한" value={roleLabels[user.role]} />
           <Row label="로그인 제공자" value={user.provider ?? 'null'} />
