@@ -48,7 +48,6 @@ export default function NotFound() {
                 width={1448}
                 height={1086}
                 className="h-auto w-full object-cover"
-                sizes="(min-width: 768px) 36rem, calc(100vw - 3.5rem)"
               />
             </div>
             <figcaption className="m-0 font-mono text-xs leading-[1.45] text-[var(--overlay1)]">
