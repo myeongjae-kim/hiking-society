@@ -1,0 +1,156 @@
+import { ActionButton } from '@/app/common/components/ActionButton';
+import { Command } from '@/app/common/components/Command';
+import { InlineMeta } from '@/app/common/components/InlineMeta';
+import { boxBorderClassName } from '@/app/common/components/styles';
+import { CommentForm } from '@/app/comment/components/CommentForm';
+import { CommentLine } from '@/app/comment/components/CommentLine';
+import { getThreadedComments, getVisibleCommentCount } from '@/app/comment/components/commentUtils';
+import { PhotoViewer } from '@/app/feed/photo-viewer';
+import type { Article, ArticleId } from '@/core/article/domain';
+import type { Comment, CommentId } from '@/core/comment/domain';
+import type { AuthorName } from '@/core/common/domain';
+
+import { ArticleForm } from './ArticleForm';
+import type { ArticleFormValues } from './articleFormTypes';
+import { getArticleMeta } from './articleMeta';
+
+type ArticlePanelProps = {
+  article: Article;
+  canEdit: boolean;
+  comments: readonly Comment[];
+  currentAuthorName: AuthorName;
+  editingArticleId: ArticleId | null;
+  editingCommentId: CommentId | null;
+  errorByKey: Record<string, string>;
+  onCancelArticleEdit: () => void;
+  onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
+  onDeleteArticle: () => void;
+  onDeleteComment: (comment: Comment) => void;
+  onEditArticle: () => void;
+  onEditComment: (commentId: CommentId | null) => void;
+  onReplyComment: (commentId: CommentId | null) => void;
+  onSubmitArticleEdit: (values: ArticleFormValues) => void;
+  onSubmitCommentEdit: (commentId: CommentId, body: string) => void;
+  replyingCommentId: CommentId | null;
+};
+
+export function ArticlePanel({
+  article,
+  canEdit,
+  comments,
+  currentAuthorName,
+  editingArticleId,
+  editingCommentId,
+  errorByKey,
+  onCancelArticleEdit,
+  onCreateComment,
+  onDeleteArticle,
+  onDeleteComment,
+  onEditArticle,
+  onEditComment,
+  onReplyComment,
+  onSubmitArticleEdit,
+  onSubmitCommentEdit,
+  replyingCommentId,
+}: ArticlePanelProps) {
+  const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
+
+  return (
+    <article
+      className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
+      box-="round"
+    >
+      <header className="grid gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <Command>article.open {article.id}</Command>
+          {canEdit ? (
+            <div className="flex flex-wrap gap-2">
+              <ActionButton onClick={onEditArticle}>수정</ActionButton>
+              <ActionButton onClick={onDeleteArticle} tone="danger">
+                삭제
+              </ActionButton>
+            </div>
+          ) : null}
+        </div>
+        <InlineMeta items={getArticleMeta(article, getVisibleCommentCount(comments))} />
+      </header>
+
+      {editingArticleId === article.id ? (
+        <ArticleForm
+          article={article}
+          error={errorByKey[`article-edit-${article.id}`]}
+          onCancel={onCancelArticleEdit}
+          onSubmit={onSubmitArticleEdit}
+        />
+      ) : (
+        <>
+          <PhotoViewer
+            articleId={article.id}
+            authorName={article.authorName}
+            photos={article.photos}
+          />
+
+          <p className="m-0 text-[1.05rem] leading-[1.6] break-keep text-[var(--foreground0)]">
+            {article.body}
+          </p>
+        </>
+      )}
+
+      <section
+        className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5"
+        aria-label={`${article.authorName} 게시글 댓글`}
+      >
+        <Command>comments.list --count={getVisibleCommentCount(comments)}</Command>
+        <CommentForm
+          error={errorByKey[`comment-new-${article.id}`]}
+          onSubmit={(body) => onCreateComment(article.id, body, null)}
+          prompt="comment.new>"
+        />
+        {topLevelComments.map((comment) => (
+          <div className="grid min-w-0 gap-2" key={comment.id}>
+            <CommentLine
+              canEdit={comment.authorName === currentAuthorName}
+              comment={comment}
+              editingCommentId={editingCommentId}
+              onDelete={onDeleteComment}
+              onEdit={onEditComment}
+              onReply={onReplyComment}
+              onSubmitEdit={onSubmitCommentEdit}
+              prompt="comment>"
+              replies={(repliesByParentId.get(comment.id) ?? []).filter(
+                (reply) => reply.deletedAt === null,
+              )}
+            />
+            {replyingCommentId === comment.id ? (
+              <div className="ml-4">
+                <CommentForm
+                  autoFocus
+                  onCancel={() => onReplyComment(null)}
+                  onSubmit={(body) => onCreateComment(article.id, body, comment.id)}
+                  prompt="reply.new>"
+                />
+              </div>
+            ) : null}
+            {(repliesByParentId.get(comment.id) ?? [])
+              .filter((reply) => reply.deletedAt === null)
+              .map((reply) => (
+                <CommentLine
+                  canEdit={reply.authorName === currentAuthorName}
+                  comment={reply}
+                  editingCommentId={editingCommentId}
+                  key={reply.id}
+                  onDelete={onDeleteComment}
+                  onEdit={onEditComment}
+                  onReply={onReplyComment}
+                  onSubmitEdit={onSubmitCommentEdit}
+                  prompt="reply>"
+                  replies={[]}
+                  reply
+                />
+              ))}
+          </div>
+        ))}
+      </section>
+    </article>
+  );
+}
