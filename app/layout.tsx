@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import ClientDependencyContainer from './common/components/ClientDependencyContainer';
 import './globals.css';
 
 const siteUrl =
@@ -44,7 +45,9 @@ export default function RootLayout({
       <head>
         <link href="https://cdn.myeongjae.kim/fonts/suit/SUIT.css" rel="stylesheet" />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <ClientDependencyContainer>{children}</ClientDependencyContainer>
+      </body>
     </html>
   );
 }

@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import type { CSSProperties } from 'react';
+import { LoginButton } from './auth/components/LoginButton';
 
 const finalHeroTitle = '대학생(?)등산동아리';
 
@@ -195,18 +195,11 @@ export default function Home() {
               </span>
             ))}
           </p>
-
           <h1 id="teaser-title" className="sr-only">
             {finalHeroTitle}
           </h1>
-
           <p className="max-w-[32ch] text-2xl text-[var(--foreground1)]">Coming soon...</p>
-
-          <Link href={'/feed'}>
-            <button className="basecamp-button" size-="large" type="button" variant-="lavender">
-              Enter Basecamp
-            </button>
-          </Link>
+          <LoginButton />
         </div>
       </section>
     </main>
