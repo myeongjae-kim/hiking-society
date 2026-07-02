@@ -10,6 +10,7 @@ import { getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
+import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { boxBorderClassName, gridStackClassName } from '@/app/common/components/styles';
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
@@ -54,7 +55,7 @@ export function FeedCrudClient({
   hikings: initialHikings,
 }: FeedCrudClientProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
   const [newHikingOpen, setNewHikingOpen] = useState(false);
   const [editingHikingId, setEditingHikingId] = useState<HikingId | null>(null);
@@ -67,6 +68,7 @@ export function FeedCrudClient({
   >({});
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [articleLoadingLabel, setArticleLoadingLabel] = useState<string | null>(null);
 
   const groups = useMemo(
     () => getFeedGroups(initialHikings, initialArticles),
@@ -97,8 +99,14 @@ export function FeedCrudClient({
 
   const runAction = (
     action: () => Promise<{ error?: string; ok: boolean }>,
-    options: { errorKey: string; onSuccess?: () => void },
+    options: { errorKey: string; loadingLabel?: string; onSuccess?: () => void },
   ) => {
+    if (options.loadingLabel) {
+      setArticleLoadingLabel(options.loadingLabel);
+    } else {
+      setArticleLoadingLabel(null);
+    }
+
     startTransition(async () => {
       const result = await action();
 
@@ -211,6 +219,7 @@ export function FeedCrudClient({
 
     runAction(() => createArticleAction(createArticleFormData(values, { hikingId })), {
       errorKey: `article-new-${hikingId}`,
+      loadingLabel: '게시글 저장 중',
       onSuccess: () => setArticleFormHikingId(null),
     });
   };
@@ -223,6 +232,7 @@ export function FeedCrudClient({
 
     runAction(() => updateArticleAction(createArticleFormData(values, { articleId })), {
       errorKey: `article-edit-${articleId}`,
+      loadingLabel: '게시글 저장 중',
       onSuccess: () => setEditingArticleId(null),
     });
   };
@@ -355,6 +365,7 @@ export function FeedCrudClient({
                     setError(`article-new-${group.hiking.id}`, null);
                   }}
                   onSubmit={(values) => createArticle(group.hiking.id, values)}
+                  submitting={isPending && articleLoadingLabel !== null}
                 />
               ) : null}
               <div className={gridStackClassName}>
@@ -380,6 +391,7 @@ export function FeedCrudClient({
                       onSubmitArticleEdit={(values) => updateArticle(article.id, values)}
                       onSubmitCommentEdit={updateComment}
                       replyingCommentId={replyingCommentId}
+                      submittingArticleEdit={isPending && articleLoadingLabel !== null}
                     />
                   ))
                 ) : (
@@ -409,6 +421,10 @@ export function FeedCrudClient({
       <ConfirmDialog
         confirmState={confirmState}
         onOpenChange={(open) => !open && setConfirmState(null)}
+      />
+      <LoadingOverlay
+        label={articleLoadingLabel ?? undefined}
+        open={isPending && articleLoadingLabel !== null}
       />
     </main>
   );

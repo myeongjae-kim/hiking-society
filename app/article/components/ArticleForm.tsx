@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { FieldLabel } from '@/app/common/components/FieldLabel';
+import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import {
   boxBorderClassName,
   fieldClassName,
@@ -28,6 +29,7 @@ type ArticleFormProps = {
   error?: string;
   onCancel: () => void;
   onSubmit: (values: ArticleFormValues) => void;
+  submitting?: boolean;
 };
 
 function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
@@ -37,11 +39,19 @@ function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
   }));
 }
 
-export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormProps) {
+export function ArticleForm({
+  article,
+  error,
+  onCancel,
+  onSubmit,
+  submitting = false,
+}: ArticleFormProps) {
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
   const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
+  const disabled = isProcessingPhotos || submitting;
 
   const removePhotoDragPreview = () => {
     dragPreviewRef.current?.remove();
@@ -83,45 +93,52 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
     input.value = '';
 
     setPhotoError(null);
+    setIsProcessingPhotos(true);
 
-    const settledPhotos = await Promise.allSettled(
-      files.map(async (file, index) => {
-        try {
-          return await createCompressedDraftPhoto(file, index + 1);
-        } catch {
-          throw new Error(`${file.name} 이미지를 변환하지 못했습니다.`);
-        }
-      }),
-    );
-    const compressedPhotos = settledPhotos.flatMap((result) =>
-      result.status === 'fulfilled' ? [result.value] : [],
-    );
-    const failedFileNames = settledPhotos.flatMap((result) =>
-      result.status === 'rejected' && result.reason instanceof Error ? [result.reason.message] : [],
-    );
+    try {
+      const settledPhotos = await Promise.allSettled(
+        files.map(async (file, index) => {
+          try {
+            return await createCompressedDraftPhoto(file, index + 1);
+          } catch {
+            throw new Error(`${file.name} 이미지를 변환하지 못했습니다.`);
+          }
+        }),
+      );
+      const compressedPhotos = settledPhotos.flatMap((result) =>
+        result.status === 'fulfilled' ? [result.value] : [],
+      );
+      const failedFileNames = settledPhotos.flatMap((result) =>
+        result.status === 'rejected' && result.reason instanceof Error
+          ? [result.reason.message]
+          : [],
+      );
 
-    if (failedFileNames.length > 0) {
-      setPhotoError(failedFileNames.join(' '));
+      if (failedFileNames.length > 0) {
+        setPhotoError(failedFileNames.join(' '));
+      }
+
+      if (compressedPhotos.length === 0) {
+        return;
+      }
+
+      setValues((currentValues) => {
+        const appendedPhotos = [
+          ...currentValues.photos,
+          ...compressedPhotos.map((photo, index) => ({
+            ...photo,
+            order: currentValues.photos.length + index + 1,
+          })),
+        ];
+
+        return {
+          ...currentValues,
+          photos: reorderDraftPhotos(appendedPhotos),
+        };
+      });
+    } finally {
+      setIsProcessingPhotos(false);
     }
-
-    if (compressedPhotos.length === 0) {
-      return;
-    }
-
-    setValues((currentValues) => {
-      const appendedPhotos = [
-        ...currentValues.photos,
-        ...compressedPhotos.map((photo, index) => ({
-          ...photo,
-          order: currentValues.photos.length + index + 1,
-        })),
-      ];
-
-      return {
-        ...currentValues,
-        photos: reorderDraftPhotos(appendedPhotos),
-      };
-    });
   };
 
   const movePhoto = (fromOrder: number, toOrder: number) => {
@@ -205,6 +222,11 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (disabled) {
+      return;
+    }
+
     onSubmit(values);
   };
 
@@ -216,113 +238,125 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
   const duplicatePhotoKeys = getDuplicatePhotoKeys(values.photos);
 
   return (
-    <form
-      className={`grid gap-4 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
-      box-="round"
-      onSubmit={handleSubmit}
-    >
-      <Command>{article ? `article.edit ${article.id}` : 'article.new'}</Command>
-      <FieldLabel label="사진">
-        <label className={inlineButtonClassName}>
-          사진 선택
-          <input
-            accept="image/*,.heic,.heif,image/heic,image/heif"
-            className={hiddenFileInputClassName}
-            multiple
-            onChange={handlePhotoChange}
-            type="file"
-          />
-        </label>
-      </FieldLabel>
-      {photoError ? <p className="m-0 text-sm text-[var(--red)]">{photoError}</p> : null}
-      {values.photos.length > 0 ? (
-        <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
-          {values.photos.map((photo: DraftPhoto) => {
-            const duplicateKey = getPhotoDuplicateKey(photo);
-            const isDuplicate = duplicateKey !== null && duplicatePhotoKeys.has(duplicateKey);
-            const isDragged = draggedPhotoOrder === photo.order;
-            const canMoveUp = photo.order > 1;
-            const canMoveDown = photo.order < values.photos.length;
+    <>
+      <form
+        className={`grid gap-4 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+        box-="round"
+        onSubmit={handleSubmit}
+      >
+        <Command>{article ? `article.edit ${article.id}` : 'article.new'}</Command>
+        <FieldLabel label="사진">
+          <label
+            className={`${inlineButtonClassName} ${disabled ? 'cursor-not-allowed opacity-45' : ''}`}
+          >
+            사진 선택
+            <input
+              accept="image/*,.heic,.heif,image/heic,image/heif"
+              className={hiddenFileInputClassName}
+              disabled={disabled}
+              multiple
+              onChange={handlePhotoChange}
+              type="file"
+            />
+          </label>
+        </FieldLabel>
+        {photoError ? <p className="m-0 text-sm text-[var(--red)]">{photoError}</p> : null}
+        {values.photos.length > 0 ? (
+          <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
+            {values.photos.map((photo: DraftPhoto) => {
+              const duplicateKey = getPhotoDuplicateKey(photo);
+              const isDuplicate = duplicateKey !== null && duplicatePhotoKeys.has(duplicateKey);
+              const isDragged = draggedPhotoOrder === photo.order;
+              const canMoveUp = photo.order > 1;
+              const canMoveDown = photo.order < values.photos.length;
 
-            return (
-              <li
-                aria-label={`선택한 게시글 사진 ${photo.order}번째`}
-                className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
-                  isDuplicate ? 'border-2 border-[var(--peach)]' : 'border border-[var(--overlay0)]'
-                } ${
-                  isDragged
-                    ? '!border-[var(--blue)] !bg-[var(--surface1)] opacity-70'
-                    : 'hover:border-[var(--blue)]'
-                }`}
-                draggable
-                key={`${photo.fileName}-${photo.order}`}
-                onDragEnd={() => {
-                  setDraggedPhotoOrder(null);
-                  removePhotoDragPreview();
-                }}
-                onDragOver={(event) => handlePhotoDragOver(event, photo.order)}
-                onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
-                onDrop={(event) => handlePhotoDrop(event, photo.order)}
-              >
-                <img
-                  alt={`선택한 게시글 사진 ${photo.order}`}
-                  className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain"
-                  src={photo.url}
-                />
-                <div className="grid gap-2 px-3 py-2">
-                  <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
-                    order={photo.order} {photo.fileName}
-                  </span>
-                  {isDuplicate ? (
-                    <span className="text-sm leading-[1.35] text-[var(--peach)]">
-                      동일한 사진이 선택되었습니다.
+              return (
+                <li
+                  aria-label={`선택한 게시글 사진 ${photo.order}번째`}
+                  className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
+                    isDuplicate
+                      ? 'border-2 border-[var(--peach)]'
+                      : 'border border-[var(--overlay0)]'
+                  } ${
+                    isDragged
+                      ? '!border-[var(--blue)] !bg-[var(--surface1)] opacity-70'
+                      : 'hover:border-[var(--blue)]'
+                  }`}
+                  draggable
+                  key={`${photo.fileName}-${photo.order}`}
+                  onDragEnd={() => {
+                    setDraggedPhotoOrder(null);
+                    removePhotoDragPreview();
+                  }}
+                  onDragOver={(event) => handlePhotoDragOver(event, photo.order)}
+                  onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
+                  onDrop={(event) => handlePhotoDrop(event, photo.order)}
+                >
+                  <img
+                    alt={`선택한 게시글 사진 ${photo.order}`}
+                    className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain"
+                    src={photo.url}
+                  />
+                  <div className="grid gap-2 px-3 py-2">
+                    <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
+                      order={photo.order} {photo.fileName}
                     </span>
-                  ) : null}
-                  <div className="grid grid-cols-3 gap-2">
-                    <ActionButton
-                      disabled={!canMoveUp}
-                      onClick={() => movePhoto(photo.order, photo.order - 1)}
-                    >
-                      위로
-                    </ActionButton>
-                    <ActionButton
-                      disabled={!canMoveDown}
-                      onClick={() => movePhoto(photo.order, photo.order + 1)}
-                    >
-                      아래로
-                    </ActionButton>
-                    <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
-                      제거
-                    </ActionButton>
+                    {isDuplicate ? (
+                      <span className="text-sm leading-[1.35] text-[var(--peach)]">
+                        동일한 사진이 선택되었습니다.
+                      </span>
+                    ) : null}
+                    <div className="grid grid-cols-3 gap-2">
+                      <ActionButton
+                        disabled={!canMoveUp}
+                        onClick={() => movePhoto(photo.order, photo.order - 1)}
+                      >
+                        위로
+                      </ActionButton>
+                      <ActionButton
+                        disabled={!canMoveDown}
+                        onClick={() => movePhoto(photo.order, photo.order + 1)}
+                      >
+                        아래로
+                      </ActionButton>
+                      <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
+                        제거
+                      </ActionButton>
+                    </div>
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        <p className="m-0 text-sm text-[var(--subtext0)]">사진을 1개 이상 선택해야 합니다.</p>
-      )}
-      <FieldLabel label="본문">
-        <textarea
-          className={`${fieldClassName} min-h-[8rem] resize-y`}
-          onChange={(event) => {
-            const body = event.currentTarget.value;
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="m-0 text-sm text-[var(--subtext0)]">사진을 1개 이상 선택해야 합니다.</p>
+        )}
+        <FieldLabel label="본문">
+          <textarea
+            className={`${fieldClassName} min-h-[8rem] resize-y`}
+            onChange={(event) => {
+              const body = event.currentTarget.value;
 
-            setValues((currentValues) => ({
-              ...currentValues,
-              body,
-            }));
-          }}
-          required
-          value={values.body}
-        />
-      </FieldLabel>
-      {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
-      <div className="flex flex-wrap justify-end gap-2">
-        <ActionButton onClick={handleCancel}>취소</ActionButton>
-        <ActionButton type="submit">저장</ActionButton>
-      </div>
-    </form>
+              setValues((currentValues) => ({
+                ...currentValues,
+                body,
+              }));
+            }}
+            required
+            value={values.body}
+          />
+        </FieldLabel>
+        {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          <ActionButton disabled={submitting} onClick={handleCancel}>
+            취소
+          </ActionButton>
+          <ActionButton disabled={disabled} type="submit">
+            저장
+          </ActionButton>
+        </div>
+      </form>
+      <LoadingOverlay label="사진 처리 중" open={isProcessingPhotos} />
+    </>
   );
 }

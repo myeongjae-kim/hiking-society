@@ -33,6 +33,7 @@ type ArticlePanelProps = {
   onSubmitArticleEdit: (values: ArticleFormValues) => void;
   onSubmitCommentEdit: (commentId: CommentId, body: string) => void;
   replyingCommentId: CommentId | null;
+  submittingArticleEdit?: boolean;
 };
 
 export function ArticlePanel({
@@ -54,6 +55,7 @@ export function ArticlePanel({
   onSubmitArticleEdit,
   onSubmitCommentEdit,
   replyingCommentId,
+  submittingArticleEdit = false,
 }: ArticlePanelProps) {
   const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
 
@@ -90,6 +92,7 @@ export function ArticlePanel({
           error={errorByKey[`article-edit-${article.id}`]}
           onCancel={onCancelArticleEdit}
           onSubmit={onSubmitArticleEdit}
+          submitting={submittingArticleEdit}
         />
       ) : (
         <>
