@@ -1,8 +1,8 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { MouseEvent, PointerEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MouseEvent, PointerEvent, ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import type { ArticlePhoto } from '@/core/article/domain';
 
@@ -10,6 +10,9 @@ type PhotoViewerProps = {
   articleId: string;
   authorName: string;
   photos: readonly ArticlePhoto[];
+  thumbnailGridClassName?: string;
+  trigger?: ReactNode;
+  viewerLabel?: string;
 };
 
 type DragState = {
@@ -34,7 +37,15 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps) {
+export function PhotoViewer({
+  articleId,
+  authorName,
+  photos,
+  thumbnailGridClassName = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3',
+  trigger,
+  viewerLabel,
+}: PhotoViewerProps) {
+  const viewerId = useId();
   const dragStateRef = useRef<DragState | null>(null);
   const isPinchGestureRef = useRef(false);
   const selectedPhotoImageRef = useRef<HTMLImageElement>(null);
@@ -44,6 +55,12 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultiplePhotos = photos.length > 1;
   const selectedPhoto = photos[selectedIndex] ?? photos[0];
+  const title = viewerLabel ?? `${authorName}의 산행 사진`;
+  const descriptionId = `photo-viewer-description-${viewerId}`;
+  const viewerCommand = viewerLabel ? 'profile.photo' : `article.photo ${articleId}`;
+  const description = hasMultiplePhotos
+    ? '좌우 화살표로 사진을 이동하고 Escape 키로 닫을 수 있습니다.'
+    : 'Escape 키로 닫을 수 있습니다.';
 
   const showPreviousPhoto = useCallback(() => {
     setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex - 1, photos.length));
@@ -300,44 +317,58 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
-        {photos.map((photo, index) => (
-          <figure
-            className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
-            key={`${articleId}-${photo.order}`}
+      {trigger ? (
+        <Dialog.Trigger asChild>
+          <button
+            className="appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+            onClick={() => {
+              setSelectedIndex(0);
+            }}
+            type="button"
           >
-            <Dialog.Trigger asChild>
-              <button
-                className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                onClick={() => {
-                  setSelectedIndex(index);
-                }}
-                type="button"
-              >
-                <img
-                  alt={`${authorName}의 산행 사진 ${photo.order}`}
-                  className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                  src={photo.url}
-                />
-              </button>
-            </Dialog.Trigger>
-            <figcaption className="px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
-              photo {photo.order}/{photos.length}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
+            {trigger}
+          </button>
+        </Dialog.Trigger>
+      ) : (
+        <div className={thumbnailGridClassName}>
+          {photos.map((photo, index) => (
+            <figure
+              className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
+              key={`${articleId}-${photo.order}`}
+            >
+              <Dialog.Trigger asChild>
+                <button
+                  className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                  onClick={() => {
+                    setSelectedIndex(index);
+                  }}
+                  type="button"
+                >
+                  <img
+                    alt={`${authorName}의 산행 사진 ${photo.order}`}
+                    className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                    src={photo.url}
+                  />
+                </button>
+              </Dialog.Trigger>
+              <figcaption className="px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+                photo {photo.order}/{photos.length}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--background0)_86%,black)]" />
         <Dialog.Content
-          aria-describedby={`photo-viewer-description-${articleId}`}
+          aria-describedby={descriptionId}
           className="fixed inset-0 z-50 grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
           onClick={closeOnBackdropClick}
         >
-          <Dialog.Title className="sr-only">{authorName}의 산행 사진</Dialog.Title>
-          <Dialog.Description className="sr-only" id={`photo-viewer-description-${articleId}`}>
-            좌우 화살표로 사진을 이동하고 Escape 키로 닫을 수 있습니다.
+          <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          <Dialog.Description className="sr-only" id={descriptionId}>
+            {description}
           </Dialog.Description>
 
           <div
@@ -345,7 +376,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             data-photo-modal-surface
           >
             <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1">
-              article.photo {articleId}
+              {viewerCommand}
             </span>
             <Dialog.Close asChild>
               <button

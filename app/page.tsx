@@ -198,7 +198,6 @@ export default function Home() {
           <h1 id="teaser-title" className="sr-only">
             {finalHeroTitle}
           </h1>
-          <p className="max-w-[32ch] text-2xl text-[var(--foreground1)]">Coming soon...</p>
           <LoginButton />
         </div>
       </section>
