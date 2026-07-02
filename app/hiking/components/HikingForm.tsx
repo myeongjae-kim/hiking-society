@@ -23,6 +23,7 @@ type HikingFormProps = {
   hiking?: Hiking;
   onCancel: () => void;
   onSubmit: (values: HikingFormValues) => void;
+  submitting?: boolean;
 };
 
 function shiftTimeValue(time: string, offsetMinutes: number) {
@@ -35,7 +36,13 @@ function shiftTimeValue(time: string, offsetMinutes: number) {
   return `${String(shiftedHour).padStart(2, '0')}:${String(shiftedMinute).padStart(2, '0')}`;
 }
 
-export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProps) {
+export function HikingForm({
+  error,
+  hiking,
+  onCancel,
+  onSubmit,
+  submitting = false,
+}: HikingFormProps) {
   const [values, setValues] = useState(() => getHikingFormDefaults(hiking));
   const [metadataStatus, setMetadataStatus] = useState(
     '사진을 선택하면 EXIF 좌표와 촬영시각을 채웁니다.',
@@ -113,6 +120,11 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
     onSubmit(values);
   };
 
@@ -216,7 +228,9 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
       {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-2">
         <ActionButton onClick={onCancel}>취소</ActionButton>
-        <ActionButton type="submit">저장</ActionButton>
+        <ActionButton disabled={submitting} type="submit">
+          저장
+        </ActionButton>
       </div>
     </form>
   );

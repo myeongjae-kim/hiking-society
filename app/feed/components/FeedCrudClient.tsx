@@ -15,7 +15,7 @@ import { boxBorderClassName, gridStackClassName } from '@/app/common/components/
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { StatusPanel } from '@/app/feed/components/StatusPanel';
-import { HikingForm } from '@/app/hiking/components/HikingForm';
+import { HikingFormDialog } from '@/app/hiking/components/HikingFormDialog';
 import type { HikingFormValues } from '@/app/hiking/components/hikingFormTypes';
 import { HikingHeader } from '@/app/hiking/components/HikingHeader';
 import type { Article, ArticleId } from '@/core/article/domain';
@@ -51,6 +51,8 @@ type FeedCrudClientProps = {
 type ActiveArticleForm =
   { hikingId: HikingId; type: 'create' } | { articleId: ArticleId; type: 'edit' } | null;
 
+type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' } | null;
+
 export function FeedCrudClient({
   articles: initialArticles,
   comments: initialComments,
@@ -60,8 +62,7 @@ export function FeedCrudClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
-  const [newHikingOpen, setNewHikingOpen] = useState(false);
-  const [editingHikingId, setEditingHikingId] = useState<HikingId | null>(null);
+  const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
   const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
@@ -70,7 +71,7 @@ export function FeedCrudClient({
   >({});
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
-  const [articleLoadingLabel, setArticleLoadingLabel] = useState<string | null>(null);
+  const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
 
   const groups = useMemo(
     () => getFeedGroups(initialHikings, initialArticles),
@@ -84,6 +85,20 @@ export function FeedCrudClient({
     (article) => article.deletedAt === null,
   ).length;
   const visibleCommentCount = getVisibleCommentCount(initialComments);
+  const activeHiking =
+    activeHikingForm?.type === 'edit'
+      ? initialHikings.find((hiking) => hiking.id === activeHikingForm.hikingId)
+      : undefined;
+  const activeHikingFormKey =
+    activeHikingForm?.type === 'create'
+      ? 'hiking-new'
+      : activeHikingForm?.type === 'edit'
+        ? `hiking-edit-${activeHikingForm.hikingId}`
+        : null;
+  const activeHikingFormTitle = activeHikingForm?.type === 'edit' ? '산행 수정' : '산행 등록';
+  const hikingFormDialogOpen =
+    activeHikingForm?.type === 'create' ||
+    (activeHikingForm?.type === 'edit' && activeHiking !== undefined);
   const activeArticle =
     activeArticleForm?.type === 'edit'
       ? initialArticles.find((article) => article.id === activeArticleForm.articleId)
@@ -118,9 +133,9 @@ export function FeedCrudClient({
     options: { errorKey: string; loadingLabel?: string; onSuccess?: () => void },
   ) => {
     if (options.loadingLabel) {
-      setArticleLoadingLabel(options.loadingLabel);
+      setLoadingLabel(options.loadingLabel);
     } else {
-      setArticleLoadingLabel(null);
+      setLoadingLabel(null);
     }
 
     startTransition(async () => {
@@ -147,6 +162,18 @@ export function FeedCrudClient({
     }
 
     setActiveArticleForm(null);
+  };
+
+  const closeActiveHikingForm = () => {
+    if (activeHikingForm?.type === 'create') {
+      setError('hiking-new', null);
+    }
+
+    if (activeHikingForm?.type === 'edit') {
+      setError(`hiking-edit-${activeHikingForm.hikingId}`, null);
+    }
+
+    setActiveHikingForm(null);
   };
 
   const createHikingFormData = (values: HikingFormValues) => {
@@ -200,7 +227,8 @@ export function FeedCrudClient({
   const createHiking = (values: HikingFormValues) => {
     runAction(() => createHikingAction(createHikingFormData(values)), {
       errorKey: 'hiking-new',
-      onSuccess: () => setNewHikingOpen(false),
+      loadingLabel: '산행 저장 중',
+      onSuccess: () => setActiveHikingForm(null),
     });
   };
 
@@ -210,7 +238,8 @@ export function FeedCrudClient({
 
     runAction(() => updateHikingAction(formData), {
       errorKey: `hiking-edit-${hikingId}`,
-      onSuccess: () => setEditingHikingId(null),
+      loadingLabel: '산행 저장 중',
+      onSuccess: () => setActiveHikingForm(null),
     });
   };
 
@@ -344,20 +373,10 @@ export function FeedCrudClient({
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Command>{'echo "hello, hiking!"'}</Command>
-              <ActionButton onClick={() => setNewHikingOpen((open) => !open)}>
+              <ActionButton onClick={() => setActiveHikingForm({ type: 'create' })}>
                 산행 등록
               </ActionButton>
             </div>
-            {newHikingOpen ? (
-              <HikingForm
-                error={errorByKey['hiking-new']}
-                onCancel={() => {
-                  setNewHikingOpen(false);
-                  setError('hiking-new', null);
-                }}
-                onSubmit={createHiking}
-              />
-            ) : null}
           </section>
 
           {groups.map((group, groupIndex) => (
@@ -374,19 +393,8 @@ export function FeedCrudClient({
                   setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
                 }
                 onDelete={() => requestDeleteHiking(group.hiking)}
-                onEdit={() => setEditingHikingId(group.hiking.id)}
+                onEdit={() => setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
               />
-              {editingHikingId === group.hiking.id ? (
-                <HikingForm
-                  error={errorByKey[`hiking-edit-${group.hiking.id}`]}
-                  hiking={group.hiking}
-                  onCancel={() => {
-                    setEditingHikingId(null);
-                    setError(`hiking-edit-${group.hiking.id}`, null);
-                  }}
-                  onSubmit={(values) => updateHiking(group.hiking.id, values)}
-                />
-              ) : null}
               <div className={gridStackClassName}>
                 {group.articles.length > 0 ? (
                   group.articles.map((article) => (
@@ -439,6 +447,30 @@ export function FeedCrudClient({
         confirmState={confirmState}
         onOpenChange={(open) => !open && setConfirmState(null)}
       />
+      <HikingFormDialog
+        error={activeHikingFormKey ? errorByKey[activeHikingFormKey] : undefined}
+        formKey={activeHikingFormKey ?? 'hiking-form'}
+        hiking={activeHiking}
+        onCancel={closeActiveHikingForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeActiveHikingForm();
+          }
+        }}
+        onSubmit={(values) => {
+          if (activeHikingForm?.type === 'create') {
+            createHiking(values);
+            return;
+          }
+
+          if (activeHikingForm?.type === 'edit') {
+            updateHiking(activeHikingForm.hikingId, values);
+          }
+        }}
+        open={hikingFormDialogOpen}
+        submitting={isPending && loadingLabel !== null}
+        title={activeHikingFormTitle}
+      />
       <ArticleFormDialog
         article={activeArticle}
         error={activeArticleFormKey ? errorByKey[activeArticleFormKey] : undefined}
@@ -460,13 +492,10 @@ export function FeedCrudClient({
           }
         }}
         open={articleFormDialogOpen}
-        submitting={isPending && articleLoadingLabel !== null}
+        submitting={isPending && loadingLabel !== null}
         title={activeArticleFormTitle}
       />
-      <LoadingOverlay
-        label={articleLoadingLabel ?? undefined}
-        open={isPending && articleLoadingLabel !== null}
-      />
+      <LoadingOverlay label={loadingLabel ?? undefined} open={isPending && loadingLabel !== null} />
     </main>
   );
 }
