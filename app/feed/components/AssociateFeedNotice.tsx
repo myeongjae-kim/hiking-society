@@ -37,12 +37,19 @@ export function AssociateFeedNotice({ user }: AssociateFeedNoticeProps) {
               </Link>
             </div>
           </div>
-          <div className="grid place-items-center">
-            <img
-              src="https://hike-cdn.myeongjae.kim/assets/associate-block-image.webp"
-              alt="작은 산, 잠긴 등산로 게이트"
-              className="rounded"
-            />
+          <div className="flex flex-col gap-1">
+            <div className="overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]">
+              <img
+                src="https://hike-cdn.myeongjae.kim/assets/associate-block-image.webp"
+                alt="작은 산, 잠긴 등산로 게이트"
+                width={1448}
+                height={1086}
+                className="h-auto w-full object-cover"
+              />
+            </div>
+            <figcaption className="m-0 font-mono text-xs leading-[1.45] text-[var(--overlay1)]">
+              route: unknown / next checkpoint: home
+            </figcaption>
           </div>
         </div>
       </section>

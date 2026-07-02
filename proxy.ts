@@ -4,7 +4,19 @@ import { applicationContext } from './core/config/applicationContext';
 const { accessTokenCookieName, accessTokenMaxAgeSeconds, refreshTokenCookieName } =
   applicationContext().get('CookieConfig');
 
+const protectedPathPrefixes = ['/feed', '/me', '/members'];
+
+function isProtectedPath(pathname: string) {
+  return protectedPathPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export async function proxy(request: NextRequest) {
+  if (!isProtectedPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   const accessToken = request.cookies.get(accessTokenCookieName)?.value;
   const refreshToken = request.cookies.get(refreshTokenCookieName)?.value;
 
