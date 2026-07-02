@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { MouseEvent, PointerEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { photoDialogOverlayClassName } from '@/app/common/components/styles';
 import type { ArticlePhoto } from '@/core/article/domain';
 
 type PhotoViewerProps = {
@@ -360,7 +361,7 @@ export function PhotoViewer({
       )}
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--background0)_86%,black)]" />
+        <Dialog.Overlay className={photoDialogOverlayClassName} />
         <Dialog.Content
           aria-describedby={descriptionId}
           className="fixed inset-0 z-50 grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"

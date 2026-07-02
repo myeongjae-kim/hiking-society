@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { ChangeEvent, ReactNode } from 'react';
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 
-import { inlineButtonClassName } from '@/app/common/components/styles';
+import { dialogOverlayClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
 import {
   updateDisplayName,
@@ -61,7 +61,7 @@ function ProfileDialogShell({
         )}
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--background0)_68%,black)]" />
+        <Dialog.Overlay className={dialogOverlayClassName} />
         <Dialog.Content className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none">
           <div className="grid max-h-[calc(100svh-2rem)] w-full max-w-[28rem] gap-4 overflow-y-auto border border-[var(--overlay0)] bg-[var(--surface0)] p-5 shadow-[0.35rem_0.35rem_0_var(--background0)]">
             <div className="grid gap-2 border-b border-[var(--overlay0)] pb-3">
