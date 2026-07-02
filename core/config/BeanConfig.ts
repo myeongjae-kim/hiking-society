@@ -36,6 +36,13 @@ import { UpdateMemberRoleUseCase } from '../member/application/port/in/UpdateMem
 import { MemberCommandPort } from '../member/application/port/out/MemberCommandPort';
 import { MemberQueryPort } from '../member/application/port/out/MemberQueryPort';
 import { UpdateMemberRoleService } from '../member/application/UpdateMemberRoleService';
+import { ProfileDrizzleAdapter } from '../profile/adapter/ProfileDrizzleAdapter';
+import { S3ProfileImageStorageAdapter } from '../profile/adapter/S3ProfileImageStorageAdapter';
+import { UpdateProfileService } from '../profile/application/UpdateProfileService';
+import { UpdateProfileUseCase } from '../profile/application/port/in/UpdateProfileUseCase';
+import { ProfileCommandPort } from '../profile/application/port/out/ProfileCommandPort';
+import { ProfileImageStoragePort } from '../profile/application/port/out/ProfileImageStoragePort';
+import { ProfileQueryPort } from '../profile/application/port/out/ProfileQueryPort';
 import { env } from './env';
 
 export type Beans = {
@@ -59,6 +66,10 @@ export type Beans = {
   MemberQueryPort: MemberQueryPort;
   ListMembersUseCase: ListMembersUseCase;
   UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
+  ProfileCommandPort: ProfileCommandPort;
+  ProfileImageStoragePort: ProfileImageStoragePort;
+  ProfileQueryPort: ProfileQueryPort;
+  UpdateProfileUseCase: UpdateProfileUseCase;
   TextEncoder: TextEncoder;
   JWT_SECRET: string;
   GOOGLE_LOGIN_CLIENT_ID: string;
@@ -87,6 +98,10 @@ export const beanConfig: BeanConfig<Beans> = {
   MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
   ListMembersUseCase: (bind) => bind().to(ListMembersService),
   UpdateMemberRoleUseCase: (bind) => bind().to(UpdateMemberRoleService),
+  ProfileCommandPort: (bind) => bind().to(ProfileDrizzleAdapter),
+  ProfileImageStoragePort: (bind) => bind().to(S3ProfileImageStorageAdapter),
+  ProfileQueryPort: (bind) => bind().to(ProfileDrizzleAdapter),
+  UpdateProfileUseCase: (bind) => bind().to(UpdateProfileService),
   TextEncoder: (bind) => bind().to(TextEncoder),
   JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
   GOOGLE_LOGIN_CLIENT_ID: (bind) => bind().toConstantValue(env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID),

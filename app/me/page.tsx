@@ -1,18 +1,26 @@
 import { requireCurrentUser } from '@/app/auth/actions/session';
+import { inlineButtonClassName } from '@/app/common/components/styles';
 import { roleLabels } from '@/core/auth/model/roleLabels';
 import { canManageMembers } from '@/core/auth/model/roles';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { logout } from '../auth/actions/logout';
+import {
+  DisplayNameEditDialog,
+  EmailEditDialog,
+  ProfileImageEditDialog,
+} from './components/ProfileEditDialogs';
 
 function formatDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 19).replace('T', ' ') : 'null';
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ action, label, value }: { action?: ReactNode; label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-4 border-b border-dotted border-[var(--overlay0)] pb-2">
+    <div className="grid grid-cols-[9rem_minmax(0,1fr)_auto] items-center gap-4 border-b border-dotted border-[var(--overlay0)] pb-2">
       <dt className="text-[var(--subtext0)]">{label}</dt>
       <dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground0)]">{value}</dd>
+      <div className="min-w-0">{action}</div>
     </div>
   );
 }
@@ -34,20 +42,35 @@ export default async function MyPage() {
       >
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-4">
-            {user.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt={`${displayName} 프로필 사진`}
-                className="size-20 rounded-full border border-[var(--overlay0)] object-cover"
+            <div className="relative size-20 shrink-0">
+              {user.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt={`${displayName} 프로필 사진`}
+                  className="size-20 rounded-full border border-[var(--overlay0)] object-cover"
+                />
+              ) : (
+                <div
+                  className="grid size-20 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] text-3xl text-[var(--blue)]"
+                  aria-label={`${displayName} 프로필 사진 없음`}
+                >
+                  <span className="place-self-center">{profileInitial}</span>
+                </div>
+              )}
+              <ProfileImageEditDialog
+                displayName={displayName}
+                profileImageUrl={user.profileImageUrl}
+                trigger={
+                  <button
+                    aria-label="프로필 이미지 수정"
+                    className={`absolute -right-2 -bottom-1 z-10 ${inlineButtonClassName} !min-h-[1.5rem] !px-1 !py-0 !text-xs shadow-[0.12rem_0.12rem_0_var(--background0)]`}
+                    type="button"
+                  >
+                    수정
+                  </button>
+                }
               />
-            ) : (
-              <div
-                className="grid size-20 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] text-3xl text-[var(--blue)]"
-                aria-label={`${displayName} 프로필 사진 없음`}
-              >
-                <span className="place-self-center">{profileInitial}</span>
-              </div>
-            )}
+            </div>
             <div className="min-w-0">
               <p className="m-0 font-mono text-sm text-[var(--mauve)]">$ profile.show</p>
               <h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">마이페이지</h1>
@@ -66,8 +89,12 @@ export default async function MyPage() {
         </header>
 
         <dl className="m-0 grid gap-3">
-          <Row label="이름" value={displayName} />
-          <Row label="이메일" value={user.email ?? 'null'} />
+          <Row
+            action={<DisplayNameEditDialog displayName={displayName} />}
+            label="이름"
+            value={displayName}
+          />
+          <Row action={<EmailEditDialog email={user.email} />} label="이메일" value={user.email} />
           <Row label="권한" value={roleLabels[user.role]} />
           <Row label="로그인 제공자" value={user.provider ?? 'null'} />
           <Row label="최근 로그인" value={formatDate(user.lastLoginAt)} />

@@ -29,11 +29,7 @@ export class AuthCommandAdapter implements AuthCommandPort {
         const [updatedUser] = await tx
           .update(userTable)
           .set({
-            displayName: payload.displayName,
-            email: payload.email,
             lastLoginAt: now,
-            name: payload.displayName,
-            profileImageUrl: payload.profileImageUrl,
             updatedAt: now,
           })
           .where(eq(userTable.id, existingAccount.user.id))

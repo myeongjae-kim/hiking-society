@@ -28,6 +28,9 @@
 @layer base, utils, components;
 
 @import "@webtui/css";
+@import "@webtui/css/components/button.css";
+@import "@webtui/css/components/input.css";
+@import "@webtui/css/components/spinner.css";
 @import "@webtui/css/components/typography.css";
 
 /* below should be last */
