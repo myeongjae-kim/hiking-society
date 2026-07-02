@@ -24,10 +24,10 @@ export function StatusPanel({
       box-="round"
       aria-label="피드 상태"
     >
-      <Command>status --mock --ui-only</Command>
+      <Command>status --ui-only</Command>
       <dl className="m-0 grid gap-2">
         <StatusRow label="access" value="invite" />
-        <StatusRow label="mode" value="crud-photo-log" />
+        <StatusRow label="mode" value="photo-log" />
         <StatusRow label="actor" value={String(currentAuthorName)} />
         <StatusRow label="groups" value={groupCount} />
         <StatusRow label="hikings" value={hikingCount} />

@@ -305,7 +305,7 @@ export function FeedCrudClient({
             box-="round"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <Command>feed.crud --db</Command>
+              <Command>{'echo "hello, hiking!"'}</Command>
               <ActionButton onClick={() => setNewHikingOpen((open) => !open)}>
                 산행 등록
               </ActionButton>
