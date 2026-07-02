@@ -12,18 +12,28 @@ function isProtectedPath(pathname: string) {
   );
 }
 
+async function getValidAccessPayload(request: NextRequest) {
+  const accessToken = request.cookies.get(accessTokenCookieName)?.value;
+
+  if (!accessToken) {
+    return null;
+  }
+
+  return applicationContext().get('VerifyAccessTokenUseCase').verifyAccessToken(accessToken);
+}
+
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === '/' && (await getValidAccessPayload(request))) {
+    return NextResponse.redirect(new URL('/feed', request.url));
+  }
+
   if (!isProtectedPath(request.nextUrl.pathname)) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get(accessTokenCookieName)?.value;
   const refreshToken = request.cookies.get(refreshTokenCookieName)?.value;
 
-  if (
-    accessToken &&
-    (await applicationContext().get('VerifyAccessTokenUseCase').verifyAccessToken(accessToken))
-  ) {
+  if (await getValidAccessPayload(request)) {
     return NextResponse.next();
   }
 
@@ -67,6 +77,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!$|api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };
