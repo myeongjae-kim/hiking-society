@@ -1,10 +1,8 @@
 'use server';
 
 import { requireRole } from '@/app/auth/actions/session';
-import { canChangeRole, mutableRoles } from '@/core/auth/model/roles';
-import { db } from '@/lib/db/drizzle';
-import { userTable, type UserRole } from '@/lib/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { mutableRoles, type UserRole } from '@/core/auth/model/roles';
+import { applicationContext } from '@/core/config/applicationContext';
 import { revalidatePath } from 'next/cache';
 
 function parseRole(value: FormDataEntryValue | null): UserRole {
@@ -34,27 +32,12 @@ export async function updateMemberRole(formData: FormData) {
   const userId = parseUserId(formData.get('userId'));
   const nextRole = parseRole(formData.get('role'));
 
-  const [targetUser] = await db
-    .select()
-    .from(userTable)
-    .where(and(eq(userTable.id, userId), isNull(userTable.deletedAt)))
-    .limit(1);
-
-  if (!targetUser) {
-    throw new Error('Member not found.');
-  }
-
-  if (!canChangeRole(actor.role, targetUser.role, nextRole)) {
-    throw new Error('You cannot change this member role.');
-  }
-
-  await db
-    .update(userTable)
-    .set({
-      role: nextRole,
-      updatedAt: new Date(),
-    })
-    .where(eq(userTable.id, userId));
+  await applicationContext().get('UpdateMemberRoleUseCase').update({
+    actorRole: actor.role,
+    nextRole,
+    now: new Date(),
+    userId,
+  });
 
   revalidatePath('/members');
 }

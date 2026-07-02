@@ -15,6 +15,14 @@ import { AuthQueryPort } from '../auth/application/port/out/AuthQueryPort';
 import { GoogleOAuthPort } from '../auth/application/port/out/GoogleOAuthPort';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';
 import { CookieConfig } from '../auth/config/CookieConfig';
+import { MemberCommandAdapter } from '../member/adapter/MemberCommandAdapter';
+import { MemberQueryAdapter } from '../member/adapter/MemberQueryAdapter';
+import { ListMembersService } from '../member/application/ListMembersService';
+import { ListMembersUseCase } from '../member/application/port/in/ListMembersUseCase';
+import { UpdateMemberRoleUseCase } from '../member/application/port/in/UpdateMemberRoleUseCase';
+import { MemberCommandPort } from '../member/application/port/out/MemberCommandPort';
+import { MemberQueryPort } from '../member/application/port/out/MemberQueryPort';
+import { UpdateMemberRoleService } from '../member/application/UpdateMemberRoleService';
 import { env } from './env';
 
 export type Beans = {
@@ -27,6 +35,10 @@ export type Beans = {
   CreateSessionTokenUseCase: CreateSessionTokenUseCase;
   CookieConfig: CookieConfig;
   GetCookieOptionsUseCase: GetCookieOptionsUseCase;
+  MemberCommandPort: MemberCommandPort;
+  MemberQueryPort: MemberQueryPort;
+  ListMembersUseCase: ListMembersUseCase;
+  UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
   TextEncoder: TextEncoder;
   JWT_SECRET: string;
   GOOGLE_LOGIN_CLIENT_ID: string;
@@ -44,6 +56,10 @@ export const beanConfig: BeanConfig<Beans> = {
   CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),
   CookieConfig: (bind) => bind().to(CookieConfig),
   GetCookieOptionsUseCase: (bind) => bind().to(GetCookieOptionsService),
+  MemberCommandPort: (bind) => bind().to(MemberCommandAdapter),
+  MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
+  ListMembersUseCase: (bind) => bind().to(ListMembersService),
+  UpdateMemberRoleUseCase: (bind) => bind().to(UpdateMemberRoleService),
   TextEncoder: (bind) => bind().to(TextEncoder),
   JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
   GOOGLE_LOGIN_CLIENT_ID: (bind) => bind().toConstantValue(env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID),

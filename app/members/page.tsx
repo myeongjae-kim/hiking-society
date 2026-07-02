@@ -1,9 +1,7 @@
 import { requireRole } from '@/app/auth/actions/session';
 import { roleLabels } from '@/core/auth/model/roleLabels';
-import { canChangeRole } from '@/core/auth/model/roles';
-import { db } from '@/lib/db/drizzle';
-import { socialAccountTable, userTable, type UserRole } from '@/lib/db/schema';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { canChangeRole, type UserRole } from '@/core/auth/model/roles';
+import { applicationContext } from '@/core/config/applicationContext';
 import Link from 'next/link';
 import { updateMemberRole } from './actions/updateMemberRole';
 
@@ -15,24 +13,7 @@ function formatDate(value: Date | null) {
 
 export default async function MembersPage() {
   const actor = await requireRole(['admin', 'member']);
-  const members = await db
-    .select({
-      createdAt: userTable.createdAt,
-      displayName: userTable.displayName,
-      email: userTable.email,
-      id: userTable.id,
-      lastLoginAt: userTable.lastLoginAt,
-      name: userTable.name,
-      provider: socialAccountTable.provider,
-      role: userTable.role,
-    })
-    .from(userTable)
-    .leftJoin(
-      socialAccountTable,
-      and(eq(socialAccountTable.userId, userTable.id), isNull(socialAccountTable.deletedAt)),
-    )
-    .where(isNull(userTable.deletedAt))
-    .orderBy(asc(userTable.id));
+  const members = await applicationContext().get('ListMembersUseCase').list();
 
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] p-4 text-[var(--foreground0)] lg:p-8">
