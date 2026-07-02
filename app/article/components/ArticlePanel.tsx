@@ -48,6 +48,24 @@ export function ArticlePanel({
   replyingCommentId,
 }: ArticlePanelProps) {
   const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
+  const visibleCommentThreads = topLevelComments.flatMap((comment) => {
+    const visibleReplies = (repliesByParentId.get(comment.id) ?? []).filter(
+      (reply) => reply.deletedAt === null,
+    );
+
+    if (comment.deletedAt !== null && visibleReplies.length === 0) {
+      return [];
+    }
+
+    return [{ comment, visibleReplies }];
+  });
+  const visibleCommentIds = visibleCommentThreads.flatMap(({ comment, visibleReplies }) => [
+    comment.id,
+    ...visibleReplies.map((reply) => reply.id),
+  ]);
+  const lastVisibleCommentId = visibleCommentIds.at(-1) ?? null;
+  const getCommentMenuPosition = (commentId: CommentId) =>
+    commentId === lastVisibleCommentId ? 'top left' : 'bottom left';
 
   return (
     <article
@@ -93,23 +111,19 @@ export function ArticlePanel({
           onSubmit={(body) => onCreateComment(article.id, body, null)}
           prompt="comment.new>"
         />
-        {topLevelComments.map((comment, commentIndex) => (
+        {visibleCommentThreads.map(({ comment, visibleReplies }) => (
           <div className="grid min-w-0 gap-2" key={comment.id}>
             <CommentLine
               canEdit={comment.authorUserId === currentUserId}
               comment={comment}
               editingCommentId={editingCommentId}
-              menuPosition={
-                commentIndex === topLevelComments.length - 1 ? 'top left' : 'bottom left'
-              }
+              menuPosition={getCommentMenuPosition(comment.id)}
               onDelete={onDeleteComment}
               onEdit={onEditComment}
               onReply={onReplyComment}
               onSubmitEdit={onSubmitCommentEdit}
               prompt="comment>"
-              replies={(repliesByParentId.get(comment.id) ?? []).filter(
-                (reply) => reply.deletedAt === null,
-              )}
+              replies={visibleReplies}
             />
             {replyingCommentId === comment.id ? (
               <div className="ml-4">
@@ -121,24 +135,22 @@ export function ArticlePanel({
                 />
               </div>
             ) : null}
-            {(repliesByParentId.get(comment.id) ?? [])
-              .filter((reply) => reply.deletedAt === null)
-              .map((reply) => (
-                <CommentLine
-                  canEdit={reply.authorUserId === currentUserId}
-                  comment={reply}
-                  editingCommentId={editingCommentId}
-                  key={reply.id}
-                  menuPosition="top left"
-                  onDelete={onDeleteComment}
-                  onEdit={onEditComment}
-                  onReply={onReplyComment}
-                  onSubmitEdit={onSubmitCommentEdit}
-                  prompt="reply>"
-                  replies={[]}
-                  reply
-                />
-              ))}
+            {visibleReplies.map((reply) => (
+              <CommentLine
+                canEdit={reply.authorUserId === currentUserId}
+                comment={reply}
+                editingCommentId={editingCommentId}
+                key={reply.id}
+                menuPosition={getCommentMenuPosition(reply.id)}
+                onDelete={onDeleteComment}
+                onEdit={onEditComment}
+                onReply={onReplyComment}
+                onSubmitEdit={onSubmitCommentEdit}
+                prompt="reply>"
+                replies={[]}
+                reply
+              />
+            ))}
           </div>
         ))}
       </section>
