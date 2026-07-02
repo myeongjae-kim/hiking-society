@@ -9,6 +9,7 @@ type CommentLineProps = {
   canEdit: boolean;
   comment: Comment;
   editingCommentId: CommentId | null;
+  menuPosition?: 'bottom left' | 'top left';
   onDelete: (comment: Comment) => void;
   onEdit: (commentId: CommentId | null) => void;
   onReply: (commentId: CommentId | null) => void;
@@ -22,6 +23,7 @@ export function CommentLine({
   canEdit,
   comment,
   editingCommentId,
+  menuPosition = 'bottom left',
   onDelete,
   onEdit,
   onReply,
@@ -74,7 +76,7 @@ export function CommentLine({
                   <ActionButton onClick={() => onReply(comment.id)}>답글</ActionButton>
                 ) : null}
                 {canEdit ? (
-                  <details className="relative" is-="popover" position-="bottom left">
+                  <details className="relative" is-="popover" position-={menuPosition}>
                     <summary
                       aria-label="댓글 관리 메뉴"
                       className="inline-flex !h-auto !min-h-[1.75rem] min-w-[2.25rem] cursor-pointer list-none items-center justify-center !border !border-[var(--overlay0)] !bg-[var(--surface0)] !bg-none px-2 py-1 font-mono !text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] [&::-webkit-details-marker]:hidden"

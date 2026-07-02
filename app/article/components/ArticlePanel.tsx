@@ -116,12 +116,15 @@ export function ArticlePanel({
           onSubmit={(body) => onCreateComment(article.id, body, null)}
           prompt="comment.new>"
         />
-        {topLevelComments.map((comment) => (
+        {topLevelComments.map((comment, commentIndex) => (
           <div className="grid min-w-0 gap-2" key={comment.id}>
             <CommentLine
               canEdit={comment.authorUserId === currentUserId}
               comment={comment}
               editingCommentId={editingCommentId}
+              menuPosition={
+                commentIndex === topLevelComments.length - 1 ? 'top left' : 'bottom left'
+              }
               onDelete={onDeleteComment}
               onEdit={onEditComment}
               onReply={onReplyComment}
@@ -149,6 +152,7 @@ export function ArticlePanel({
                   comment={reply}
                   editingCommentId={editingCommentId}
                   key={reply.id}
+                  menuPosition="top left"
                   onDelete={onDeleteComment}
                   onEdit={onEditComment}
                   onReply={onReplyComment}

@@ -29,13 +29,15 @@ export function HikingHeader({
     <>
       <header className="sticky top-2 z-20 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-4 py-3 shadow-[0_0.35rem_0_var(--background0)]">
         <h2
-          className="m-0 text-[1.75rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)]"
+          className="m-0 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]"
           id={`hiking-${hiking.id}`}
         >
           {hiking.mountainName}
         </h2>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="text-[var(--yellow)]">{formatDateLabel(hiking.hikingDate)}</span>
+          <span className="text-sm text-[var(--yellow)] sm:text-base">
+            {formatDateLabel(hiking.hikingDate)}
+          </span>
           <ActionButton onClick={onAddArticle}>글 작성</ActionButton>
           {canManageHiking ? (
             <details className="relative" is-="popover" position-="bottom left">
