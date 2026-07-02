@@ -1,10 +1,10 @@
 'use server';
 
-import { canChangeRole, mutableRoles } from '@/core/auth/roles';
-import { requireRole } from '@/core/auth/session';
+import { requireRole } from '@/app/auth/actions/session';
+import { canChangeRole, mutableRoles } from '@/core/auth/model/roles';
 import { db } from '@/lib/db/drizzle';
 import { userTable, type UserRole } from '@/lib/db/schema';
-import { eq, isNull, and } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 function parseRole(value: FormDataEntryValue | null): UserRole {

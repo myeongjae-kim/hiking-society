@@ -1,5 +1,6 @@
-import { canChangeRole, roleLabels } from '@/core/auth/roles';
-import { requireRole } from '@/core/auth/session';
+import { requireRole } from '@/app/auth/actions/session';
+import { roleLabels } from '@/core/auth/model/roleLabels';
+import { canChangeRole } from '@/core/auth/model/roles';
 import { db } from '@/lib/db/drizzle';
 import { socialAccountTable, userTable, type UserRole } from '@/lib/db/schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';

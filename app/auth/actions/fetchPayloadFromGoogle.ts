@@ -1,7 +1,7 @@
 'use server';
 
+import { setSessionCookies } from '@/app/auth/actions/session';
 import { env } from '@/core/config/env';
-import { setSessionCookies } from '@/core/auth/session';
 import { db } from '@/lib/db/drizzle';
 import { socialAccountTable, userTable, type User } from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';

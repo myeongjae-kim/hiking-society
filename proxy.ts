@@ -2,15 +2,10 @@ import { db } from '@/lib/db/drizzle';
 import { socialAccountTable, userTable } from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  accessTokenCookieName,
-  accessTokenMaxAgeSeconds,
-  createSessionTokens,
-  getCookieOptions,
-  refreshTokenCookieName,
-  verifyAccessToken,
-  verifyRefreshToken,
-} from './core/auth/jwt';
+import { applicationContext } from './core/config/applicationContext';
+
+const { accessTokenCookieName, accessTokenMaxAgeSeconds, refreshTokenCookieName } =
+  applicationContext().get('CookieConfig');
 
 async function getSessionSnapshot(userId: number) {
   const [row] = await db
@@ -39,11 +34,16 @@ export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get(accessTokenCookieName)?.value;
   const refreshToken = request.cookies.get(refreshTokenCookieName)?.value;
 
-  if (accessToken && (await verifyAccessToken(accessToken))) {
+  if (
+    accessToken &&
+    (await applicationContext().get('VerifyAccessTokenUseCase').verifyAccessToken(accessToken))
+  ) {
     return NextResponse.next();
   }
 
-  const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
+  const refreshPayload = refreshToken
+    ? await applicationContext().get('VerifyRefreshTokenUseCase').verifyRefreshToken(refreshToken)
+    : null;
 
   if (!refreshPayload) {
     return NextResponse.redirect(new URL('/', request.url));
@@ -63,17 +63,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const { accessToken: nextAccessToken } = await createSessionTokens({
-    email,
-    provider,
-    role: session.role,
-    userId: session.userId,
-  });
+  const { accessToken: nextAccessToken } = await applicationContext()
+    .get('CreateSessionTokenUseCase')
+    .create({
+      email,
+      provider,
+      role: session.role,
+      userId: session.userId,
+    });
+
+  const getCookieOptionsUseCase = applicationContext().get('GetCookieOptionsUseCase');
 
   response.cookies.set(
     accessTokenCookieName,
     nextAccessToken,
-    getCookieOptions(accessTokenMaxAgeSeconds),
+    getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
   );
 
   return response;

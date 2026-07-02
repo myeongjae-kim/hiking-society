@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
+import { requireCurrentUser } from '@/app/auth/actions/session';
 import type { Article, ArticleId } from '@/core/article/domain';
-import { roleLabels } from '@/core/auth/roles';
-import { requireCurrentUser, type AuthenticatedUser } from '@/core/auth/session';
+import { type AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
+import { roleLabels } from '@/core/auth/model/roleLabels';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import { mockArticles, mockComments, mockHikings } from '@/core/mock';

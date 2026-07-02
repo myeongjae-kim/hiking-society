@@ -1,6 +1,6 @@
 'use server';
 
-import { clearSessionCookies } from '@/core/auth/session';
+import { clearSessionCookies } from '@/app/auth/actions/session';
 import { redirect } from 'next/navigation';
 
 export async function logout() {

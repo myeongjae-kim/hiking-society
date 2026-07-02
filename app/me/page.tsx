@@ -1,7 +1,8 @@
-import { canManageMembers, roleLabels } from '@/core/auth/roles';
-import { requireCurrentUser } from '@/core/auth/session';
-import { logout } from '../auth/actions/logout';
+import { requireCurrentUser } from '@/app/auth/actions/session';
+import { roleLabels } from '@/core/auth/model/roleLabels';
+import { canManageMembers } from '@/core/auth/model/roles';
 import Link from 'next/link';
+import { logout } from '../auth/actions/logout';
 
 function formatDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 19).replace('T', ' ') : 'null';
