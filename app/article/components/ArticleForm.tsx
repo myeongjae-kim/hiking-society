@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
@@ -40,6 +40,36 @@ function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
 export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormProps) {
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
   const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
+  const dragPreviewRef = useRef<HTMLElement | null>(null);
+
+  const removePhotoDragPreview = () => {
+    dragPreviewRef.current?.remove();
+    dragPreviewRef.current = null;
+  };
+
+  const setPhotoDragPreview = (event: DragEvent<HTMLLIElement>) => {
+    removePhotoDragPreview();
+
+    const sourceCard = event.currentTarget;
+    const sourceRect = sourceCard.getBoundingClientRect();
+    const previewCard = sourceCard.cloneNode(true) as HTMLElement;
+    const offsetX = event.clientX - sourceRect.left;
+    const offsetY = event.clientY - sourceRect.top;
+
+    previewCard.setAttribute('aria-hidden', 'true');
+    previewCard.style.width = `${sourceRect.width}px`;
+    previewCard.style.position = 'fixed';
+    previewCard.style.top = '-10000px';
+    previewCard.style.left = '-10000px';
+    previewCard.style.pointerEvents = 'none';
+    previewCard.style.opacity = '0.94';
+    previewCard.style.boxShadow = '0 18px 48px color-mix(in_srgb, var(--background0) 72%, black)';
+    previewCard.style.zIndex = '9999';
+
+    document.body.append(previewCard);
+    dragPreviewRef.current = previewCard;
+    event.dataTransfer.setDragImage(previewCard, offsetX, offsetY);
+  };
 
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
@@ -97,6 +127,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
   const handlePhotoDragStart = (event: DragEvent<HTMLLIElement>, order: number) => {
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(order));
+    setPhotoDragPreview(event);
     setDraggedPhotoOrder(order);
   };
 
@@ -120,6 +151,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
     }
 
     setDraggedPhotoOrder(null);
+    removePhotoDragPreview();
   };
 
   const removePhoto = (order: number) => {
@@ -194,7 +226,10 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
                 }`}
                 draggable
                 key={`${photo.fileName}-${photo.order}`}
-                onDragEnd={() => setDraggedPhotoOrder(null)}
+                onDragEnd={() => {
+                  setDraggedPhotoOrder(null);
+                  removePhotoDragPreview();
+                }}
                 onDragOver={(event) => handlePhotoDragOver(event, photo.order)}
                 onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
                 onDrop={(event) => handlePhotoDrop(event, photo.order)}
