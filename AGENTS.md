@@ -19,3 +19,11 @@ If WebTUI does not provide an appropriate component for the interaction, use Rad
 
 Use Tailwind CSS utilities as much as possible for application styling.
 <!-- END:ui-component-agent-rules -->
+
+<!-- BEGIN:db-schema-agent-rules -->
+# DB Schema
+
+Name database tables in the singular form.
+
+In `lib/db/schema.ts`, declare table variables using the `{name}Table` pattern, for example `userTable`.
+<!-- END:db-schema-agent-rules -->
