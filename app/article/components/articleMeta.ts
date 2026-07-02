@@ -1,6 +1,6 @@
 import { createElement, type ReactNode } from 'react';
 
-import { DateTimeLabel } from '@/app/feed/date-time-label';
+import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import type { Article } from '@/core/article/domain';
 
 export function getArticleMeta(article: Article, commentCount: number): ReactNode[] {

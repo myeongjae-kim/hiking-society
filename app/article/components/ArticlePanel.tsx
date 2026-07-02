@@ -1,11 +1,11 @@
+import { PhotoViewer } from '@/app/article/components/PhotoViewer';
+import { CommentForm } from '@/app/comment/components/CommentForm';
+import { CommentLine } from '@/app/comment/components/CommentLine';
+import { getThreadedComments, getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { InlineMeta } from '@/app/common/components/InlineMeta';
 import { boxBorderClassName } from '@/app/common/components/styles';
-import { CommentForm } from '@/app/comment/components/CommentForm';
-import { CommentLine } from '@/app/comment/components/CommentLine';
-import { getThreadedComments, getVisibleCommentCount } from '@/app/comment/components/commentUtils';
-import { PhotoViewer } from '@/app/feed/photo-viewer';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { AuthorName } from '@/core/common/domain';

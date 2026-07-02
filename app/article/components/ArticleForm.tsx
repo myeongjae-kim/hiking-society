@@ -15,7 +15,13 @@ import {
 import type { Article } from '@/core/article/domain';
 
 import type { ArticleFormValues, DraftPhoto } from './articleFormTypes';
-import { getArticleFormDefaults, revokeDraftPhotoUrl } from './articleFormUtils';
+import {
+  createDraftPhoto,
+  getArticleFormDefaults,
+  getDuplicatePhotoKeys,
+  getPhotoDuplicateKey,
+  revokeDraftPhotoUrl,
+} from './articleFormUtils';
 
 type ArticleFormProps = {
   article?: Article;
@@ -36,14 +42,18 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
     }
 
     setValues((currentValues) => {
-      currentValues.photos.forEach(revokeDraftPhotoUrl);
+      const appendedPhotos = [
+        ...currentValues.photos,
+        ...files.map((file, index) =>
+          createDraftPhoto(file, currentValues.photos.length + index + 1),
+        ),
+      ];
 
       return {
         ...currentValues,
-        photos: files.map((file, index) => ({
-          fileName: file.name,
+        photos: appendedPhotos.map((photo, index) => ({
+          ...photo,
           order: index + 1,
-          url: URL.createObjectURL(file),
         })),
       };
     });
@@ -80,6 +90,8 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
     onCancel();
   };
 
+  const duplicatePhotoKeys = getDuplicatePhotoKeys(values.photos);
+
   return (
     <form
       className={`grid gap-4 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
@@ -101,26 +113,38 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
       </FieldLabel>
       {values.photos.length > 0 ? (
         <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
-          {values.photos.map((photo: DraftPhoto) => (
-            <li
-              className="grid w-full min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--background0)] sm:w-[16rem]"
-              key={`${photo.fileName}-${photo.order}`}
-            >
-              <img
-                alt={`선택한 게시글 사진 ${photo.order}`}
-                className="aspect-4/3 w-full border-b border-[var(--overlay0)] object-cover"
-                src={photo.url}
-              />
-              <div className="grid gap-2 px-3 py-2">
-                <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
-                  order={photo.order} {photo.fileName}
-                </span>
-                <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
-                  제거
-                </ActionButton>
-              </div>
-            </li>
-          ))}
+          {values.photos.map((photo: DraftPhoto) => {
+            const duplicateKey = getPhotoDuplicateKey(photo);
+            const isDuplicate = duplicateKey !== null && duplicatePhotoKeys.has(duplicateKey);
+
+            return (
+              <li
+                className={`grid w-full min-w-0 overflow-hidden bg-[var(--background0)] sm:w-[16rem] ${
+                  isDuplicate ? 'border-2 border-[var(--peach)]' : 'border border-[var(--overlay0)]'
+                }`}
+                key={`${photo.fileName}-${photo.order}`}
+              >
+                <img
+                  alt={`선택한 게시글 사진 ${photo.order}`}
+                  className="aspect-4/3 w-full border-b border-[var(--overlay0)] object-cover"
+                  src={photo.url}
+                />
+                <div className="grid gap-2 px-3 py-2">
+                  <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
+                    order={photo.order} {photo.fileName}
+                  </span>
+                  {isDuplicate ? (
+                    <span className="text-sm leading-[1.35] text-[var(--peach)]">
+                      동일한 사진이 선택되었습니다.
+                    </span>
+                  ) : null}
+                  <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
+                    제거
+                  </ActionButton>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       ) : (
         <p className="m-0 text-sm text-[var(--subtext0)]">사진을 1개 이상 선택해야 합니다.</p>

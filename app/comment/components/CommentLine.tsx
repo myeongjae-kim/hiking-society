@@ -1,5 +1,5 @@
 import { ActionButton } from '@/app/common/components/ActionButton';
-import { DateTimeLabel } from '@/app/feed/date-time-label';
+import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import type { Comment, CommentId } from '@/core/comment/domain';
 
 import { CommentForm } from './CommentForm';

@@ -5,11 +5,11 @@ import { useMemo, useState } from 'react';
 import { ArticleForm } from '@/app/article/components/ArticleForm';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
 import { ArticlePanel } from '@/app/article/components/ArticlePanel';
+import { getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { boxBorderClassName, gridStackClassName } from '@/app/common/components/styles';
-import { getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { StatusPanel } from '@/app/feed/components/StatusPanel';
@@ -30,7 +30,7 @@ import {
   isOwn,
   makeDateTime,
   nowIso,
-} from './feedCrudUtils';
+} from '../utils/feed-crud-utils';
 
 type FeedCrudClientProps = {
   articles: readonly Article[];
