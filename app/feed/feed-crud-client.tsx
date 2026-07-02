@@ -518,7 +518,7 @@ function HikingForm({
             value={values.timezone}
           />
         </FieldLabel>
-        <FieldLabel label="참석자 CSV">
+        <FieldLabel label="참석자 (쉼표로 구분)">
           <input
             className={fieldClassName}
             onChange={(event) => updateValue('participantsCsv', event.currentTarget.value)}
@@ -619,22 +619,40 @@ function ArticleForm({
       return;
     }
 
-    setValues((currentValues) => ({
-      ...currentValues,
-      photos: files.map((file, index) => ({
-        fileName: file.name,
-        order: index + 1,
-        url: URL.createObjectURL(file),
-      })),
-    }));
+    setValues((currentValues) => {
+      currentValues.photos.forEach(revokeDraftPhotoUrl);
+
+      return {
+        ...currentValues,
+        photos: files.map((file, index) => ({
+          fileName: file.name,
+          order: index + 1,
+          url: URL.createObjectURL(file),
+        })),
+      };
+    });
     input.value = '';
+  };
+
+  const revokeDraftPhotoUrl = (photo: DraftPhoto) => {
+    if (photo.url.startsWith('blob:')) {
+      URL.revokeObjectURL(photo.url);
+    }
   };
 
   const removePhoto = (order: number) => {
     setValues((currentValues) => ({
       ...currentValues,
       photos: currentValues.photos
-        .filter((photo) => photo.order !== order)
+        .filter((photo) => {
+          const keepPhoto = photo.order !== order;
+
+          if (!keepPhoto) {
+            revokeDraftPhotoUrl(photo);
+          }
+
+          return keepPhoto;
+        })
         .map((photo, index) => ({
           ...photo,
           order: index + 1,
@@ -645,6 +663,11 @@ function ArticleForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSubmit(values);
+  };
+
+  const handleCancel = () => {
+    values.photos.forEach(revokeDraftPhotoUrl);
+    onCancel();
   };
 
   return (
@@ -667,18 +690,25 @@ function ArticleForm({
         </label>
       </FieldLabel>
       {values.photos.length > 0 ? (
-        <ol className="m-0 grid list-none gap-2 p-0">
+        <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
           {values.photos.map((photo) => (
             <li
-              className="flex min-w-0 flex-wrap items-center justify-between gap-2 border border-[var(--overlay0)] bg-[var(--background0)] px-3 py-2"
+              className="grid w-full min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--background0)] sm:w-[16rem]"
               key={`${photo.fileName}-${photo.order}`}
             >
-              <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
-                order={photo.order} {photo.fileName}
-              </span>
-              <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
-                제거
-              </ActionButton>
+              <img
+                alt={`선택한 게시글 사진 ${photo.order}`}
+                className="aspect-4/3 w-full border-b border-[var(--overlay0)] object-cover"
+                src={photo.url}
+              />
+              <div className="grid gap-2 px-3 py-2">
+                <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
+                  order={photo.order} {photo.fileName}
+                </span>
+                <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
+                  제거
+                </ActionButton>
+              </div>
             </li>
           ))}
         </ol>
@@ -702,7 +732,7 @@ function ArticleForm({
       </FieldLabel>
       {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-2">
-        <ActionButton onClick={onCancel}>취소</ActionButton>
+        <ActionButton onClick={handleCancel}>취소</ActionButton>
         <ActionButton type="submit">저장</ActionButton>
       </div>
     </form>
