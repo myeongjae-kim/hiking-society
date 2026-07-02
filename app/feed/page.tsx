@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { canManageMembers, roleLabels } from '@/core/auth/roles';
+import { requireCurrentUser, type AuthenticatedUser } from '@/core/auth/session';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
@@ -256,16 +258,26 @@ function StatusPanel({ groupCount }: { groupCount: number }) {
   );
 }
 
-function FeedTopbar() {
+function FeedTopbar({ user }: { user: AuthenticatedUser }) {
   return (
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <Command>
           <Link href="/">Hiking Society</Link> /feed
         </Command>
-        <p className="m-0 font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
-          theme: catppuccin-mocha / webtui
-        </p>
+        <nav className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
+            {user.displayName ?? user.name ?? user.email} · {roleLabels[user.role]}
+          </span>
+          <Link is-="button" size-="small" variant-="foreground1" href="/me">
+            마이페이지
+          </Link>
+          {canManageMembers(user.role) ? (
+            <Link is-="button" size-="small" variant-="foreground1" href="/members">
+              회원 관리
+            </Link>
+          ) : null}
+        </nav>
       </div>
     </header>
   );
@@ -284,13 +296,14 @@ function FeedFooter() {
   );
 }
 
-export default function FeedPage() {
+export default async function FeedPage() {
+  const user = await requireCurrentUser();
   const groups = getFeedGroups();
   const commentsByArticleId = getCommentsByArticleId();
 
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
-      <FeedTopbar />
+      <FeedTopbar user={user} />
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
         <section className={gridStackClassName} aria-label="산행 게시글 피드">

@@ -1,0 +1,61 @@
+import { canManageMembers, roleLabels } from '@/core/auth/roles';
+import { requireCurrentUser } from '@/core/auth/session';
+import { logout } from '../auth/actions/logout';
+import Link from 'next/link';
+
+function formatDate(value: Date | null) {
+  return value ? value.toISOString().slice(0, 19).replace('T', ' ') : 'null';
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-4 border-b border-dotted border-[var(--overlay0)] pb-2">
+      <dt className="text-[var(--subtext0)]">{label}</dt>
+      <dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground0)]">{value}</dd>
+    </div>
+  );
+}
+
+export default async function MyPage() {
+  const user = await requireCurrentUser();
+
+  return (
+    <main className="min-h-svh bg-[var(--background0)] p-4 text-[var(--foreground0)] lg:p-8">
+      <section
+        className="mx-auto grid w-[min(100%,48rem)] gap-5 bg-[var(--surface0)] !p-5 [--box-border-color:var(--overlay0)] [--box-border-width:1px]"
+        box-="round"
+      >
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="m-0 font-mono text-sm text-[var(--mauve)]">$ profile.show</p>
+            <h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">마이페이지</h1>
+          </div>
+          <nav className="flex flex-wrap gap-2">
+            <Link is-="button" size-="small" variant-="foreground1" href="/feed">
+              피드
+            </Link>
+            {canManageMembers(user.role) ? (
+              <Link is-="button" size-="small" variant-="foreground1" href="/members">
+                회원 관리
+              </Link>
+            ) : null}
+          </nav>
+        </header>
+
+        <dl className="m-0 grid gap-3">
+          <Row label="이름" value={user.displayName ?? user.name ?? 'null'} />
+          <Row label="이메일" value={user.email ?? 'null'} />
+          <Row label="권한" value={roleLabels[user.role]} />
+          <Row label="로그인 제공자" value={user.provider ?? 'null'} />
+          <Row label="최근 로그인" value={formatDate(user.lastLoginAt)} />
+        </dl>
+
+        <form action={logout}>
+          <button size-="small" variant-="foreground2" type="submit">
+            로그아웃
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
