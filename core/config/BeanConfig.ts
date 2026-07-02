@@ -9,6 +9,7 @@ import { VerifyRefreshTokenUseCase } from '../auth/application/port/in/VerifyRef
 import { AuthQueryPort } from '../auth/application/port/out/AuthQueryPort';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';
 import { CookieConfig } from '../auth/config/CookieConfig';
+import { env } from './env';
 
 export type Beans = {
   AuthQueryPort: AuthQueryPort;
@@ -18,6 +19,8 @@ export type Beans = {
   CookieConfig: CookieConfig;
   GetCookieOptionsUseCase: GetCookieOptionsUseCase;
   TextEncoder: TextEncoder;
+  JWT_SECRET: string;
+  NODE_ENV: typeof process.env.NODE_ENV;
 };
 
 export const beanConfig: BeanConfig<Beans> = {
@@ -28,4 +31,6 @@ export const beanConfig: BeanConfig<Beans> = {
   CookieConfig: (bind) => bind().to(CookieConfig),
   GetCookieOptionsUseCase: (bind) => bind().to(GetCookieOptionsService),
   TextEncoder: (bind) => bind().to(TextEncoder),
+  JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
+  NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),
 };

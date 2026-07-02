@@ -8,6 +8,8 @@ export class VerifyTokenService implements VerifyAccessTokenUseCase, VerifyRefre
   constructor(
     @Autowired('TextEncoder')
     private encoder: TextEncoder,
+    @Autowired('JWT_SECRET')
+    private JWT_SECRET: string,
   ) {}
 
   verifyAccessToken(token: string): Promise<AccessTokenPayload | null> {
@@ -40,7 +42,7 @@ export class VerifyTokenService implements VerifyAccessTokenUseCase, VerifyRefre
   }
 
   private getSigningKey() {
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = this.JWT_SECRET;
 
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is required.');

@@ -11,6 +11,8 @@ export class CreateSessionTokenService implements CreateSessionTokenUseCase {
     private encoder: TextEncoder,
     @Autowired('CookieConfig')
     private cookieConfig: CookieConfig,
+    @Autowired('JWT_SECRET')
+    private JWT_SECRET: string,
   ) {}
 
   async create(input: SessionTokensInput): Promise<{ accessToken: string; refreshToken: string }> {
@@ -38,7 +40,7 @@ export class CreateSessionTokenService implements CreateSessionTokenUseCase {
   }
 
   private getSigningKey() {
-    const jwtSecret = process.env.JWT_SECRET;
+    const jwtSecret = this.JWT_SECRET;
 
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is required.');
