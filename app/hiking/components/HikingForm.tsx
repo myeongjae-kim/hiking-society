@@ -14,7 +14,7 @@ import {
 } from '@/app/common/components/styles';
 import type { Hiking } from '@/core/hiking/domain';
 
-import { readGpsFromFile } from './exifGps';
+import { readPhotoMetadataFromFile } from './exifGps';
 import type { HikingFormValues } from './hikingFormTypes';
 import { getHikingFormDefaults } from './hikingFormUtils';
 
@@ -25,9 +25,21 @@ type HikingFormProps = {
   onSubmit: (values: HikingFormValues) => void;
 };
 
+function shiftTimeValue(time: string, offsetMinutes: number) {
+  const [hour = 0, minute = 0] = time.split(':').map(Number);
+  const minutesInDay = 24 * 60;
+  const shiftedMinutes = (hour * 60 + minute + offsetMinutes + minutesInDay) % minutesInDay;
+  const shiftedHour = Math.floor(shiftedMinutes / 60);
+  const shiftedMinute = shiftedMinutes % 60;
+
+  return `${String(shiftedHour).padStart(2, '0')}:${String(shiftedMinute).padStart(2, '0')}`;
+}
+
 export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProps) {
   const [values, setValues] = useState(() => getHikingFormDefaults(hiking));
-  const [gpsStatus, setGpsStatus] = useState('EXIF 좌표를 읽을 사진을 선택하세요.');
+  const [metadataStatus, setMetadataStatus] = useState(
+    '사진을 선택하면 EXIF 좌표와 촬영시각을 채웁니다.',
+  );
 
   const updateValue = (key: keyof HikingFormValues, value: string) => {
     setValues((currentValues) => ({
@@ -36,7 +48,7 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
     }));
   };
 
-  const handleGpsFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleMetadataFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
 
@@ -44,24 +56,56 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
       return;
     }
 
-    setGpsStatus('EXIF 좌표를 읽는 중...');
+    setMetadataStatus('EXIF 메타정보를 읽는 중...');
 
     try {
-      const gps = await readGpsFromFile(file);
+      const metadata = await readPhotoMetadataFromFile(file);
+      const hasGps =
+        typeof metadata.latitude === 'number' && typeof metadata.longitude === 'number';
+      const appliedLabels: string[] = [];
+      const missingLabels: string[] = [];
 
-      if (!gps) {
-        setGpsStatus('이 사진에서 EXIF 위경도를 찾지 못했습니다.');
+      if (!hasGps && !metadata.takenAt) {
+        setMetadataStatus('이 사진에서 EXIF 좌표와 촬영시각을 찾지 못했습니다.');
         return;
       }
 
       setValues((currentValues) => ({
         ...currentValues,
-        latitude: gps.latitude.toFixed(6),
-        longitude: gps.longitude.toFixed(6),
+        ...(hasGps
+          ? {
+              latitude: metadata.latitude?.toFixed(6) ?? currentValues.latitude,
+              longitude: metadata.longitude?.toFixed(6) ?? currentValues.longitude,
+            }
+          : {}),
+        ...(metadata.takenAt
+          ? {
+              completedTime: shiftTimeValue(metadata.takenAt.time, 60),
+              hikingDate: metadata.takenAt.date,
+              startedTime: shiftTimeValue(metadata.takenAt.time, -90),
+            }
+          : {}),
       }));
-      setGpsStatus(`${file.name}에서 좌표를 반영했습니다.`);
+
+      if (hasGps) {
+        appliedLabels.push('좌표');
+      } else {
+        missingLabels.push('좌표');
+      }
+
+      if (metadata.takenAt) {
+        appliedLabels.push(`촬영시각 ${metadata.takenAt.date} ${metadata.takenAt.time}`);
+      } else {
+        missingLabels.push('촬영시각');
+      }
+
+      setMetadataStatus(
+        `${file.name}: ${appliedLabels.join(', ')} 반영${
+          missingLabels.length > 0 ? ` (${missingLabels.join(', ')} 없음)` : ''
+        }.`,
+      );
     } catch {
-      setGpsStatus('EXIF 좌표를 읽지 못했습니다.');
+      setMetadataStatus('EXIF 메타정보를 읽지 못했습니다.');
     } finally {
       input.value = '';
     }
@@ -79,6 +123,18 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
       onSubmit={handleSubmit}
     >
       <Command>{hiking ? `산행 수정: ${hiking.id}` : '산행 등록'}</Command>
+      <div className="grid gap-1.5">
+        <label className={inlineButtonClassName}>
+          사진에서 메타정보 채우기
+          <input
+            accept="image/jpeg,image/tiff"
+            className={hiddenFileInputClassName}
+            onChange={handleMetadataFileChange}
+            type="file"
+          />
+        </label>
+        <p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">{metadataStatus}</p>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <FieldLabel label="산 이름">
           <input
@@ -149,25 +205,13 @@ export function HikingForm({ error, hiking, onCancel, onSubmit }: HikingFormProp
             value={values.longitude}
           />
         </FieldLabel>
-        <FieldLabel label="식당 주소">
+        <FieldLabel label="식당 주소 (생략 가능)">
           <input
             className={fieldClassName}
             onChange={(event) => updateValue('restaurantAddress', event.currentTarget.value)}
             value={values.restaurantAddress}
           />
         </FieldLabel>
-        <div className="grid content-end gap-1.5">
-          <label className={inlineButtonClassName}>
-            사진에서 좌표 읽기
-            <input
-              accept="image/jpeg,image/tiff"
-              className={hiddenFileInputClassName}
-              onChange={handleGpsFileChange}
-              type="file"
-            />
-          </label>
-          <p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">{gpsStatus}</p>
-        </div>
       </div>
       {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-2">

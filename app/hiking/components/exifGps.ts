@@ -1,3 +1,12 @@
+type PhotoMetadata = {
+  latitude?: number;
+  longitude?: number;
+  takenAt?: {
+    date: string;
+    time: string;
+  };
+};
+
 function parseExifGpsCoordinate(values: number[], reference: string) {
   const [degrees = 0, minutes = 0, seconds = 0] = values;
   const sign = reference === 'S' || reference === 'W' ? -1 : 1;
@@ -59,42 +68,35 @@ function findExifSegment(view: DataView) {
   return null;
 }
 
-function parseExifGps(arrayBuffer: ArrayBuffer) {
-  const view = new DataView(arrayBuffer);
-
-  if (view.byteLength < 4 || view.getUint16(0, false) !== 0xffd8) {
-    return null;
-  }
-
-  const tiffStart = findExifSegment(view);
-
-  if (tiffStart === null) {
-    return null;
-  }
-
-  const byteOrder = readAscii(view, tiffStart, 2);
-  const littleEndian = byteOrder === 'II';
-
-  if (!littleEndian && byteOrder !== 'MM') {
-    return null;
-  }
-
-  const firstIfdOffset = tiffStart + view.getUint32(tiffStart + 4, littleEndian);
-  const entryCount = view.getUint16(firstIfdOffset, littleEndian);
-  let gpsIfdOffset: number | null = null;
+function findIfdPointer(
+  view: DataView,
+  tiffStart: number,
+  ifdOffset: number,
+  tagToFind: number,
+  littleEndian: boolean,
+) {
+  const entryCount = view.getUint16(ifdOffset, littleEndian);
 
   for (let index = 0; index < entryCount; index += 1) {
-    const entryOffset = firstIfdOffset + 2 + index * 12;
+    const entryOffset = ifdOffset + 2 + index * 12;
     const tag = view.getUint16(entryOffset, littleEndian);
 
-    if (tag === 0x8825) {
-      gpsIfdOffset = tiffStart + view.getUint32(entryOffset + 8, littleEndian);
-      break;
+    if (tag === tagToFind) {
+      return tiffStart + view.getUint32(entryOffset + 8, littleEndian);
     }
   }
 
+  return null;
+}
+
+function parseExifGps(
+  view: DataView,
+  tiffStart: number,
+  gpsIfdOffset: number | null,
+  littleEndian: boolean,
+) {
   if (gpsIfdOffset === null) {
-    return null;
+    return {};
   }
 
   const gpsEntryCount = view.getUint16(gpsIfdOffset, littleEndian);
@@ -147,7 +149,7 @@ function parseExifGps(arrayBuffer: ArrayBuffer) {
   }
 
   if (!latitudeRef || !longitudeRef || !latitudeValues || !longitudeValues) {
-    return null;
+    return {};
   }
 
   return {
@@ -156,7 +158,98 @@ function parseExifGps(arrayBuffer: ArrayBuffer) {
   };
 }
 
-export async function readGpsFromFile(file: File) {
+function readAsciiEntry(
+  view: DataView,
+  tiffStart: number,
+  ifdOffset: number | null,
+  tagsToFind: readonly number[],
+  littleEndian: boolean,
+) {
+  if (ifdOffset === null) {
+    return null;
+  }
+
+  const entryCount = view.getUint16(ifdOffset, littleEndian);
+  const tagValues = new Map<number, string>();
+
+  for (let index = 0; index < entryCount; index += 1) {
+    const entryOffset = ifdOffset + 2 + index * 12;
+    const tag = view.getUint16(entryOffset, littleEndian);
+    const type = view.getUint16(entryOffset + 2, littleEndian);
+    const count = view.getUint32(entryOffset + 4, littleEndian);
+
+    if (!tagsToFind.includes(tag) || type !== 2) {
+      continue;
+    }
+
+    const valueOffset = getExifEntryValueOffset(view, tiffStart, entryOffset, count, littleEndian);
+    tagValues.set(tag, readAscii(view, valueOffset, count));
+  }
+
+  for (const tag of tagsToFind) {
+    const value = tagValues.get(tag);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function parseExifDateTime(value: string | null) {
+  if (value === null) {
+    return undefined;
+  }
+
+  const match = value.match(/^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const [, year, month, day, hour, minute] = match;
+
+  return {
+    date: `${year}-${month}-${day}`,
+    time: `${hour}:${minute}`,
+  };
+}
+
+function parseExifMetadata(arrayBuffer: ArrayBuffer): PhotoMetadata {
+  const view = new DataView(arrayBuffer);
+
+  if (view.byteLength < 4 || view.getUint16(0, false) !== 0xffd8) {
+    return {};
+  }
+
+  const tiffStart = findExifSegment(view);
+
+  if (tiffStart === null) {
+    return {};
+  }
+
+  const byteOrder = readAscii(view, tiffStart, 2);
+  const littleEndian = byteOrder === 'II';
+
+  if (!littleEndian && byteOrder !== 'MM') {
+    return {};
+  }
+
+  const firstIfdOffset = tiffStart + view.getUint32(tiffStart + 4, littleEndian);
+  const gpsIfdOffset = findIfdPointer(view, tiffStart, firstIfdOffset, 0x8825, littleEndian);
+  const exifIfdOffset = findIfdPointer(view, tiffStart, firstIfdOffset, 0x8769, littleEndian);
+  const dateTime =
+    readAsciiEntry(view, tiffStart, exifIfdOffset, [0x9003, 0x9004], littleEndian) ??
+    readAsciiEntry(view, tiffStart, firstIfdOffset, [0x0132], littleEndian);
+
+  return {
+    ...parseExifGps(view, tiffStart, gpsIfdOffset, littleEndian),
+    takenAt: parseExifDateTime(dateTime),
+  };
+}
+
+export async function readPhotoMetadataFromFile(file: File) {
   const arrayBuffer = await file.arrayBuffer();
-  return parseExifGps(arrayBuffer);
+  return parseExifMetadata(arrayBuffer);
 }
