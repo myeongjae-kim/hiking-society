@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 
-import { ArticleForm } from '@/app/article/components/ArticleForm';
+import { ArticleFormDialog } from '@/app/article/components/ArticleFormDialog';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
 import { ArticlePanel } from '@/app/article/components/ArticlePanel';
 import { getVisibleCommentCount } from '@/app/comment/components/commentUtils';
@@ -48,6 +48,9 @@ type FeedCrudClientProps = {
   hikings: readonly Hiking[];
 };
 
+type ActiveArticleForm =
+  { hikingId: HikingId; type: 'create' } | { articleId: ArticleId; type: 'edit' } | null;
+
 export function FeedCrudClient({
   articles: initialArticles,
   comments: initialComments,
@@ -59,8 +62,7 @@ export function FeedCrudClient({
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
   const [newHikingOpen, setNewHikingOpen] = useState(false);
   const [editingHikingId, setEditingHikingId] = useState<HikingId | null>(null);
-  const [articleFormHikingId, setArticleFormHikingId] = useState<HikingId | null>(null);
-  const [editingArticleId, setEditingArticleId] = useState<ArticleId | null>(null);
+  const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
   const [commentFormResetKeyByArticleId, setCommentFormResetKeyByArticleId] = useState<
@@ -82,6 +84,20 @@ export function FeedCrudClient({
     (article) => article.deletedAt === null,
   ).length;
   const visibleCommentCount = getVisibleCommentCount(initialComments);
+  const activeArticle =
+    activeArticleForm?.type === 'edit'
+      ? initialArticles.find((article) => article.id === activeArticleForm.articleId)
+      : undefined;
+  const activeArticleFormKey =
+    activeArticleForm?.type === 'create'
+      ? `article-new-${activeArticleForm.hikingId}`
+      : activeArticleForm?.type === 'edit'
+        ? `article-edit-${activeArticleForm.articleId}`
+        : null;
+  const activeArticleFormTitle = activeArticleForm?.type === 'edit' ? '게시글 수정' : '게시글 작성';
+  const articleFormDialogOpen =
+    activeArticleForm?.type === 'create' ||
+    (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
 
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
@@ -119,6 +135,18 @@ export function FeedCrudClient({
       setError(options.errorKey, null);
       router.refresh();
     });
+  };
+
+  const closeActiveArticleForm = () => {
+    if (activeArticleForm?.type === 'create') {
+      setError(`article-new-${activeArticleForm.hikingId}`, null);
+    }
+
+    if (activeArticleForm?.type === 'edit') {
+      setError(`article-edit-${activeArticleForm.articleId}`, null);
+    }
+
+    setActiveArticleForm(null);
   };
 
   const createHikingFormData = (values: HikingFormValues) => {
@@ -220,7 +248,7 @@ export function FeedCrudClient({
     runAction(() => createArticleAction(createArticleFormData(values, { hikingId })), {
       errorKey: `article-new-${hikingId}`,
       loadingLabel: '게시글 저장 중',
-      onSuccess: () => setArticleFormHikingId(null),
+      onSuccess: () => setActiveArticleForm(null),
     });
   };
 
@@ -233,7 +261,7 @@ export function FeedCrudClient({
     runAction(() => updateArticleAction(createArticleFormData(values, { articleId })), {
       errorKey: `article-edit-${articleId}`,
       loadingLabel: '게시글 저장 중',
-      onSuccess: () => setEditingArticleId(null),
+      onSuccess: () => setActiveArticleForm(null),
     });
   };
 
@@ -342,7 +370,9 @@ export function FeedCrudClient({
                 canManageHiking={group.hiking.authorUserId === currentUser.id}
                 error={errorByKey[`hiking-${group.hiking.id}`]}
                 hiking={group.hiking}
-                onAddArticle={() => setArticleFormHikingId(group.hiking.id)}
+                onAddArticle={() =>
+                  setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
+                }
                 onDelete={() => requestDeleteHiking(group.hiking)}
                 onEdit={() => setEditingHikingId(group.hiking.id)}
               />
@@ -357,17 +387,6 @@ export function FeedCrudClient({
                   onSubmit={(values) => updateHiking(group.hiking.id, values)}
                 />
               ) : null}
-              {articleFormHikingId === group.hiking.id ? (
-                <ArticleForm
-                  error={errorByKey[`article-new-${group.hiking.id}`]}
-                  onCancel={() => {
-                    setArticleFormHikingId(null);
-                    setError(`article-new-${group.hiking.id}`, null);
-                  }}
-                  onSubmit={(values) => createArticle(group.hiking.id, values)}
-                  submitting={isPending && articleLoadingLabel !== null}
-                />
-              ) : null}
               <div className={gridStackClassName}>
                 {group.articles.length > 0 ? (
                   group.articles.map((article) => (
@@ -377,21 +396,19 @@ export function FeedCrudClient({
                       comments={getArticleComments(commentsByArticleId, article.id)}
                       commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
                       currentUserId={currentUser.id}
-                      editingArticleId={editingArticleId}
                       editingCommentId={editingCommentId}
                       errorByKey={errorByKey}
                       key={article.id}
-                      onCancelArticleEdit={() => setEditingArticleId(null)}
                       onCreateComment={createComment}
                       onDeleteArticle={() => requestDeleteArticle(article)}
                       onDeleteComment={requestDeleteComment}
-                      onEditArticle={() => setEditingArticleId(article.id)}
+                      onEditArticle={() =>
+                        setActiveArticleForm({ articleId: article.id, type: 'edit' })
+                      }
                       onEditComment={setEditingCommentId}
                       onReplyComment={setReplyingCommentId}
-                      onSubmitArticleEdit={(values) => updateArticle(article.id, values)}
                       onSubmitCommentEdit={updateComment}
                       replyingCommentId={replyingCommentId}
-                      submittingArticleEdit={isPending && articleLoadingLabel !== null}
                     />
                   ))
                 ) : (
@@ -421,6 +438,30 @@ export function FeedCrudClient({
       <ConfirmDialog
         confirmState={confirmState}
         onOpenChange={(open) => !open && setConfirmState(null)}
+      />
+      <ArticleFormDialog
+        article={activeArticle}
+        error={activeArticleFormKey ? errorByKey[activeArticleFormKey] : undefined}
+        formKey={activeArticleFormKey ?? 'article-form'}
+        onCancel={closeActiveArticleForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeActiveArticleForm();
+          }
+        }}
+        onSubmit={(values) => {
+          if (activeArticleForm?.type === 'create') {
+            createArticle(activeArticleForm.hikingId, values);
+            return;
+          }
+
+          if (activeArticleForm?.type === 'edit') {
+            updateArticle(activeArticleForm.articleId, values);
+          }
+        }}
+        open={articleFormDialogOpen}
+        submitting={isPending && articleLoadingLabel !== null}
+        title={activeArticleFormTitle}
       />
       <LoadingOverlay
         label={articleLoadingLabel ?? undefined}

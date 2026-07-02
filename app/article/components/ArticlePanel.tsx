@@ -10,8 +10,6 @@ import { boxBorderClassName } from '@/app/common/components/styles';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 
-import { ArticleForm } from './ArticleForm';
-import type { ArticleFormValues } from './articleFormTypes';
 import { getArticleMeta } from './articleMeta';
 
 type ArticlePanelProps = {
@@ -20,20 +18,16 @@ type ArticlePanelProps = {
   comments: readonly Comment[];
   commentFormResetKey: number;
   currentUserId: number;
-  editingArticleId: ArticleId | null;
   editingCommentId: CommentId | null;
   errorByKey: Record<string, string>;
-  onCancelArticleEdit: () => void;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
   onDeleteArticle: () => void;
   onDeleteComment: (comment: Comment) => void;
   onEditArticle: () => void;
   onEditComment: (commentId: CommentId | null) => void;
   onReplyComment: (commentId: CommentId | null) => void;
-  onSubmitArticleEdit: (values: ArticleFormValues) => void;
   onSubmitCommentEdit: (commentId: CommentId, body: string) => void;
   replyingCommentId: CommentId | null;
-  submittingArticleEdit?: boolean;
 };
 
 export function ArticlePanel({
@@ -42,20 +36,16 @@ export function ArticlePanel({
   comments,
   commentFormResetKey,
   currentUserId,
-  editingArticleId,
   editingCommentId,
   errorByKey,
-  onCancelArticleEdit,
   onCreateComment,
   onDeleteArticle,
   onDeleteComment,
   onEditArticle,
   onEditComment,
   onReplyComment,
-  onSubmitArticleEdit,
   onSubmitCommentEdit,
   replyingCommentId,
-  submittingArticleEdit = false,
 }: ArticlePanelProps) {
   const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
 
@@ -86,27 +76,11 @@ export function ArticlePanel({
         <InlineMeta items={getArticleMeta(article, getVisibleCommentCount(comments))} />
       </header>
 
-      {editingArticleId === article.id ? (
-        <ArticleForm
-          article={article}
-          error={errorByKey[`article-edit-${article.id}`]}
-          onCancel={onCancelArticleEdit}
-          onSubmit={onSubmitArticleEdit}
-          submitting={submittingArticleEdit}
-        />
-      ) : (
-        <>
-          <PhotoViewer
-            articleId={article.id}
-            authorName={article.authorName}
-            photos={article.photos}
-          />
+      <PhotoViewer articleId={article.id} authorName={article.authorName} photos={article.photos} />
 
-          <p className="m-0 text-[1.05rem] leading-[1.6] break-keep whitespace-pre-wrap text-[var(--foreground0)]">
-            {article.body}
-          </p>
-        </>
-      )}
+      <p className="m-0 text-[1.05rem] leading-[1.6] break-keep whitespace-pre-wrap text-[var(--foreground0)]">
+        {article.body}
+      </p>
 
       <section
         className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5"

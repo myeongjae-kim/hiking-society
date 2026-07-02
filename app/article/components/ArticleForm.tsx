@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
@@ -51,7 +51,20 @@ export function ArticleForm({
   const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
   const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
+  const valuesRef = useRef(values);
   const disabled = isProcessingPhotos || submitting;
+
+  useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
+
+  useEffect(() => {
+    return () => {
+      dragPreviewRef.current?.remove();
+      dragPreviewRef.current = null;
+      valuesRef.current.photos.forEach(revokeDraftPhotoUrl);
+    };
+  }, []);
 
   const removePhotoDragPreview = () => {
     dragPreviewRef.current?.remove();
