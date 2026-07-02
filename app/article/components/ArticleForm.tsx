@@ -242,7 +242,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
               >
                 <img
                   alt={`선택한 게시글 사진 ${photo.order}`}
-                  className="aspect-4/3 w-full border-b border-[var(--overlay0)] object-cover"
+                  className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain"
                   src={photo.url}
                 />
                 <div className="grid gap-2 px-3 py-2">
