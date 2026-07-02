@@ -39,6 +39,7 @@ function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
 
 export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormProps) {
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
 
@@ -81,9 +82,31 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
 
     input.value = '';
 
-    const compressedPhotos = await Promise.all(
-      files.map((file, index) => createCompressedDraftPhoto(file, index + 1)),
+    setPhotoError(null);
+
+    const settledPhotos = await Promise.allSettled(
+      files.map(async (file, index) => {
+        try {
+          return await createCompressedDraftPhoto(file, index + 1);
+        } catch {
+          throw new Error(`${file.name} 이미지를 변환하지 못했습니다.`);
+        }
+      }),
     );
+    const compressedPhotos = settledPhotos.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : [],
+    );
+    const failedFileNames = settledPhotos.flatMap((result) =>
+      result.status === 'rejected' && result.reason instanceof Error ? [result.reason.message] : [],
+    );
+
+    if (failedFileNames.length > 0) {
+      setPhotoError(failedFileNames.join(' '));
+    }
+
+    if (compressedPhotos.length === 0) {
+      return;
+    }
 
     setValues((currentValues) => {
       const appendedPhotos = [
@@ -203,7 +226,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
         <label className={inlineButtonClassName}>
           사진 선택
           <input
-            accept="image/*"
+            accept="image/*,.heic,.heif,image/heic,image/heif"
             className={hiddenFileInputClassName}
             multiple
             onChange={handlePhotoChange}
@@ -211,6 +234,7 @@ export function ArticleForm({ article, error, onCancel, onSubmit }: ArticleFormP
           />
         </label>
       </FieldLabel>
+      {photoError ? <p className="m-0 text-sm text-[var(--red)]">{photoError}</p> : null}
       {values.photos.length > 0 ? (
         <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
           {values.photos.map((photo: DraftPhoto) => {

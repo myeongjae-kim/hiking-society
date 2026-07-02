@@ -122,6 +122,10 @@ async function parsePhotoUploads(formData: FormData) {
         throw new Error('사진 파일만 업로드할 수 있습니다.');
       }
 
+      if (file.type !== 'image/webp') {
+        throw new Error('게시글 사진은 WEBP 형식이어야 합니다.');
+      }
+
       return {
         byteSize: file.size,
         bytes: new Uint8Array(await file.arrayBuffer()),

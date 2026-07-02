@@ -30,16 +30,12 @@ export function createDraftPhoto(file: File, order: number): DraftPhoto {
 }
 
 export async function createCompressedDraftPhoto(file: File, order: number): Promise<DraftPhoto> {
-  try {
-    const compressedFile = await createCompressedWebpFile(file, {
-      maxWidth: maxCompressedPhotoWidth,
-      quality: webpQuality,
-    });
+  const compressedFile = await createCompressedWebpFile(file, {
+    maxWidth: maxCompressedPhotoWidth,
+    quality: webpQuality,
+  });
 
-    return createDraftPhoto(compressedFile, order);
-  } catch {
-    return createDraftPhoto(file, order);
-  }
+  return createDraftPhoto(compressedFile, order);
 }
 
 export function getPhotoDuplicateKey(photo: DraftPhoto) {

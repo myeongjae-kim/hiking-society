@@ -3,12 +3,53 @@ type CompressImageOptions = {
   quality: number;
 };
 
+const heicImageTypes = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+]);
+const heicFileNamePattern = /\.(heic|heif)$/i;
+
 function getWebpFileName(fileName: string) {
   const extensionStartIndex = fileName.lastIndexOf('.');
   const baseName =
     extensionStartIndex > 0 ? fileName.slice(0, extensionStartIndex) : fileName || 'image';
 
   return `${baseName}.webp`;
+}
+
+function getJpegFileName(fileName: string) {
+  const extensionStartIndex = fileName.lastIndexOf('.');
+  const baseName =
+    extensionStartIndex > 0 ? fileName.slice(0, extensionStartIndex) : fileName || 'image';
+
+  return `${baseName}.jpg`;
+}
+
+export function isHeicImageFile(file: File) {
+  return heicImageTypes.has(file.type.toLowerCase()) || heicFileNamePattern.test(file.name);
+}
+
+async function createBrowserReadableFile(file: File) {
+  if (!isHeicImageFile(file)) {
+    return file;
+  }
+
+  const heicConvertModule = await import('heic-convert/browser');
+  const convert = heicConvertModule.default;
+  const output = await convert({
+    buffer: new Uint8Array(await file.arrayBuffer()),
+    format: 'JPEG',
+    quality: 0.92,
+  });
+  const outputBuffer = new ArrayBuffer(output.byteLength);
+  new Uint8Array(outputBuffer).set(output);
+
+  return new File([outputBuffer], getJpegFileName(file.name), {
+    lastModified: file.lastModified,
+    type: 'image/jpeg',
+  });
 }
 
 async function encodeImageDataToWebpBlob(imageData: ImageData, quality: number) {
@@ -22,7 +63,8 @@ export async function createCompressedWebpFile(
   file: File,
   options: CompressImageOptions,
 ): Promise<File> {
-  const imageBitmap = await createImageBitmap(file);
+  const browserReadableFile = await createBrowserReadableFile(file);
+  const imageBitmap = await createImageBitmap(browserReadableFile);
   const longestSide = Math.max(imageBitmap.width, imageBitmap.height);
   const scale = longestSide > options.maxWidth ? options.maxWidth / longestSide : 1;
   const targetWidth = Math.round(imageBitmap.width * scale);
