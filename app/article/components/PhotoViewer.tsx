@@ -316,7 +316,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
               >
                 <img
                   alt={`${authorName}의 산행 사진 ${photo.order}`}
-                  className="block aspect-4/3 w-full object-cover transition-[filter] group-hover:brightness-110"
+                  className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
                   src={photo.url}
                 />
               </button>

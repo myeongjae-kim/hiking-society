@@ -17,6 +17,7 @@ type ArticlePanelProps = {
   article: Article;
   canEdit: boolean;
   comments: readonly Comment[];
+  commentFormResetKey: number;
   currentUserId: number;
   editingArticleId: ArticleId | null;
   editingCommentId: CommentId | null;
@@ -37,6 +38,7 @@ export function ArticlePanel({
   article,
   canEdit,
   comments,
+  commentFormResetKey,
   currentUserId,
   editingArticleId,
   editingCommentId,
@@ -102,6 +104,7 @@ export function ArticlePanel({
         <Command>comments.list --count={getVisibleCommentCount(comments)}</Command>
         <CommentForm
           error={errorByKey[`comment-new-${article.id}`]}
+          key={`comment-new-${article.id}-${commentFormResetKey}`}
           onSubmit={(body) => onCreateComment(article.id, body, null)}
           prompt="comment.new>"
         />

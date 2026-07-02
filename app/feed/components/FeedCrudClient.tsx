@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMemo, useState, useTransition } from 'react';
 
 import { ArticleForm } from '@/app/article/components/ArticleForm';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
@@ -62,6 +62,9 @@ export function FeedCrudClient({
   const [editingArticleId, setEditingArticleId] = useState<ArticleId | null>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
+  const [commentFormResetKeyByArticleId, setCommentFormResetKeyByArticleId] = useState<
+    Record<string, number>
+  >({});
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 
@@ -251,7 +254,16 @@ export function FeedCrudClient({
 
     runAction(() => createCommentAction(formData), {
       errorKey: `comment-new-${articleId}`,
-      onSuccess: () => setReplyingCommentId(null),
+      onSuccess: () => {
+        if (parentCommentId === null) {
+          setCommentFormResetKeyByArticleId((currentKeys) => ({
+            ...currentKeys,
+            [articleId]: (currentKeys[articleId] ?? 0) + 1,
+          }));
+        }
+
+        setReplyingCommentId(null);
+      },
     });
   };
 
@@ -352,6 +364,7 @@ export function FeedCrudClient({
                       article={article}
                       canEdit={article.authorUserId === currentUser.id}
                       comments={getArticleComments(commentsByArticleId, article.id)}
+                      commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
                       currentUserId={currentUser.id}
                       editingArticleId={editingArticleId}
                       editingCommentId={editingCommentId}
