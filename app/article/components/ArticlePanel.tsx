@@ -3,6 +3,7 @@ import { CommentForm } from '@/app/comment/components/CommentForm';
 import { CommentLine } from '@/app/comment/components/CommentLine';
 import { getThreadedComments, getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { ActionButton } from '@/app/common/components/ActionButton';
+import { AuthorBadge } from '@/app/common/components/AuthorBadge';
 import { Command } from '@/app/common/components/Command';
 import { InlineMeta } from '@/app/common/components/InlineMeta';
 import { boxBorderClassName } from '@/app/common/components/styles';
@@ -72,6 +73,13 @@ export function ArticlePanel({
               </ActionButton>
             </div>
           ) : null}
+        </div>
+        <div className="font-mono">
+          <AuthorBadge
+            name={article.authorName}
+            profileImageUrl={article.authorProfileImageUrl}
+            size="md"
+          />
         </div>
         <InlineMeta items={getArticleMeta(article, getVisibleCommentCount(comments))} />
       </header>

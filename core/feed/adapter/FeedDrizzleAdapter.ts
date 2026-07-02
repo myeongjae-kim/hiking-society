@@ -101,6 +101,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           hikingId: articleTable.hikingId,
           id: articleTable.id,
           name: userTable.name,
+          profileImageUrl: userTable.profileImageUrl,
           updatedAt: articleTable.updatedAt,
         })
         .from(articleTable)
@@ -119,6 +120,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           id: commentTable.id,
           name: userTable.name,
           parentCommentId: commentTable.parentCommentId,
+          profileImageUrl: userTable.profileImageUrl,
           updatedAt: commentTable.updatedAt,
         })
         .from(commentTable)
@@ -167,6 +169,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       return [
         {
           authorName: toAuthorName(row),
+          authorProfileImageUrl: row.profileImageUrl,
           authorUserId: row.authorUserId,
           body: row.body,
           createdAt: row.createdAt.toISOString() as IsoDateTimeString,
@@ -183,6 +186,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
     const comments: Comment[] = commentRows.map((row) => ({
       articleId: String(row.articleId) as ArticleId,
       authorName: toAuthorName(row),
+      authorProfileImageUrl: row.profileImageUrl,
       authorUserId: row.authorUserId,
       body: row.body,
       createdAt: row.createdAt.toISOString() as IsoDateTimeString,

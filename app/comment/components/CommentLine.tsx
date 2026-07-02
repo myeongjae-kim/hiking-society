@@ -1,4 +1,5 @@
 import { ActionButton } from '@/app/common/components/ActionButton';
+import { AuthorBadge } from '@/app/common/components/AuthorBadge';
 import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import type { Comment, CommentId } from '@/core/comment/domain';
 
@@ -84,7 +85,10 @@ export function CommentLine({
               <span className="text-[var(--subtext0)]">삭제된 댓글</span>
             ) : (
               <>
-                <span className="whitespace-nowrap text-[var(--pink)]">{comment.authorName}</span>
+                <AuthorBadge
+                  name={comment.authorName}
+                  profileImageUrl={comment.authorProfileImageUrl}
+                />
                 <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
                   :
                 </span>

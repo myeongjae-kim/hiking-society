@@ -20,6 +20,7 @@ export type Article = {
   readonly photos: ArticlePhotos;
   readonly body: string;
   readonly authorName: AuthorName;
+  readonly authorProfileImageUrl: string | null;
   readonly createdAt: IsoDateTimeString;
   readonly updatedAt: IsoDateTimeString;
   readonly deletedAt: IsoDateTimeString | null;
