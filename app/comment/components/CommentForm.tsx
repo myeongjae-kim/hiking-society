@@ -34,9 +34,9 @@ export function CommentForm({
     <form className="grid gap-2" onSubmit={handleSubmit}>
       <label className="grid gap-1.5">
         <span className="font-mono text-sm text-[var(--green)]">{prompt}</span>
-        <textarea
+        <input
           autoFocus={autoFocus}
-          className={`${fieldClassName} min-h-[4.5rem] resize-y`}
+          className={`${fieldClassName} min-h-[2.5rem] resize-y`}
           onChange={(event) => setBody(event.currentTarget.value)}
           required
           value={body}
