@@ -37,6 +37,7 @@ export function CommentForm({
         <input
           autoFocus={autoFocus}
           className={`${fieldClassName} min-h-[2.5rem] resize-y`}
+          enterKeyHint="done"
           onChange={(event) => setBody(event.currentTarget.value)}
           required
           value={body}
