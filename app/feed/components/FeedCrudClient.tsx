@@ -318,7 +318,7 @@ export function FeedCrudClient({
 
   const requestDeleteComment = (comment: Comment) => {
     setConfirmState({
-      body: '댓글은 대화 맥락이 필요하면 자리표시자로 남습니다.',
+      body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
         const formData = new FormData();
