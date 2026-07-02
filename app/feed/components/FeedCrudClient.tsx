@@ -267,7 +267,7 @@ export function FeedCrudClient({
 
   const requestDeleteArticle = (article: Article) => {
     setConfirmState({
-      body: '게시글은 피드에서 숨겨지고 삭제 시각만 남습니다.',
+      body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
         const formData = new FormData();
