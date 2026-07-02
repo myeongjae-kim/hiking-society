@@ -16,4 +16,4 @@ export const inlineButtonClassName =
 export const labelClassName = 'grid min-w-0 gap-1.5 text-sm leading-[1.35] text-[var(--subtext0)]';
 
 export const photoDialogOverlayClassName =
-  'fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--background0)_58%,transparent)] backdrop-blur-md';
+  'fixed inset-0 z-[60] bg-[color-mix(in_srgb,var(--background0)_58%,transparent)] backdrop-blur-md';

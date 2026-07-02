@@ -10,9 +10,12 @@ import type { ArticlePhoto } from '@/core/article/domain';
 type PhotoViewerProps = {
   articleId: string;
   authorName: string;
+  initialIndex?: number;
   photos: readonly ArticlePhoto[];
   thumbnailGridClassName?: string;
   trigger?: ReactNode;
+  triggerClassName?: string;
+  viewerCommand?: string;
   viewerLabel?: string;
 };
 
@@ -41,9 +44,12 @@ function clamp(value: number, min: number, max: number) {
 export function PhotoViewer({
   articleId,
   authorName,
+  initialIndex = 0,
   photos,
   thumbnailGridClassName = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3',
   trigger,
+  triggerClassName = 'inline-flex !h-auto appearance-none items-center justify-center overflow-hidden rounded-full !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]',
+  viewerCommand,
   viewerLabel,
 }: PhotoViewerProps) {
   const viewerId = useId();
@@ -58,7 +64,8 @@ export function PhotoViewer({
   const selectedPhoto = photos[selectedIndex] ?? photos[0];
   const title = viewerLabel ?? `${authorName}의 산행 사진`;
   const descriptionId = `photo-viewer-description-${viewerId}`;
-  const viewerCommand = viewerLabel ? 'profile.photo' : `article.photo ${articleId}`;
+  const displayCommand =
+    viewerCommand ?? (viewerLabel ? 'profile.photo' : `article.photo ${articleId}`);
   const description = hasMultiplePhotos
     ? '좌우 화살표로 사진을 이동하고 Escape 키로 닫을 수 있습니다.'
     : 'Escape 키로 닫을 수 있습니다.';
@@ -321,9 +328,9 @@ export function PhotoViewer({
       {trigger ? (
         <Dialog.Trigger asChild>
           <button
-            className="inline-flex !h-auto appearance-none items-center justify-center overflow-hidden rounded-full !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+            className={triggerClassName}
             onClick={() => {
-              setSelectedIndex(0);
+              setSelectedIndex(clamp(initialIndex, 0, Math.max(photos.length - 1, 0)));
             }}
             type="button"
           >
@@ -364,7 +371,7 @@ export function PhotoViewer({
         <Dialog.Overlay className={photoDialogOverlayClassName} />
         <Dialog.Content
           aria-describedby={descriptionId}
-          className="fixed inset-0 z-50 grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
+          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
           onClick={closeOnBackdropClick}
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
@@ -377,7 +384,7 @@ export function PhotoViewer({
             data-photo-modal-surface
           >
             <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1">
-              {viewerCommand}
+              {displayCommand}
             </span>
             <Dialog.Close asChild>
               <button

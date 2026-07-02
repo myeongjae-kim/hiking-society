@@ -23,6 +23,7 @@ import {
   getPhotoDuplicateKey,
   revokeDraftPhotoUrl,
 } from './articleFormUtils';
+import { PhotoViewer } from './PhotoViewer';
 
 type ArticleFormProps = {
   article?: Article;
@@ -305,10 +306,22 @@ export function ArticleForm({
                   onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
                   onDrop={(event) => handlePhotoDrop(event, photo.order)}
                 >
-                  <img
-                    alt={`선택한 게시글 사진 ${photo.order}`}
-                    className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain"
-                    src={photo.url}
+                  <PhotoViewer
+                    articleId={article?.id ?? 'draft'}
+                    authorName="선택한 게시글"
+                    initialIndex={photo.order - 1}
+                    photos={values.photos}
+                    trigger={
+                      <img
+                        alt={`선택한 게시글 사진 ${photo.order}`}
+                        className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                        draggable={false}
+                        src={photo.url}
+                      />
+                    }
+                    triggerClassName="group block h-auto w-full appearance-none !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                    viewerCommand="article.photo.preview"
+                    viewerLabel="선택한 게시글 사진"
                   />
                   <div className="grid gap-2 px-3 py-2">
                     <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
