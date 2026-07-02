@@ -322,7 +322,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
               </button>
             </Dialog.Trigger>
             <figcaption className="px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
-              photo {photo.order}/{photos.length} order={photo.order}
+              photo {photo.order}/{photos.length}
             </figcaption>
           </figure>
         ))}
@@ -410,7 +410,7 @@ export function PhotoViewer({ articleId, authorName, photos }: PhotoViewerProps)
             className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
             data-photo-modal-surface
           >
-            photo {selectedIndex + 1}/{photos.length} order={selectedPhoto.order}
+            photo {selectedIndex + 1}/{photos.length}
           </p>
         </Dialog.Content>
       </Dialog.Portal>
