@@ -99,7 +99,7 @@ export function ArticlePanel({
             photos={article.photos}
           />
 
-          <p className="m-0 text-[1.05rem] leading-[1.6] break-keep text-[var(--foreground0)]">
+          <p className="m-0 text-[1.05rem] leading-[1.6] break-keep whitespace-pre-wrap text-[var(--foreground0)]">
             {article.body}
           </p>
         </>

@@ -84,16 +84,20 @@ export function CommentLine({
             {isDeleted ? (
               <span className="text-[var(--subtext0)]">삭제된 댓글</span>
             ) : (
-              <>
-                <AuthorBadge
-                  name={comment.authorName}
-                  profileImageUrl={comment.authorProfileImageUrl}
-                />
-                <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
-                  :
-                </span>
-                <span>{comment.body}</span>
-              </>
+              <div className="flex">
+                <div className="flex shrink-0 items-start">
+                  <AuthorBadge
+                    name={comment.authorName}
+                    profileImageUrl={comment.authorProfileImageUrl}
+                  />
+                  <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
+                    :
+                  </span>
+                </div>
+                <div className="min-w-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
+                  {comment.body}
+                </div>
+              </div>
             )}
           </p>
         </>
