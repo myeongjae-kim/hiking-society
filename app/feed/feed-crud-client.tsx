@@ -68,7 +68,7 @@ const fieldClassName =
   'min-w-0 border border-[var(--overlay0)] bg-[var(--background1)] px-2 py-1.5 text-[var(--foreground0)]';
 const labelClassName = 'grid min-w-0 gap-1.5 text-sm leading-[1.35] text-[var(--subtext0)]';
 const inlineButtonClassName =
-  'inline-flex min-h-[1.75rem] items-center justify-center border border-[var(--overlay0)] bg-[var(--surface0)] px-3 py-1 font-mono text-sm leading-[1.2] whitespace-nowrap text-[var(--foreground1)] hover:bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
+  'inline-flex !h-auto !min-h-[1.75rem] items-center justify-center !border !border-[var(--overlay0)] !bg-[var(--surface0)] !bg-none px-3 py-1 font-mono !text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] no-underline hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)]';
 const hiddenFileInputClassName = 'sr-only';
 const thumbnailUrl = '/thumbnail.webp';
 const defaultTimezone = 'Asia/Seoul';
@@ -238,7 +238,7 @@ function ActionButton({
 }) {
   return (
     <button
-      className={`${inlineButtonClassName} ${tone === 'danger' ? 'text-[var(--red)]' : ''}`}
+      className={`${inlineButtonClassName} ${tone === 'danger' ? '!text-[var(--red)]' : ''}`}
       onClick={onClick}
       type={type}
     >
@@ -491,7 +491,7 @@ function HikingForm({
       box-="round"
       onSubmit={handleSubmit}
     >
-      <Command>{hiking ? `hiking.edit ${hiking.id}` : 'hiking.new'}</Command>
+      <Command>{hiking ? `산행 수정: ${hiking.id}` : '산행 등록'}</Command>
       <div className="grid gap-3 sm:grid-cols-2">
         <FieldLabel label="산 이름">
           <input
@@ -997,7 +997,7 @@ export function FeedCrudClient({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Command>feed.crud --mock</Command>
               <ActionButton onClick={() => setNewHikingOpen((open) => !open)}>
-                hiking.new
+                산행 등록
               </ActionButton>
             </div>
             {newHikingOpen ? (
@@ -1019,7 +1019,7 @@ export function FeedCrudClient({
               aria-labelledby={`hiking-${group.hiking.id}`}
             >
               <HikingHeader
-                canEdit={isOwn(group.hiking.authorName, currentAuthorName)}
+                canManageHiking={isOwn(group.hiking.authorName, currentAuthorName)}
                 error={errorByKey[`hiking-${group.hiking.id}`]}
                 hiking={group.hiking}
                 onAddArticle={() => setArticleFormHikingId(group.hiking.id)}
@@ -1130,14 +1130,14 @@ function FeedTopbar({
 }
 
 function HikingHeader({
-  canEdit,
+  canManageHiking,
   error,
   hiking,
   onAddArticle,
   onDelete,
   onEdit,
 }: {
-  canEdit: boolean;
+  canManageHiking: boolean;
   error?: string;
   hiking: Hiking;
   onAddArticle: () => void;
@@ -1155,9 +1155,9 @@ function HikingHeader({
         </h2>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <span className="text-[var(--yellow)]">{formatDateLabel(hiking.hikingDate)}</span>
-          {canEdit ? (
+          <ActionButton onClick={onAddArticle}>글 작성</ActionButton>
+          {canManageHiking ? (
             <>
-              <ActionButton onClick={onAddArticle}>게시글 추가</ActionButton>
               <ActionButton onClick={onEdit}>수정</ActionButton>
               <ActionButton onClick={onDelete} tone="danger">
                 삭제
