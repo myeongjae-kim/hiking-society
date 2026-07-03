@@ -496,6 +496,7 @@ export function FeedCrudClient({
                   group.articles.map((article) => (
                     <ArticlePanel
                       article={article}
+                      articleDetailHref={`/article/${article.id}`}
                       canEdit={article.authorUserId === currentUser.id}
                       comments={getArticleComments(commentsByArticleId, article.id)}
                       commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}

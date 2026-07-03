@@ -67,6 +67,20 @@ function getId<T extends string>(formData: FormData, key: string) {
   return value as T;
 }
 
+function getOptionalId<T extends string>(formData: FormData, key: string) {
+  const value = getString(formData, key);
+
+  if (!value) {
+    return null;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error('잘못된 id입니다.');
+  }
+
+  return value as T;
+}
+
 async function requireMember() {
   const user = await requireCurrentUser();
 
@@ -84,8 +98,13 @@ function toActionResult(error: unknown): ActionResult {
   };
 }
 
-function success(): ActionResult {
+function success(articleId?: ArticleId | null): ActionResult {
   revalidatePath('/feed');
+
+  if (articleId) {
+    revalidatePath(`/article/${articleId}`);
+  }
+
   return { ok: true };
 }
 
@@ -296,7 +315,7 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
       userId: user.id,
     });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -309,7 +328,7 @@ export async function deleteArticle(formData: FormData): Promise<ActionResult> {
 
     await applicationContext().get('ArticleCommandUseCase').delete({ articleId, userId: user.id });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -324,7 +343,7 @@ export async function toggleArticleLike(formData: FormData): Promise<ActionResul
       .get('LikeCommandUseCase')
       .toggleArticleLike({ articleId, userId: user.id });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -350,7 +369,7 @@ export async function createComment(formData: FormData): Promise<ActionResult> {
           : { articleId, authorUserId: user.id, body: values.body },
       );
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -360,12 +379,13 @@ export async function toggleCommentLike(formData: FormData): Promise<ActionResul
   try {
     const user = await requireMember();
     const commentId = getId<CommentId>(formData, 'commentId');
+    const articleId = getOptionalId<ArticleId>(formData, 'articleId');
 
     await applicationContext()
       .get('LikeCommandUseCase')
       .toggleCommentLike({ commentId, userId: user.id });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -375,6 +395,7 @@ export async function updateComment(formData: FormData): Promise<ActionResult> {
   try {
     const user = await requireMember();
     const commentId = getId<CommentId>(formData, 'commentId');
+    const articleId = getOptionalId<ArticleId>(formData, 'articleId');
     const values = commentSchema.parse({ body: getString(formData, 'body') });
 
     await applicationContext().get('CommentCommandUseCase').update({
@@ -383,7 +404,7 @@ export async function updateComment(formData: FormData): Promise<ActionResult> {
       values,
     });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }
@@ -393,10 +414,11 @@ export async function deleteComment(formData: FormData): Promise<ActionResult> {
   try {
     const user = await requireMember();
     const commentId = getId<CommentId>(formData, 'commentId');
+    const articleId = getOptionalId<ArticleId>(formData, 'articleId');
 
     await applicationContext().get('CommentCommandUseCase').delete({ commentId, userId: user.id });
 
-    return success();
+    return success(articleId);
   } catch (error) {
     return toActionResult(error);
   }

@@ -1,0 +1,210 @@
+import type { Article, ArticleId, ArticleMedia, ArticleMediaItems } from '@/core/article/domain';
+import type { ArticleDetailQueryPort } from '@/core/article/application/port/out/ArticleDetailQueryPort';
+import type { Comment, CommentId } from '@/core/comment/domain';
+import type { AuthorName, IsoDateTimeString } from '@/core/common/domain';
+import { db } from '@/lib/db/drizzle';
+import {
+  articleLikeTable,
+  articleMediaTable,
+  articleTable,
+  commentLikeTable,
+  commentTable,
+  userTable,
+} from '@/lib/db/schema';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+
+function toNumericId(id: string) {
+  const numericId = Number(id);
+
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new Error('잘못된 id입니다.');
+  }
+
+  return numericId;
+}
+
+function toIsoDateTime(value: Date | null) {
+  return (value ? value.toISOString() : null) as IsoDateTimeString | null;
+}
+
+function toAuthorName(row: {
+  displayName: string | null;
+  email: string | null;
+  name: string | null;
+}) {
+  return (row.displayName ?? row.name ?? row.email ?? '회원') as AuthorName;
+}
+
+function toArticleMedia(media: readonly ArticleMedia[]): ArticleMediaItems | null {
+  if (media.length === 0) {
+    return null;
+  }
+
+  return [media[0], ...media.slice(1)];
+}
+
+function incrementCount(counts: Map<number, number>, id: number) {
+  counts.set(id, (counts.get(id) ?? 0) + 1);
+}
+
+export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
+  async get(input: Parameters<ArticleDetailQueryPort['get']>[0]) {
+    const articleId = toNumericId(input.articleId);
+    const [articleRows, mediaRows, commentRows, articleLikeRows, commentLikeRows] =
+      await Promise.all([
+        db
+          .select({
+            authorUserId: articleTable.authorUserId,
+            body: articleTable.body,
+            createdAt: articleTable.createdAt,
+            deletedAt: articleTable.deletedAt,
+            displayName: userTable.displayName,
+            email: userTable.email,
+            hikingId: articleTable.hikingId,
+            id: articleTable.id,
+            name: userTable.name,
+            profileImageUrl: userTable.profileImageUrl,
+            updatedAt: articleTable.updatedAt,
+          })
+          .from(articleTable)
+          .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+          .where(
+            and(
+              eq(articleTable.id, articleId),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          )
+          .limit(1),
+        db
+          .select()
+          .from(articleMediaTable)
+          .where(eq(articleMediaTable.articleId, articleId))
+          .orderBy(asc(articleMediaTable.order)),
+        db
+          .select({
+            articleId: commentTable.articleId,
+            authorUserId: commentTable.authorUserId,
+            body: commentTable.body,
+            createdAt: commentTable.createdAt,
+            deletedAt: commentTable.deletedAt,
+            displayName: userTable.displayName,
+            email: userTable.email,
+            id: commentTable.id,
+            name: userTable.name,
+            parentCommentId: commentTable.parentCommentId,
+            profileImageUrl: userTable.profileImageUrl,
+            updatedAt: commentTable.updatedAt,
+          })
+          .from(commentTable)
+          .innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+          .where(and(eq(commentTable.articleId, articleId), isNull(userTable.deletedAt)))
+          .orderBy(asc(commentTable.createdAt)),
+        db
+          .select({
+            articleId: articleLikeTable.articleId,
+            userId: articleLikeTable.userId,
+          })
+          .from(articleLikeTable)
+          .innerJoin(articleTable, eq(articleTable.id, articleLikeTable.articleId))
+          .innerJoin(userTable, eq(userTable.id, articleLikeTable.userId))
+          .where(
+            and(
+              eq(articleLikeTable.articleId, articleId),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
+        db
+          .select({
+            commentId: commentLikeTable.commentId,
+            userId: commentLikeTable.userId,
+          })
+          .from(commentLikeTable)
+          .innerJoin(commentTable, eq(commentTable.id, commentLikeTable.commentId))
+          .innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
+          .where(
+            and(
+              eq(commentTable.articleId, articleId),
+              isNull(commentTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
+      ]);
+
+    const [row] = articleRows;
+    const media = toArticleMedia(
+      mediaRows.map((mediaRow) => ({
+        byteSize: mediaRow.byteSize,
+        contentType: mediaRow.contentType,
+        durationMs: mediaRow.durationMs,
+        height: mediaRow.height,
+        mediaType: mediaRow.mediaType,
+        objectKey: mediaRow.objectKey,
+        order: mediaRow.order,
+        thumbnailUrl: mediaRow.thumbnailUrl,
+        url: mediaRow.url,
+        width: mediaRow.width,
+      })),
+    );
+
+    if (!row || !media) {
+      return null;
+    }
+
+    const articleLikeCountByArticleId = new Map<number, number>();
+    const likedArticleIdsByCurrentUser = new Set<number>();
+    const commentLikeCountByCommentId = new Map<number, number>();
+    const likedCommentIdsByCurrentUser = new Set<number>();
+
+    for (const like of articleLikeRows) {
+      incrementCount(articleLikeCountByArticleId, like.articleId);
+
+      if (like.userId === input.currentUserId) {
+        likedArticleIdsByCurrentUser.add(like.articleId);
+      }
+    }
+
+    for (const like of commentLikeRows) {
+      incrementCount(commentLikeCountByCommentId, like.commentId);
+
+      if (like.userId === input.currentUserId) {
+        likedCommentIdsByCurrentUser.add(like.commentId);
+      }
+    }
+
+    const article: Article = {
+      authorName: toAuthorName(row),
+      authorProfileImageUrl: row.profileImageUrl,
+      authorUserId: row.authorUserId,
+      body: row.body,
+      createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+      deletedAt: toIsoDateTime(row.deletedAt),
+      edited: row.updatedAt.getTime() !== row.createdAt.getTime(),
+      hikingId: String(row.hikingId) as Article['hikingId'],
+      id: String(row.id) as ArticleId,
+      likeCount: articleLikeCountByArticleId.get(row.id) ?? 0,
+      likedByCurrentUser: likedArticleIdsByCurrentUser.has(row.id),
+      media,
+      updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+    };
+
+    const comments: Comment[] = commentRows.map((comment) => ({
+      articleId: String(comment.articleId) as ArticleId,
+      authorName: toAuthorName(comment),
+      authorProfileImageUrl: comment.profileImageUrl,
+      authorUserId: comment.authorUserId,
+      body: comment.body,
+      createdAt: comment.createdAt.toISOString() as IsoDateTimeString,
+      deletedAt: toIsoDateTime(comment.deletedAt),
+      id: String(comment.id) as CommentId,
+      likeCount: commentLikeCountByCommentId.get(comment.id) ?? 0,
+      likedByCurrentUser: likedCommentIdsByCurrentUser.has(comment.id),
+      parentCommentId:
+        comment.parentCommentId === null ? null : (String(comment.parentCommentId) as CommentId),
+      updatedAt: comment.updatedAt.toISOString() as IsoDateTimeString,
+    })) as Comment[];
+
+    return { article, comments };
+  }
+}

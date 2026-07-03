@@ -9,6 +9,7 @@ type CommentLineProps = {
   canEdit: boolean;
   comment: Comment;
   editingCommentId: CommentId | null;
+  highlighted?: boolean;
   menuPosition?: 'bottom left' | 'top left';
   onDelete: (comment: Comment) => void;
   onEdit: (commentId: CommentId | null) => void;
@@ -25,6 +26,7 @@ export function CommentLine({
   canEdit,
   comment,
   editingCommentId,
+  highlighted = false,
   menuPosition = 'bottom left',
   onDelete,
   onEdit,
@@ -49,8 +51,13 @@ export function CommentLine({
 
   return (
     <div
-      className={`grid min-w-0 gap-1.5 text-[0.95rem] leading-[1.45] ${
+      id={`comment-${comment.id}`}
+      className={`grid min-w-0 scroll-mt-24 gap-1.5 text-[0.95rem] leading-[1.45] transition-[background-color,box-shadow] duration-500 ${
         reply ? 'ml-4 text-[var(--subtext0)]' : 'text-[var(--foreground1)]'
+      } ${
+        highlighted
+          ? 'bg-[color-mix(in_srgb,var(--yellow)_18%,transparent)] shadow-[0_0_0_0.25rem_color-mix(in_srgb,var(--yellow)_24%,transparent)]'
+          : ''
       }`}
     >
       {editingCommentId === comment.id ? (

@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect } from 'react';
+
 import { MediaViewer } from '@/app/article/components/MediaViewer';
 import { CommentForm } from '@/app/comment/components/CommentForm';
 import { CommentLine } from '@/app/comment/components/CommentLine';
@@ -14,6 +18,7 @@ import { getArticleMeta } from './articleMeta';
 
 type ArticlePanelProps = {
   article: Article;
+  articleDetailHref?: string;
   articleLikePending: boolean;
   canEdit: boolean;
   comments: readonly Comment[];
@@ -21,6 +26,7 @@ type ArticlePanelProps = {
   currentUserId: number;
   editingCommentId: CommentId | null;
   errorByKey: Record<string, string>;
+  highlightedCommentId?: CommentId | null;
   isCommentLikePending: (commentId: CommentId) => boolean;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
   onDeleteArticle: () => void;
@@ -36,6 +42,7 @@ type ArticlePanelProps = {
 
 export function ArticlePanel({
   article,
+  articleDetailHref,
   articleLikePending,
   canEdit,
   comments,
@@ -43,6 +50,7 @@ export function ArticlePanel({
   currentUserId,
   editingCommentId,
   errorByKey,
+  highlightedCommentId = null,
   isCommentLikePending,
   onCreateComment,
   onDeleteArticle,
@@ -55,6 +63,22 @@ export function ArticlePanel({
   onToggleCommentLike,
   replyingCommentId,
 }: ArticlePanelProps) {
+  useEffect(() => {
+    if (!highlightedCommentId) {
+      return;
+    }
+
+    const element = document.getElementById(`comment-${highlightedCommentId}`);
+
+    if (!element) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [highlightedCommentId]);
+
   const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
   const visibleCommentThreads = topLevelComments.flatMap((comment) => {
     const visibleReplies = (repliesByParentId.get(comment.id) ?? []).filter(
@@ -99,7 +123,9 @@ export function ArticlePanel({
             size="md"
           />
         </div>
-        <InlineMeta items={getArticleMeta(article, getVisibleCommentCount(comments))} />
+        <InlineMeta
+          items={getArticleMeta(article, getVisibleCommentCount(comments), articleDetailHref)}
+        />
       </header>
 
       <div className="mx-[-1.25rem] w-[calc(100%_+_2.5rem)] sm:mx-0 sm:w-full">
@@ -144,6 +170,7 @@ export function ArticlePanel({
               canEdit={comment.authorUserId === currentUserId}
               comment={comment}
               editingCommentId={editingCommentId}
+              highlighted={comment.id === highlightedCommentId}
               menuPosition={getCommentMenuPosition(comment.id)}
               onDelete={onDeleteComment}
               onEdit={onEditComment}
@@ -169,6 +196,7 @@ export function ArticlePanel({
                 canEdit={reply.authorUserId === currentUserId}
                 comment={reply}
                 editingCommentId={editingCommentId}
+                highlighted={reply.id === highlightedCommentId}
                 key={reply.id}
                 menuPosition={getCommentMenuPosition(reply.id)}
                 onDelete={onDeleteComment}

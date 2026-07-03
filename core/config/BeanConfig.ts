@@ -1,7 +1,11 @@
 import { BeanConfig } from 'inversify-typesafe-spring-like';
+import { ArticleDetailDrizzleAdapter } from '../article/adapter/ArticleDetailDrizzleAdapter';
 import { S3MediaStorageAdapter } from '../article/adapter/S3MediaStorageAdapter';
 import { ArticleCommandService } from '../article/application/ArticleCommandService';
+import { GetArticleDetailService } from '../article/application/GetArticleDetailService';
 import { ArticleCommandUseCase } from '../article/application/port/in/ArticleCommandUseCase';
+import { GetArticleDetailUseCase } from '../article/application/port/in/GetArticleDetailUseCase';
+import { ArticleDetailQueryPort } from '../article/application/port/out/ArticleDetailQueryPort';
 import { MediaStoragePort } from '../article/application/port/out/MediaStoragePort';
 import { AuthCommandAdapter } from '../auth/adapter/AuthCommandAdapter';
 import { AuthQueryAdapter } from '../auth/adapter/AuthQueryAdapter';
@@ -50,6 +54,7 @@ import { ProfileQueryPort } from '../profile/application/port/out/ProfileQueryPo
 import { env } from './env';
 
 export type Beans = {
+  ArticleDetailQueryPort: ArticleDetailQueryPort;
   ArticleCommandUseCase: ArticleCommandUseCase;
   AuthCommandPort: AuthCommandPort;
   AuthQueryPort: AuthQueryPort;
@@ -68,6 +73,7 @@ export type Beans = {
   CreateSessionTokenUseCase: CreateSessionTokenUseCase;
   CookieConfig: CookieConfig;
   GetCookieOptionsUseCase: GetCookieOptionsUseCase;
+  GetArticleDetailUseCase: GetArticleDetailUseCase;
   MemberCommandPort: MemberCommandPort;
   MemberQueryPort: MemberQueryPort;
   ListMembersUseCase: ListMembersUseCase;
@@ -84,6 +90,7 @@ export type Beans = {
 };
 
 export const beanConfig: BeanConfig<Beans> = {
+  ArticleDetailQueryPort: (bind) => bind().to(ArticleDetailDrizzleAdapter),
   ArticleCommandUseCase: (bind) => bind().to(ArticleCommandService),
   AuthCommandPort: (bind) => bind().to(AuthCommandAdapter),
   AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
@@ -102,6 +109,7 @@ export const beanConfig: BeanConfig<Beans> = {
   CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),
   CookieConfig: (bind) => bind().to(CookieConfig),
   GetCookieOptionsUseCase: (bind) => bind().to(GetCookieOptionsService),
+  GetArticleDetailUseCase: (bind) => bind().to(GetArticleDetailService),
   MemberCommandPort: (bind) => bind().to(MemberCommandAdapter),
   MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
   ListMembersUseCase: (bind) => bind().to(ListMembersService),
