@@ -1,6 +1,8 @@
+import * as Popover from '@radix-ui/react-popover';
 import Link from 'next/link';
 
 import { Command } from '@/app/common/components/Command';
+import { ThemeSelector } from '@/app/common/components/ThemeSelector';
 import { inlineButtonClassName } from '@/app/common/components/styles';
 import { NotificationPopover } from '@/app/notification/components/NotificationPopover';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
@@ -10,11 +12,17 @@ import type { NotificationListSnapshot } from '@/core/notification/model/Notific
 
 type FeedTopbarProps = {
   currentAuthorName: AuthorName;
+  currentTheme?: string;
   notificationSnapshot?: NotificationListSnapshot;
   user: AuthenticatedUser;
 };
 
-export function FeedTopbar({ currentAuthorName, notificationSnapshot, user }: FeedTopbarProps) {
+export function FeedTopbar({
+  currentAuthorName,
+  currentTheme,
+  notificationSnapshot,
+  user,
+}: FeedTopbarProps) {
   return (
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -25,7 +33,7 @@ export function FeedTopbar({ currentAuthorName, notificationSnapshot, user }: Fe
           </a>{' '}
           /feed
         </Command>
-        <nav className="flex flex-wrap items-center gap-2">
+        <nav className="ml-auto flex flex-wrap items-center gap-2">
           <span className="font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
             {String(currentAuthorName)} · {roleLabels[user.role]}
           </span>
@@ -38,6 +46,29 @@ export function FeedTopbar({ currentAuthorName, notificationSnapshot, user }: Fe
           >
             MY
           </Link>
+          {currentTheme ? (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <button
+                  aria-label="테마 선택"
+                  className={`${inlineButtonClassName} aspect-square !min-h-8 !w-8 !px-0`}
+                  title="테마 선택"
+                  type="button"
+                >
+                  테마
+                </button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  align="end"
+                  className="z-[70] w-[min(18rem,calc(100vw-2rem))] border border-[var(--overlay0)] bg-[var(--background0)] p-2 text-[var(--foreground0)] shadow-[0.25rem_0.25rem_0_var(--surface0)]"
+                  sideOffset={8}
+                >
+                  <ThemeSelector autoOpenOnMount initialTheme={currentTheme} />
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+          ) : null}
         </nav>
       </div>
     </header>

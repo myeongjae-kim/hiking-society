@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 
 import { requireCurrentUser } from '@/app/auth/actions/session';
+import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
 import { AssociateFeedNotice } from '@/app/feed/components/AssociateFeedNotice';
 import { ArticleDetailClient } from '@/app/article/components/ArticleDetailClient';
 import type { ArticleId } from '@/core/article/domain';
@@ -42,11 +44,12 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
   }
 
   const context = applicationContext();
-  const [snapshot, notificationSnapshot] = await Promise.all([
+  const [snapshot, notificationSnapshot, cookieStore] = await Promise.all([
     context
       .get('GetArticleDetailUseCase')
       .get({ articleId: articleId as ArticleId, currentUserId: user.id }),
     context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
+    cookies(),
   ]);
 
   if (!snapshot) {
@@ -57,6 +60,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     <ArticleDetailClient
       article={snapshot.article}
       comments={snapshot.comments}
+      currentTheme={getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value)}
       currentUser={user}
       highlightedCommentId={toCommentId(query.commentId)}
       notificationSnapshot={notificationSnapshot}

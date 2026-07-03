@@ -30,6 +30,7 @@ import { ArticlePanel } from './ArticlePanel';
 type ArticleDetailClientProps = {
   article: Article;
   comments: readonly Comment[];
+  currentTheme: string;
   currentUser: AuthenticatedUser;
   highlightedCommentId: CommentId | null;
   notificationSnapshot: NotificationListSnapshot;
@@ -40,6 +41,7 @@ type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
 export function ArticleDetailClient({
   article,
   comments,
+  currentTheme,
   currentUser,
   highlightedCommentId,
   notificationSnapshot,
@@ -265,6 +267,7 @@ export function ArticleDetailClient({
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
       <FeedTopbar
         currentAuthorName={currentAuthorName}
+        currentTheme={currentTheme}
         notificationSnapshot={notificationSnapshot}
         user={currentUser}
       />
