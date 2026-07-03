@@ -161,13 +161,13 @@ export function MediaViewer({
         return;
       }
 
-      if (isMediaZoomed) {
+      if (isSelectedMediaClick && isMediaZoomed) {
         event.preventDefault();
         event.stopPropagation();
         return;
       }
 
-      if (hasMultipleMedia) {
+      if (isSelectedMediaClick && hasMultipleMedia) {
         const clickPositionRatio = event.clientX / window.innerWidth;
 
         if (clickPositionRatio <= mediaNavigationClickZoneRatio) {
@@ -345,12 +345,6 @@ export function MediaViewer({
   }, []);
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (isMediaZoomed) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
     const target = event.target;
 
     if (target instanceof Element && !target.closest('[data-media-modal-surface]')) {
