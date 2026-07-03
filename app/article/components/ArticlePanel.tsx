@@ -94,7 +94,14 @@ export function ArticlePanel({
         <InlineMeta items={getArticleMeta(article, getVisibleCommentCount(comments))} />
       </header>
 
-      <PhotoViewer articleId={article.id} authorName={article.authorName} photos={article.photos} />
+      <div className="mx-[-1.25rem] w-[calc(100%_+_2.5rem)] sm:mx-0 sm:w-full">
+        <PhotoViewer
+          articleId={article.id}
+          authorName={article.authorName}
+          photos={article.photos}
+          thumbnailGridClassName="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))]"
+        />
+      </div>
 
       <p className="m-0 text-[1.05rem] leading-[1.6] break-keep whitespace-pre-wrap text-[var(--foreground0)]">
         {article.body}
