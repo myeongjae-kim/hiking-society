@@ -1,18 +1,17 @@
-import type { Article } from '@/core/article/domain';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
 import {
   createArticleMediaMetadataSummary,
   readOriginalPhotoMetadata,
 } from '@/app/common/utils/photoMetadata';
 import { createCompressedMp4File } from '@/app/common/utils/videoCompression';
-
+import type { Article } from '@/core/article/domain';
 import type { DraftMedia } from './articleFormTypes';
 
-const maxCompressedPhotoWidth = 1600;
+const maxCompressedPhotoWidth = 2048;
 const maxCompressedVideoWidth = 720;
 const maxVideoDurationMs = 90 * 1000;
 const maxVideoSourceBytes = 120 * 1024 * 1024;
-const webpQuality = 85;
+const webpQuality = 50;
 
 export function getArticleFormDefaults(article?: Article) {
   return {

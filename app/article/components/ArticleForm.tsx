@@ -50,7 +50,7 @@ export function ArticleForm({
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
-  const [processingLabel, setProcessingLabel] = useState('사진이나 동영상 처리 중');
+  const [processingLabel, setProcessingLabel] = useState('처리 중');
   const [draggedMediaOrder, setDraggedMediaOrder] = useState<number | null>(null);
   const [isMediaDropActive, setIsMediaDropActive] = useState(false);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
