@@ -56,14 +56,6 @@ jobs:
               "repo": "${{ github.event.repository.name }}",
               "ref": "${{ github.head_ref }}"
             },
-            "projectSettings": {
-              "rootDirectory": "apps/web",
-              "sourceFilesOutsideRootDirectory": true,
-              "installCommand": "cd ../.. && pnpm install",
-              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
-              "outputDirectory": ".next",
-              "framework": "nextjs"
-            }
           }'
       - name: "Add PR comment when failed"
         uses: actions/github-script@v6
@@ -105,14 +97,6 @@ jobs:
               "org": "${{ github.event.repository.owner.login }}",
               "repo": "${{ github.event.repository.name }}",
               "ref": "${{ inputs.BRANCH_NAME_STAGING }}"
-            },
-            "projectSettings": {
-              "rootDirectory": "apps/web",
-              "sourceFilesOutsideRootDirectory": true,
-              "installCommand": "cd ../.. && pnpm install",
-              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
-              "outputDirectory": ".next",
-              "framework": "nextjs"
             },
             "target": "production"
           }'
@@ -156,14 +140,6 @@ jobs:
               "org": "${{ github.event.repository.owner.login }}",
               "repo": "${{ github.event.repository.name }}",
               "ref": "${{ inputs.BRANCH_NAME_PROD }}"
-            },
-            "projectSettings": {
-              "rootDirectory": "apps/web",
-              "sourceFilesOutsideRootDirectory": true,
-              "installCommand": "cd ../.. && pnpm install",
-              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
-              "outputDirectory": ".next",
-              "framework": "nextjs"
             },
             "target": "production",
             "autoAssignCustomDomains": false
