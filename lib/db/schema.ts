@@ -3,6 +3,7 @@ import {
   boolean,
   doublePrecision,
   integer,
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -15,6 +16,13 @@ import {
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'member', 'associate']);
 export const articleMediaTypeEnum = pgEnum('article_media_type', ['image', 'video']);
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'article_comment',
+  'article_reply',
+  'comment_reply',
+  'article_like',
+  'comment_like',
+]);
 
 export const userTable = pgTable('user', {
   id: serial('id').primaryKey(),
@@ -158,6 +166,35 @@ export const commentLikeTable = pgTable(
   ],
 );
 
+export const notificationTable = pgTable(
+  'notification',
+  {
+    id: serial('id').primaryKey(),
+    recipientUserId: integer('recipient_user_id')
+      .notNull()
+      .references(() => userTable.id),
+    actorUserId: integer('actor_user_id')
+      .notNull()
+      .references(() => userTable.id),
+    type: notificationTypeEnum('type').notNull(),
+    articleId: integer('article_id')
+      .notNull()
+      .references(() => articleTable.id),
+    commentId: integer('comment_id').references(() => commentTable.id),
+    readAt: timestamp('read_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('notification_recipient_read_at_created_at_idx').on(
+      table.recipientUserId,
+      table.readAt,
+      table.createdAt,
+    ),
+    index('notification_recipient_created_at_idx').on(table.recipientUserId, table.createdAt),
+  ],
+);
+
 export type User = typeof userTable.$inferSelect;
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type SocialAccount = typeof socialAccountTable.$inferSelect;
+export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
