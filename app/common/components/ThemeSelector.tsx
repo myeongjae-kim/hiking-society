@@ -1,0 +1,91 @@
+'use client';
+
+import * as Select from '@radix-ui/react-select';
+import { useState } from 'react';
+
+import {
+  getWebtuiTheme,
+  WEBTUI_THEME_COOKIE_MAX_AGE_SECONDS,
+  WEBTUI_THEME_COOKIE_NAME,
+  webtuiThemeGroups,
+} from '@/app/common/theme/webtuiThemes';
+
+type ThemeSelectorProps = {
+  autoOpenOnMount?: boolean;
+  initialTheme: string;
+};
+
+function persistTheme(theme: string) {
+  document.documentElement.setAttribute('data-webtui-theme', theme);
+  document.cookie = `${WEBTUI_THEME_COOKIE_NAME}=${encodeURIComponent(
+    theme,
+  )}; Path=/; Max-Age=${WEBTUI_THEME_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+}
+
+export function ThemeSelector({ autoOpenOnMount = false, initialTheme }: ThemeSelectorProps) {
+  const [open, setOpen] = useState(autoOpenOnMount);
+  const [selectedTheme, setSelectedTheme] = useState(() => getWebtuiTheme(initialTheme));
+
+  function handleThemeChange(nextValue: string) {
+    const nextTheme = getWebtuiTheme(nextValue);
+
+    setSelectedTheme(nextTheme);
+    setOpen(true);
+    persistTheme(nextTheme);
+  }
+
+  return (
+    <Select.Root
+      open={open}
+      value={selectedTheme}
+      onOpenChange={setOpen}
+      onValueChange={handleThemeChange}
+    >
+      <Select.Trigger
+        aria-label="테마 선택"
+        className="inline-flex h-7 w-full min-w-0 items-center justify-between gap-2 !border !border-[var(--overlay0)] !bg-[var(--background1)] !bg-none px-2 font-mono !text-xs leading-none !text-[var(--foreground0)] hover:!bg-[var(--background2)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] sm:min-w-[12rem]"
+      >
+        <span className="text-[var(--subtext0)]">테마</span>
+        <span className="min-w-0 truncate">
+          <Select.Value />
+        </span>
+        <Select.Icon className="text-[var(--subtext0)]" aria-hidden="true">
+          v
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
+          className="z-[70] max-h-[min(26rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden border border-[var(--overlay0)] bg-[var(--background0)] text-[var(--foreground0)] shadow-[0.25rem_0.25rem_0_var(--surface0)]"
+          position="popper"
+          sideOffset={6}
+        >
+          <Select.Viewport className="p-1">
+            {webtuiThemeGroups.map((group) => (
+              <Select.Group key={group.label}>
+                <Select.Label className="px-2 pt-2 pb-1 font-mono text-[0.68rem] leading-none text-[var(--subtext0)] uppercase">
+                  {group.label}
+                </Select.Label>
+                {group.options.map((option) => (
+                  <Select.Item
+                    className="relative flex min-h-7 cursor-pointer items-center px-7 py-1.5 font-mono text-xs leading-none outline-none select-none data-[highlighted]:bg-[var(--surface0)] data-[highlighted]:text-[var(--foreground0)]"
+                    key={option.id}
+                    value={option.id}
+                  >
+                    <Select.ItemIndicator className="absolute left-2 text-[var(--green)]">
+                      *
+                    </Select.ItemIndicator>
+                    <Select.ItemText>
+                      {group.label === 'Base' || group.label === option.label
+                        ? option.label
+                        : `${group.label} ${option.label}`}
+                    </Select.ItemText>
+                  </Select.Item>
+                ))}
+              </Select.Group>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}

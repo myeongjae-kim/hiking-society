@@ -1,5 +1,6 @@
 'use client';
 
+import * as Popover from '@radix-ui/react-popover';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 
@@ -11,7 +12,12 @@ import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
-import { boxBorderClassName, gridStackClassName } from '@/app/common/components/styles';
+import { ThemeSelector } from '@/app/common/components/ThemeSelector';
+import {
+  boxBorderClassName,
+  gridStackClassName,
+  inlineButtonClassName,
+} from '@/app/common/components/styles';
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { StatusPanel } from '@/app/feed/components/StatusPanel';
@@ -44,6 +50,7 @@ import {
 type FeedCrudClientProps = {
   articles: readonly Article[];
   comments: readonly Comment[];
+  currentTheme: string;
   currentUser: AuthenticatedUser;
   hikings: readonly Hiking[];
 };
@@ -56,6 +63,7 @@ type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' 
 export function FeedCrudClient({
   articles: initialArticles,
   comments: initialComments,
+  currentTheme,
   currentUser,
   hikings: initialHikings,
 }: FeedCrudClientProps) {
@@ -373,9 +381,32 @@ export function FeedCrudClient({
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Command>{'echo "hello, hiking!"'}</Command>
-              <ActionButton onClick={() => setActiveHikingForm({ type: 'create' })}>
-                산행 등록
-              </ActionButton>
+              <div className="flex items-center gap-2">
+                <ActionButton onClick={() => setActiveHikingForm({ type: 'create' })}>
+                  산행 등록
+                </ActionButton>
+                <Popover.Root>
+                  <Popover.Trigger asChild>
+                    <button
+                      aria-label="테마 선택"
+                      className={inlineButtonClassName}
+                      title="테마 선택"
+                      type="button"
+                    >
+                      테마
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content
+                      align="end"
+                      className="z-[70] w-[min(18rem,calc(100vw-2rem))] border border-[var(--overlay0)] bg-[var(--background0)] p-2 text-[var(--foreground0)] shadow-[0.25rem_0.25rem_0_var(--surface0)]"
+                      sideOffset={8}
+                    >
+                      <ThemeSelector autoOpenOnMount initialTheme={currentTheme} />
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              </div>
             </div>
           </section>
 

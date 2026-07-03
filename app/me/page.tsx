@@ -1,8 +1,11 @@
 import { requireCurrentUser } from '@/app/auth/actions/session';
+import { ThemeSelector } from '@/app/common/components/ThemeSelector';
 import { inlineButtonClassName } from '@/app/common/components/styles';
+import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
 import { roleLabels } from '@/core/auth/model/roleLabels';
 import { canManageMembers } from '@/core/auth/model/roles';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { logout } from '../auth/actions/logout';
 import {
@@ -15,9 +18,9 @@ function formatDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 19).replace('T', ' ') : 'null';
 }
 
-function Row({ action, label, value }: { action?: ReactNode; label: string; value: string }) {
+function Row({ action, label, value }: { action?: ReactNode; label: string; value: ReactNode }) {
   return (
-    <div className="grid grid-cols-[9rem_minmax(0,1fr)_auto] items-center gap-4 border-b border-dotted border-[var(--overlay0)] pb-2">
+    <div className="grid grid-cols-1 gap-2 border-b border-dotted border-[var(--overlay0)] pb-2 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
       <dt className="text-[var(--subtext0)]">{label}</dt>
       <dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground0)]">{value}</dd>
       <div className="min-w-0">{action}</div>
@@ -31,6 +34,8 @@ function getProfileInitial(value: string) {
 
 export default async function MyPage() {
   const user = await requireCurrentUser();
+  const cookieStore = await cookies();
+  const theme = getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value);
   const displayName = user.displayName ?? user.name ?? user.email ?? '회원';
   const profileInitial = getProfileInitial(displayName);
 
@@ -95,6 +100,14 @@ export default async function MyPage() {
             value={displayName}
           />
           <Row action={<EmailEditDialog email={user.email} />} label="이메일" value={user.email} />
+          <Row
+            label="테마"
+            value={
+              <div className="w-full sm:w-fit">
+                <ThemeSelector initialTheme={theme} />
+              </div>
+            }
+          />
           <Row label="권한" value={roleLabels[user.role]} />
           <Row label="로그인 제공자" value={user.provider ?? 'null'} />
           <Row label="최근 로그인" value={formatDate(user.lastLoginAt)} />

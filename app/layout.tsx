@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import ClientDependencyContainer from './common/components/ClientDependencyContainer';
+import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from './common/theme/webtuiThemes';
 import './globals.css';
 
 const siteUrl =
@@ -35,13 +37,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const theme = getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value);
+
   return (
-    <html lang="en" data-webtui-theme="catppuccin-mocha" className="h-full antialiased">
+    <html lang="en" data-webtui-theme={theme} className="h-full antialiased">
       <head>
         <link href="https://cdn.myeongjae.kim/fonts/suit/SUIT.css" rel="stylesheet" />
       </head>

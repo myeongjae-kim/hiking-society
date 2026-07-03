@@ -36,6 +36,11 @@
 
 /* below should be last */
 @import "@webtui/theme-catppuccin";
+@import "@webtui/theme-everforest";
+@import "@webtui/theme-gruvbox";
+@import "@webtui/theme-nord";
+@import "@webtui/theme-osmium";
+@import "@webtui/theme-vitesse";
 @import "@webtui/plugin-nf";
 
 :root {
@@ -48,6 +53,76 @@
   --color-foreground: var(--foreground0);
   --font-sans: var(--font-family);
   --font-mono: var(--font-family);
+}
+
+@layer base {
+  [data-webtui-theme]:not([data-webtui-theme^="catppuccin"]):not([data-webtui-theme="osmium"]) {
+    --surface0: var(--background1);
+    --surface1: var(--background2);
+    --surface2: var(--background3);
+  }
+
+  [data-webtui-theme]:not([data-webtui-theme^="catppuccin"]) {
+    --overlay0: color-mix(in srgb, var(--foreground2) 56%, var(--background0));
+    --overlay1: color-mix(in srgb, var(--foreground2) 70%, var(--background0));
+    --subtext0: var(--foreground2);
+    --subtext1: var(--foreground1);
+  }
+
+  [data-webtui-theme|="gruvbox"] {
+    --blue: var(--gb-blue);
+    --green: var(--gb-green);
+    --mauve: var(--gb-purple);
+    --peach: var(--gb-orange);
+    --pink: var(--gb-purple);
+    --red: var(--gb-red);
+    --yellow: var(--gb-yellow);
+  }
+
+  [data-webtui-theme|="everforest"] {
+    --ef-aqua: var(--aqua);
+    --ef-blue: var(--blue);
+    --ef-green: var(--green);
+    --ef-orange: var(--orange);
+  }
+
+  [data-webtui-theme="nord"] {
+    --blue: var(--nord9);
+    --green: var(--nord14);
+    --mauve: var(--nord15);
+    --peach: var(--nord12);
+    --pink: var(--nord11);
+    --red: var(--nord11);
+    --yellow: var(--nord13);
+  }
+
+  [data-webtui-theme="osmium"] {
+    --background0: #1f1d2d;
+    --background1: #242336;
+    --background2: #353553;
+    --background3: #494764;
+    --surface0: #1f1d2d;
+    --surface1: #242336;
+    --surface2: #353553;
+    --blue: var(--blue-fg);
+    --green: var(--green-fg);
+    --mauve: var(--purple-fg);
+    --peach: var(--orange-fg);
+    --pink: var(--pink-fg);
+    --red: var(--red-fg);
+    --yellow: var(--yellow-fg);
+  }
+
+  [data-webtui-theme="dark"],
+  [data-webtui-theme="light"] {
+    --blue: var(--foreground1);
+    --green: var(--foreground1);
+    --mauve: var(--foreground1);
+    --peach: var(--foreground1);
+    --pink: var(--foreground1);
+    --red: var(--foreground1);
+    --yellow: var(--foreground1);
+  }
 }
 
 html {
