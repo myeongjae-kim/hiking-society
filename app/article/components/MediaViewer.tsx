@@ -72,6 +72,64 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeMetadataValue(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function getCameraLabel(media: ArticleMedia) {
+  const make = normalizeMetadataValue(media.metadata?.make);
+  const model = normalizeMetadataValue(media.metadata?.model);
+
+  if (make && model) {
+    return model.toLowerCase().includes(make.toLowerCase()) ? model : `${make} ${model}`;
+  }
+
+  return model ?? make;
+}
+
+function formatIso(value: string | null | undefined) {
+  const normalized = normalizeMetadataValue(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.toLowerCase().startsWith('iso')
+    ? normalized.toUpperCase()
+    : `ISO ${normalized}`;
+}
+
+function getExposureItems(media: ArticleMedia) {
+  const shutterSpeed =
+    normalizeMetadataValue(media.metadata?.exposureTime) ??
+    normalizeMetadataValue(media.metadata?.shutterSpeedValue);
+
+  return [
+    normalizeMetadataValue(media.metadata?.fNumber),
+    shutterSpeed,
+    formatIso(media.metadata?.isoSpeedRatings),
+  ].filter((value): value is string => Boolean(value));
+}
+
+function getMetadataPanelItems(media: ArticleMedia) {
+  if (media.mediaType !== 'image' || !media.metadata) {
+    return [];
+  }
+
+  const camera = getCameraLabel(media);
+  const exposureItems = getExposureItems(media);
+  const focalLength = normalizeMetadataValue(media.metadata.focalLengthIn35mmFilm);
+  const dateTime = normalizeMetadataValue(media.metadata.dateTime);
+
+  return [
+    camera ? { label: 'camera', value: camera } : null,
+    exposureItems.length > 0 ? { label: 'exposure', value: exposureItems.join(' · ') } : null,
+    focalLength ? { label: 'lens', value: focalLength } : null,
+    dateTime ? { label: 'taken', value: dateTime } : null,
+  ].filter((item): item is { label: string; value: string } => item !== null);
+}
+
 function getPointerDistance(firstPointer: GesturePointer, secondPointer: GesturePointer) {
   return Math.hypot(firstPointer.x - secondPointer.x, firstPointer.y - secondPointer.y);
 }
@@ -104,6 +162,7 @@ export function MediaViewer({
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
   const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
+  const selectedMetadataItems = getMetadataPanelItems(selectedMedia);
   const isMediaZoomed = mediaTransform.scale > mediaMinScale;
   const title = viewerLabel ?? `${authorName}의 산행 사진이나 동영상`;
   const descriptionId = `media-viewer-description-${viewerId}`;
@@ -641,12 +700,40 @@ export function MediaViewer({
             )}
           </div>
 
-          <p
-            className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
-            data-media-modal-surface
-          >
-            {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
-          </p>
+          {selectedMetadataItems.length > 0 ? (
+            <footer
+              className="grid max-h-[28svh] w-full max-w-[min(100%,58rem)] justify-self-center overflow-y-auto border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-3 py-2.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] sm:px-4"
+              data-media-modal-surface
+            >
+              <div className="grid gap-x-5 gap-y-2 sm:grid-cols-[auto_1fr_auto] sm:items-end">
+                <p className="m-0 font-mono text-[0.72rem] leading-none tracking-[0.18em] text-[var(--subtext0)] uppercase">
+                  frame {selectedIndex + 1}/{media.length}
+                </p>
+                <dl className="m-0 grid min-w-0 gap-x-4 gap-y-2 sm:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]">
+                  {selectedMetadataItems.map((item) => (
+                    <div className="grid min-w-0 gap-1" key={item.label}>
+                      <dt className="font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase">
+                        {item.label}
+                      </dt>
+                      <dd className="m-0 min-w-0 font-mono text-[0.9rem] leading-tight break-words text-[var(--foreground0)]">
+                        {item.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="m-0 justify-self-start border-l-2 border-[var(--blue)] pl-2 font-mono text-[0.72rem] leading-none text-[var(--subtext0)] sm:justify-self-end">
+                  photo data
+                </p>
+              </div>
+            </footer>
+          ) : (
+            <p
+              className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
+              data-media-modal-surface
+            >
+              {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
+            </p>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -1,3 +1,5 @@
+import type { ArticleMediaMetadataSummary } from '@/core/article/domain';
+
 const binaryTagNames = new Set([
   'Thumbnail',
   'JFIF Thumbnail',
@@ -109,6 +111,59 @@ function sanitizeMetadataValue(value: unknown, seen = new WeakSet<object>()): un
   }
 
   return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function getMetadataDescription(metadata: Record<string, unknown>, tagName: string) {
+  const exif = metadata.exif;
+
+  if (!isPlainObject(exif)) {
+    return null;
+  }
+
+  const tag = exif[tagName];
+
+  if (!isPlainObject(tag)) {
+    return null;
+  }
+
+  const description = tag.description;
+
+  if (typeof description === 'string') {
+    return description;
+  }
+
+  if (typeof description === 'number' && Number.isFinite(description)) {
+    return String(description);
+  }
+
+  return null;
+}
+
+function hasMetadataSummaryValue(metadata: ArticleMediaMetadataSummary) {
+  return Object.values(metadata).some(
+    (value) => typeof value === 'string' && value.trim().length > 0,
+  );
+}
+
+export function createArticleMediaMetadataSummary(
+  metadata: Record<string, unknown> | null | undefined,
+): ArticleMediaMetadataSummary | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const summary: ArticleMediaMetadataSummary = {
+    dateTime: getMetadataDescription(metadata, 'DateTime'),
+    exposureTime: getMetadataDescription(metadata, 'ExposureTime'),
+    fNumber: getMetadataDescription(metadata, 'FNumber'),
+    focalLengthIn35mmFilm: getMetadataDescription(metadata, 'FocalLengthIn35mmFilm'),
+    isoSpeedRatings: getMetadataDescription(metadata, 'ISOSpeedRatings'),
+    make: getMetadataDescription(metadata, 'Make'),
+    model: getMetadataDescription(metadata, 'Model'),
+    shutterSpeedValue: getMetadataDescription(metadata, 'ShutterSpeedValue'),
+  };
+
+  return hasMetadataSummaryValue(summary) ? summary : null;
 }
 
 export function sanitizeOriginalPhotoMetadata(value: unknown) {

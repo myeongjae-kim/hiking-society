@@ -1,5 +1,11 @@
 import type { ExistingArticleMediaInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
-import type { Article, ArticleId, ArticleMedia, ArticleMediaItems } from '@/core/article/domain';
+import type {
+  Article,
+  ArticleId,
+  ArticleMedia,
+  ArticleMediaItems,
+  ArticleMediaMetadataSummary,
+} from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type {
   Altitude,
@@ -58,6 +64,20 @@ function toArticleMedia(media: readonly ArticleMedia[]): ArticleMediaItems | nul
   }
 
   return [media[0], ...media.slice(1)];
+}
+
+function toMetadataSummary(
+  metadata: ArticleMediaMetadataSummary | null,
+): ArticleMediaMetadataSummary | null {
+  if (!metadata) {
+    return null;
+  }
+
+  return Object.values(metadata).some(
+    (value) => typeof value === 'string' && value.trim().length > 0,
+  )
+    ? metadata
+    : null;
 }
 
 function toOriginalMetadata(value: unknown) {
@@ -207,7 +227,34 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           .from(articleTable)
           .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
           .where(isNull(userTable.deletedAt)),
-        db.select().from(articleMediaTable).orderBy(articleMediaTable.order),
+        db
+          .select({
+            articleId: articleMediaTable.articleId,
+            byteSize: articleMediaTable.byteSize,
+            contentType: articleMediaTable.contentType,
+            durationMs: articleMediaTable.durationMs,
+            height: articleMediaTable.height,
+            mediaType: articleMediaTable.mediaType,
+            metadataDateTime: articleMediaMetadataTable.dateTime,
+            metadataExposureTime: articleMediaMetadataTable.exposureTime,
+            metadataFNumber: articleMediaMetadataTable.fNumber,
+            metadataFocalLengthIn35mmFilm: articleMediaMetadataTable.focalLengthIn35mmFilm,
+            metadataIsoSpeedRatings: articleMediaMetadataTable.isoSpeedRatings,
+            metadataMake: articleMediaMetadataTable.make,
+            metadataModel: articleMediaMetadataTable.model,
+            metadataShutterSpeedValue: articleMediaMetadataTable.shutterSpeedValue,
+            objectKey: articleMediaTable.objectKey,
+            order: articleMediaTable.order,
+            thumbnailUrl: articleMediaTable.thumbnailUrl,
+            url: articleMediaTable.url,
+            width: articleMediaTable.width,
+          })
+          .from(articleMediaTable)
+          .leftJoin(
+            articleMediaMetadataTable,
+            eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
+          )
+          .orderBy(articleMediaTable.order),
         db
           .select({
             articleId: commentTable.articleId,
@@ -260,6 +307,16 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         durationMs: media.durationMs,
         height: media.height,
         mediaType: media.mediaType,
+        metadata: toMetadataSummary({
+          dateTime: media.metadataDateTime,
+          exposureTime: media.metadataExposureTime,
+          fNumber: media.metadataFNumber,
+          focalLengthIn35mmFilm: media.metadataFocalLengthIn35mmFilm,
+          isoSpeedRatings: media.metadataIsoSpeedRatings,
+          make: media.metadataMake,
+          model: media.metadataModel,
+          shutterSpeedValue: media.metadataShutterSpeedValue,
+        }),
         objectKey: media.objectKey,
         order: media.order,
         thumbnailUrl: media.thumbnailUrl,

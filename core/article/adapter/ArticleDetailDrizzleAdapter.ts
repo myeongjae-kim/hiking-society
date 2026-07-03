@@ -1,10 +1,17 @@
-import type { Article, ArticleId, ArticleMedia, ArticleMediaItems } from '@/core/article/domain';
+import type {
+  Article,
+  ArticleId,
+  ArticleMedia,
+  ArticleMediaItems,
+  ArticleMediaMetadataSummary,
+} from '@/core/article/domain';
 import type { ArticleDetailQueryPort } from '@/core/article/application/port/out/ArticleDetailQueryPort';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { AuthorName, IsoDateTimeString } from '@/core/common/domain';
 import { db } from '@/lib/db/drizzle';
 import {
   articleLikeTable,
+  articleMediaMetadataTable,
   articleMediaTable,
   articleTable,
   commentLikeTable,
@@ -43,6 +50,20 @@ function toArticleMedia(media: readonly ArticleMedia[]): ArticleMediaItems | nul
   return [media[0], ...media.slice(1)];
 }
 
+function toMetadataSummary(
+  metadata: ArticleMediaMetadataSummary | null,
+): ArticleMediaMetadataSummary | null {
+  if (!metadata) {
+    return null;
+  }
+
+  return Object.values(metadata).some(
+    (value) => typeof value === 'string' && value.trim().length > 0,
+  )
+    ? metadata
+    : null;
+}
+
 function incrementCount(counts: Map<number, number>, id: number) {
   counts.set(id, (counts.get(id) ?? 0) + 1);
 }
@@ -77,8 +98,31 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
           )
           .limit(1),
         db
-          .select()
+          .select({
+            byteSize: articleMediaTable.byteSize,
+            contentType: articleMediaTable.contentType,
+            durationMs: articleMediaTable.durationMs,
+            height: articleMediaTable.height,
+            mediaType: articleMediaTable.mediaType,
+            metadataDateTime: articleMediaMetadataTable.dateTime,
+            metadataExposureTime: articleMediaMetadataTable.exposureTime,
+            metadataFNumber: articleMediaMetadataTable.fNumber,
+            metadataFocalLengthIn35mmFilm: articleMediaMetadataTable.focalLengthIn35mmFilm,
+            metadataIsoSpeedRatings: articleMediaMetadataTable.isoSpeedRatings,
+            metadataMake: articleMediaMetadataTable.make,
+            metadataModel: articleMediaMetadataTable.model,
+            metadataShutterSpeedValue: articleMediaMetadataTable.shutterSpeedValue,
+            objectKey: articleMediaTable.objectKey,
+            order: articleMediaTable.order,
+            thumbnailUrl: articleMediaTable.thumbnailUrl,
+            url: articleMediaTable.url,
+            width: articleMediaTable.width,
+          })
           .from(articleMediaTable)
+          .leftJoin(
+            articleMediaMetadataTable,
+            eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
+          )
           .where(eq(articleMediaTable.articleId, articleId))
           .orderBy(asc(articleMediaTable.order)),
         db
@@ -140,6 +184,16 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
         durationMs: mediaRow.durationMs,
         height: mediaRow.height,
         mediaType: mediaRow.mediaType,
+        metadata: toMetadataSummary({
+          dateTime: mediaRow.metadataDateTime,
+          exposureTime: mediaRow.metadataExposureTime,
+          fNumber: mediaRow.metadataFNumber,
+          focalLengthIn35mmFilm: mediaRow.metadataFocalLengthIn35mmFilm,
+          isoSpeedRatings: mediaRow.metadataIsoSpeedRatings,
+          make: mediaRow.metadataMake,
+          model: mediaRow.metadataModel,
+          shutterSpeedValue: mediaRow.metadataShutterSpeedValue,
+        }),
         objectKey: mediaRow.objectKey,
         order: mediaRow.order,
         thumbnailUrl: mediaRow.thumbnailUrl,

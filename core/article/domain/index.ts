@@ -5,12 +5,24 @@ export type ArticleId = Brand<string, 'ArticleId'>;
 
 export type ArticleMediaType = 'image' | 'video';
 
+export type ArticleMediaMetadataSummary = {
+  readonly dateTime?: string | null;
+  readonly exposureTime?: string | null;
+  readonly fNumber?: string | null;
+  readonly focalLengthIn35mmFilm?: string | null;
+  readonly isoSpeedRatings?: string | null;
+  readonly make?: string | null;
+  readonly model?: string | null;
+  readonly shutterSpeedValue?: string | null;
+};
+
 export type ArticleMedia = {
   readonly byteSize?: number;
   readonly contentType?: string;
   readonly durationMs?: number | null;
   readonly height?: number | null;
   readonly mediaType: ArticleMediaType;
+  readonly metadata?: ArticleMediaMetadataSummary | null;
   readonly objectKey?: string;
   readonly thumbnailUrl?: string | null;
   readonly url: string;
