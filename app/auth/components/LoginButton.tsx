@@ -2,13 +2,11 @@
 
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { loginWithGoogleCode } from '../actions/fetchPayloadFromGoogle';
 
 export const LoginButton = () => {
-  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const login = useGoogleLogin({
     flow: 'auth-code',
