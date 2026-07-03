@@ -28,6 +28,7 @@
 @layer base, utils, components;
 
 @import "@webtui/css";
+@import "@webtui/css/components/badge.css";
 @import "@webtui/css/components/button.css";
 @import "@webtui/css/components/input.css";
 @import "@webtui/css/components/popover.css";
