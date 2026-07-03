@@ -14,6 +14,8 @@ type CommentLineProps = {
   onEdit: (commentId: CommentId | null) => void;
   onReply: (commentId: CommentId | null) => void;
   onSubmitEdit: (commentId: CommentId, body: string) => void;
+  onToggleLike: (commentId: CommentId) => void;
+  likeDisabled: boolean;
   prompt: string;
   replies: readonly Comment[];
   reply?: boolean;
@@ -28,6 +30,8 @@ export function CommentLine({
   onEdit,
   onReply,
   onSubmitEdit,
+  onToggleLike,
+  likeDisabled,
   prompt,
   replies,
   reply,
@@ -72,6 +76,19 @@ export function CommentLine({
             </div>
             {!isDeleted ? (
               <div className="flex flex-wrap gap-1.5">
+                <ActionButton
+                  ariaPressed={comment.likedByCurrentUser}
+                  disabled={likeDisabled}
+                  onClick={() => onToggleLike(comment.id)}
+                  title={comment.likedByCurrentUser ? '댓글 좋아요 취소' : '댓글 좋아요'}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span className={comment.likedByCurrentUser ? 'text-[var(--red)]' : undefined}>
+                      {comment.likedByCurrentUser ? '❤' : '♡'}
+                    </span>
+                    <span>{comment.likeCount}</span>
+                  </span>
+                </ActionButton>
                 {!reply ? (
                   <ActionButton onClick={() => onReply(comment.id)}>답글</ActionButton>
                 ) : null}

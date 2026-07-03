@@ -35,6 +35,8 @@ import {
   deleteArticle as deleteArticleAction,
   deleteComment as deleteCommentAction,
   deleteHiking as deleteHikingAction,
+  toggleArticleLike as toggleArticleLikeAction,
+  toggleCommentLike as toggleCommentLikeAction,
   updateArticle as updateArticleAction,
   updateComment as updateCommentAction,
   updateHiking as updateHikingAction,
@@ -60,6 +62,8 @@ type ActiveArticleForm =
 
 type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' } | null;
 
+type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
+
 export function FeedCrudClient({
   articles: initialArticles,
   comments: initialComments,
@@ -80,6 +84,7 @@ export function FeedCrudClient({
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
+  const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
 
   const groups = useMemo(
     () => getFeedGroups(initialHikings, initialArticles),
@@ -138,7 +143,12 @@ export function FeedCrudClient({
 
   const runAction = (
     action: () => Promise<{ error?: string; ok: boolean }>,
-    options: { errorKey: string; loadingLabel?: string; onSuccess?: () => void },
+    options: {
+      errorKey: string;
+      loadingLabel?: string;
+      onSettled?: () => void;
+      onSuccess?: () => void;
+    },
   ) => {
     if (options.loadingLabel) {
       setLoadingLabel(options.loadingLabel);
@@ -147,16 +157,34 @@ export function FeedCrudClient({
     }
 
     startTransition(async () => {
-      const result = await action();
+      try {
+        const result = await action();
 
-      if (!result.ok) {
-        setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
-        return;
+        if (!result.ok) {
+          setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
+          return;
+        }
+
+        options.onSuccess?.();
+        setError(options.errorKey, null);
+        router.refresh();
+      } finally {
+        options.onSettled?.();
+      }
+    });
+  };
+
+  const setLikePending = (key: LikePendingKey, pending: boolean) => {
+    setPendingLikeByKey((currentPending) => {
+      const nextPending = { ...currentPending };
+
+      if (pending) {
+        nextPending[key] = true;
+      } else {
+        delete nextPending[key];
       }
 
-      options.onSuccess?.();
-      setError(options.errorKey, null);
-      router.refresh();
+      return nextPending;
     });
   };
 
@@ -382,6 +410,30 @@ export function FeedCrudClient({
     });
   };
 
+  const toggleArticleLike = (articleId: ArticleId) => {
+    const likePendingKey = `article-${articleId}` as LikePendingKey;
+    const formData = new FormData();
+    formData.set('articleId', articleId);
+
+    setLikePending(likePendingKey, true);
+    runAction(() => toggleArticleLikeAction(formData), {
+      errorKey: `article-${articleId}`,
+      onSettled: () => setLikePending(likePendingKey, false),
+    });
+  };
+
+  const toggleCommentLike = (commentId: CommentId) => {
+    const likePendingKey = `comment-${commentId}` as LikePendingKey;
+    const formData = new FormData();
+    formData.set('commentId', commentId);
+
+    setLikePending(likePendingKey, true);
+    runAction(() => toggleCommentLikeAction(formData), {
+      errorKey: `comment-${commentId}`,
+      onSettled: () => setLikePending(likePendingKey, false),
+    });
+  };
+
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
       <FeedTopbar currentAuthorName={currentAuthorName} user={currentUser} />
@@ -460,6 +512,12 @@ export function FeedCrudClient({
                       onEditComment={setEditingCommentId}
                       onReplyComment={setReplyingCommentId}
                       onSubmitCommentEdit={updateComment}
+                      onToggleArticleLike={toggleArticleLike}
+                      onToggleCommentLike={toggleCommentLike}
+                      articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
+                      isCommentLikePending={(commentId) =>
+                        pendingLikeByKey[`comment-${commentId}`] === true
+                      }
                       replyingCommentId={replyingCommentId}
                     />
                   ))

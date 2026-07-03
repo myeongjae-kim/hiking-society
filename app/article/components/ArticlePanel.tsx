@@ -14,12 +14,14 @@ import { getArticleMeta } from './articleMeta';
 
 type ArticlePanelProps = {
   article: Article;
+  articleLikePending: boolean;
   canEdit: boolean;
   comments: readonly Comment[];
   commentFormResetKey: number;
   currentUserId: number;
   editingCommentId: CommentId | null;
   errorByKey: Record<string, string>;
+  isCommentLikePending: (commentId: CommentId) => boolean;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
   onDeleteArticle: () => void;
   onDeleteComment: (comment: Comment) => void;
@@ -27,17 +29,21 @@ type ArticlePanelProps = {
   onEditComment: (commentId: CommentId | null) => void;
   onReplyComment: (commentId: CommentId | null) => void;
   onSubmitCommentEdit: (commentId: CommentId, body: string) => void;
+  onToggleArticleLike: (articleId: ArticleId) => void;
+  onToggleCommentLike: (commentId: CommentId) => void;
   replyingCommentId: CommentId | null;
 };
 
 export function ArticlePanel({
   article,
+  articleLikePending,
   canEdit,
   comments,
   commentFormResetKey,
   currentUserId,
   editingCommentId,
   errorByKey,
+  isCommentLikePending,
   onCreateComment,
   onDeleteArticle,
   onDeleteComment,
@@ -45,6 +51,8 @@ export function ArticlePanel({
   onEditComment,
   onReplyComment,
   onSubmitCommentEdit,
+  onToggleArticleLike,
+  onToggleCommentLike,
   replyingCommentId,
 }: ArticlePanelProps) {
   const { repliesByParentId, topLevelComments } = getThreadedComments(comments);
@@ -107,6 +115,24 @@ export function ArticlePanel({
         {article.body}
       </p>
 
+      {article.deletedAt === null ? (
+        <div>
+          <ActionButton
+            ariaPressed={article.likedByCurrentUser}
+            disabled={articleLikePending}
+            onClick={() => onToggleArticleLike(article.id)}
+            title={article.likedByCurrentUser ? '게시글 좋아요 취소' : '게시글 좋아요'}
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className={article.likedByCurrentUser ? 'text-[var(--red)]' : undefined}>
+                {article.likedByCurrentUser ? '❤' : '♡'}
+              </span>
+              <span>{article.likeCount}</span>
+            </span>
+          </ActionButton>
+        </div>
+      ) : null}
+
       <section
         className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5"
         aria-label={`${article.authorName} 게시글 댓글`}
@@ -123,6 +149,8 @@ export function ArticlePanel({
               onEdit={onEditComment}
               onReply={onReplyComment}
               onSubmitEdit={onSubmitCommentEdit}
+              onToggleLike={onToggleCommentLike}
+              likeDisabled={isCommentLikePending(comment.id)}
               prompt="comment>"
               replies={visibleReplies}
             />
@@ -147,6 +175,8 @@ export function ArticlePanel({
                 onEdit={onEditComment}
                 onReply={onReplyComment}
                 onSubmitEdit={onSubmitCommentEdit}
+                onToggleLike={onToggleCommentLike}
+                likeDisabled={isCommentLikePending(reply.id)}
                 prompt="reply>"
                 replies={[]}
                 reply

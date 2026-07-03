@@ -124,6 +124,40 @@ export const commentTable = pgTable('comment', {
   deletedAt: timestamp('deleted_at'),
 });
 
+export const articleLikeTable = pgTable(
+  'article_like',
+  {
+    id: serial('id').primaryKey(),
+    articleId: integer('article_id')
+      .notNull()
+      .references(() => articleTable.id),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => userTable.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('article_like_article_id_user_id_unique').on(table.articleId, table.userId),
+  ],
+);
+
+export const commentLikeTable = pgTable(
+  'comment_like',
+  {
+    id: serial('id').primaryKey(),
+    commentId: integer('comment_id')
+      .notNull()
+      .references(() => commentTable.id),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => userTable.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('comment_like_comment_id_user_id_unique').on(table.commentId, table.userId),
+  ],
+);
+
 export type User = typeof userTable.$inferSelect;
 export type UserRole = (typeof userRoleEnum.enumValues)[number];
 export type SocialAccount = typeof socialAccountTable.$inferSelect;

@@ -18,7 +18,9 @@ import type { Hiking, HikingId } from '@/core/hiking/domain';
 import { db } from '@/lib/db/drizzle';
 import {
   articleMediaTable,
+  articleLikeTable,
   articleTable,
+  commentLikeTable,
   commentTable,
   hikingTable,
   userTable,
@@ -70,70 +72,97 @@ function getExistingMediaInput(media: ExistingArticleMediaInput): StoredArticleM
   };
 }
 
+function incrementCount(counts: Map<number, number>, id: number) {
+  counts.set(id, (counts.get(id) ?? 0) + 1);
+}
+
 export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
-  async list() {
-    const [hikingRows, articleRows, mediaRows, commentRows] = await Promise.all([
-      db
-        .select({
-          authorUserId: hikingTable.authorUserId,
-          completedAt: hikingTable.completedAt,
-          createdAt: hikingTable.createdAt,
-          displayName: userTable.displayName,
-          email: userTable.email,
-          hikingDate: hikingTable.hikingDate,
-          id: hikingTable.id,
-          latitude: hikingTable.latitude,
-          longitude: hikingTable.longitude,
-          mountainName: hikingTable.mountainName,
-          name: userTable.name,
-          participantsCsv: hikingTable.participantsCsv,
-          restaurantAddress: hikingTable.restaurantAddress,
-          startedAt: hikingTable.startedAt,
-          timezone: hikingTable.timezone,
-          updatedAt: hikingTable.updatedAt,
-        })
-        .from(hikingTable)
-        .innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
-        .where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
-      db
-        .select({
-          authorUserId: articleTable.authorUserId,
-          body: articleTable.body,
-          createdAt: articleTable.createdAt,
-          deletedAt: articleTable.deletedAt,
-          displayName: userTable.displayName,
-          email: userTable.email,
-          hikingId: articleTable.hikingId,
-          id: articleTable.id,
-          name: userTable.name,
-          profileImageUrl: userTable.profileImageUrl,
-          updatedAt: articleTable.updatedAt,
-        })
-        .from(articleTable)
-        .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
-        .where(isNull(userTable.deletedAt)),
-      db.select().from(articleMediaTable).orderBy(articleMediaTable.order),
-      db
-        .select({
-          articleId: commentTable.articleId,
-          authorUserId: commentTable.authorUserId,
-          body: commentTable.body,
-          createdAt: commentTable.createdAt,
-          deletedAt: commentTable.deletedAt,
-          displayName: userTable.displayName,
-          email: userTable.email,
-          id: commentTable.id,
-          name: userTable.name,
-          parentCommentId: commentTable.parentCommentId,
-          profileImageUrl: userTable.profileImageUrl,
-          updatedAt: commentTable.updatedAt,
-        })
-        .from(commentTable)
-        .innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
-        .where(isNull(userTable.deletedAt)),
-    ]);
+  async list(input: Parameters<FeedQueryPort['list']>[0]) {
+    const [hikingRows, articleRows, mediaRows, commentRows, articleLikeRows, commentLikeRows] =
+      await Promise.all([
+        db
+          .select({
+            authorUserId: hikingTable.authorUserId,
+            completedAt: hikingTable.completedAt,
+            createdAt: hikingTable.createdAt,
+            displayName: userTable.displayName,
+            email: userTable.email,
+            hikingDate: hikingTable.hikingDate,
+            id: hikingTable.id,
+            latitude: hikingTable.latitude,
+            longitude: hikingTable.longitude,
+            mountainName: hikingTable.mountainName,
+            name: userTable.name,
+            participantsCsv: hikingTable.participantsCsv,
+            restaurantAddress: hikingTable.restaurantAddress,
+            startedAt: hikingTable.startedAt,
+            timezone: hikingTable.timezone,
+            updatedAt: hikingTable.updatedAt,
+          })
+          .from(hikingTable)
+          .innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
+          .where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
+        db
+          .select({
+            authorUserId: articleTable.authorUserId,
+            body: articleTable.body,
+            createdAt: articleTable.createdAt,
+            deletedAt: articleTable.deletedAt,
+            displayName: userTable.displayName,
+            email: userTable.email,
+            hikingId: articleTable.hikingId,
+            id: articleTable.id,
+            name: userTable.name,
+            profileImageUrl: userTable.profileImageUrl,
+            updatedAt: articleTable.updatedAt,
+          })
+          .from(articleTable)
+          .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+          .where(isNull(userTable.deletedAt)),
+        db.select().from(articleMediaTable).orderBy(articleMediaTable.order),
+        db
+          .select({
+            articleId: commentTable.articleId,
+            authorUserId: commentTable.authorUserId,
+            body: commentTable.body,
+            createdAt: commentTable.createdAt,
+            deletedAt: commentTable.deletedAt,
+            displayName: userTable.displayName,
+            email: userTable.email,
+            id: commentTable.id,
+            name: userTable.name,
+            parentCommentId: commentTable.parentCommentId,
+            profileImageUrl: userTable.profileImageUrl,
+            updatedAt: commentTable.updatedAt,
+          })
+          .from(commentTable)
+          .innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+          .where(isNull(userTable.deletedAt)),
+        db
+          .select({
+            articleId: articleLikeTable.articleId,
+            userId: articleLikeTable.userId,
+          })
+          .from(articleLikeTable)
+          .innerJoin(articleTable, eq(articleTable.id, articleLikeTable.articleId))
+          .innerJoin(userTable, eq(userTable.id, articleLikeTable.userId))
+          .where(and(isNull(articleTable.deletedAt), isNull(userTable.deletedAt))),
+        db
+          .select({
+            commentId: commentLikeTable.commentId,
+            userId: commentLikeTable.userId,
+          })
+          .from(commentLikeTable)
+          .innerJoin(commentTable, eq(commentTable.id, commentLikeTable.commentId))
+          .innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
+          .where(and(isNull(commentTable.deletedAt), isNull(userTable.deletedAt))),
+      ]);
 
     const mediaByArticleId = new Map<number, ArticleMedia[]>();
+    const articleLikeCountByArticleId = new Map<number, number>();
+    const likedArticleIdsByCurrentUser = new Set<number>();
+    const commentLikeCountByCommentId = new Map<number, number>();
+    const likedCommentIdsByCurrentUser = new Set<number>();
 
     for (const media of mediaRows) {
       const articleMedia = mediaByArticleId.get(media.articleId) ?? [];
@@ -150,6 +179,22 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         width: media.width,
       });
       mediaByArticleId.set(media.articleId, articleMedia);
+    }
+
+    for (const like of articleLikeRows) {
+      incrementCount(articleLikeCountByArticleId, like.articleId);
+
+      if (like.userId === input.currentUserId) {
+        likedArticleIdsByCurrentUser.add(like.articleId);
+      }
+    }
+
+    for (const like of commentLikeRows) {
+      incrementCount(commentLikeCountByCommentId, like.commentId);
+
+      if (like.userId === input.currentUserId) {
+        likedCommentIdsByCurrentUser.add(like.commentId);
+      }
     }
 
     const hikings: Hiking[] = hikingRows.map((row) => ({
@@ -187,6 +232,8 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           edited: row.updatedAt.getTime() !== row.createdAt.getTime(),
           hikingId: String(row.hikingId) as HikingId,
           id: String(row.id) as ArticleId,
+          likeCount: articleLikeCountByArticleId.get(row.id) ?? 0,
+          likedByCurrentUser: likedArticleIdsByCurrentUser.has(row.id),
           media,
           updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
         },
@@ -202,6 +249,8 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       createdAt: row.createdAt.toISOString() as IsoDateTimeString,
       deletedAt: toIsoDateTime(row.deletedAt),
       id: String(row.id) as CommentId,
+      likeCount: commentLikeCountByCommentId.get(row.id) ?? 0,
+      likedByCurrentUser: likedCommentIdsByCurrentUser.has(row.id),
       parentCommentId:
         row.parentCommentId === null ? null : (String(row.parentCommentId) as CommentId),
       updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,

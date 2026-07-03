@@ -28,6 +28,8 @@ export type Article = {
   readonly body: string;
   readonly authorName: AuthorName;
   readonly authorProfileImageUrl: string | null;
+  readonly likeCount: number;
+  readonly likedByCurrentUser: boolean;
   readonly createdAt: IsoDateTimeString;
   readonly updatedAt: IsoDateTimeString;
   readonly deletedAt: IsoDateTimeString | null;

@@ -91,7 +91,7 @@ export const mockHikings: readonly Hiking[] = [
   },
 ];
 
-export const mockArticles: readonly Article[] = [
+const rawMockArticles = [
   {
     id: 'article-1-1' as Article['id'],
     hikingId: 'hiking-1' as Hiking['id'],
@@ -288,9 +288,15 @@ export const mockArticles: readonly Article[] = [
     deletedAt: null,
     edited: true,
   },
-];
+] as readonly Omit<Article, 'likeCount' | 'likedByCurrentUser'>[];
 
-export const mockComments: readonly Comment[] = [
+export const mockArticles: readonly Article[] = rawMockArticles.map((article) => ({
+  ...article,
+  likeCount: 0,
+  likedByCurrentUser: false,
+}));
+
+const rawMockComments = [
   {
     id: 'comment-1-1-1' as Comment['id'],
     articleId: 'article-1-1' as Article['id'],
@@ -1446,4 +1452,10 @@ export const mockComments: readonly Comment[] = [
     updatedAt: '2026-03-21T23:27:00+09:00' as IsoDateTimeString,
     deletedAt: null,
   },
-];
+] as readonly Omit<Comment, 'likeCount' | 'likedByCurrentUser'>[];
+
+export const mockComments: readonly Comment[] = rawMockComments.map((comment) => ({
+  ...comment,
+  likeCount: 0,
+  likedByCurrentUser: false,
+}));

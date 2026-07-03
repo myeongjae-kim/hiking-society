@@ -8,7 +8,7 @@ export class ListFeedService implements ListFeedUseCase {
     private feedQueryPort: FeedQueryPort,
   ) {}
 
-  async list() {
-    return this.feedQueryPort.list();
+  async list(input: Parameters<ListFeedUseCase['list']>[0]) {
+    return this.feedQueryPort.list(input);
   }
 }

@@ -28,6 +28,10 @@ import { FeedCommandPort } from '../feed/application/port/out/FeedCommandPort';
 import { FeedQueryPort } from '../feed/application/port/out/FeedQueryPort';
 import { HikingCommandService } from '../hiking/application/HikingCommandService';
 import { HikingCommandUseCase } from '../hiking/application/port/in/HikingCommandUseCase';
+import { LikeDrizzleAdapter } from '../like/adapter/LikeDrizzleAdapter';
+import { LikeCommandService } from '../like/application/LikeCommandService';
+import { LikeCommandUseCase } from '../like/application/port/in/LikeCommandUseCase';
+import { LikeCommandPort } from '../like/application/port/out/LikeCommandPort';
 import { MemberCommandAdapter } from '../member/adapter/MemberCommandAdapter';
 import { MemberQueryAdapter } from '../member/adapter/MemberQueryAdapter';
 import { ListMembersService } from '../member/application/ListMembersService';
@@ -54,6 +58,8 @@ export type Beans = {
   FeedQueryPort: FeedQueryPort;
   GoogleOAuthPort: GoogleOAuthPort;
   HikingCommandUseCase: HikingCommandUseCase;
+  LikeCommandPort: LikeCommandPort;
+  LikeCommandUseCase: LikeCommandUseCase;
   ListFeedUseCase: ListFeedUseCase;
   LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
   MediaStoragePort: MediaStoragePort;
@@ -86,6 +92,8 @@ export const beanConfig: BeanConfig<Beans> = {
   FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
   GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
   HikingCommandUseCase: (bind) => bind().to(HikingCommandService),
+  LikeCommandPort: (bind) => bind().to(LikeDrizzleAdapter),
+  LikeCommandUseCase: (bind) => bind().to(LikeCommandService),
   ListFeedUseCase: (bind) => bind().to(ListFeedService),
   LoginWithGoogleCodeUseCase: (bind) => bind().to(LoginWithGoogleCodeService),
   MediaStoragePort: (bind) => bind().to(S3MediaStorageAdapter),

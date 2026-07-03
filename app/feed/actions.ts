@@ -315,6 +315,21 @@ export async function deleteArticle(formData: FormData): Promise<ActionResult> {
   }
 }
 
+export async function toggleArticleLike(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await requireMember();
+    const articleId = getId<ArticleId>(formData, 'articleId');
+
+    await applicationContext()
+      .get('LikeCommandUseCase')
+      .toggleArticleLike({ articleId, userId: user.id });
+
+    return success();
+  } catch (error) {
+    return toActionResult(error);
+  }
+}
+
 export async function createComment(formData: FormData): Promise<ActionResult> {
   try {
     const user = await requireMember();
@@ -334,6 +349,21 @@ export async function createComment(formData: FormData): Promise<ActionResult> {
             }
           : { articleId, authorUserId: user.id, body: values.body },
       );
+
+    return success();
+  } catch (error) {
+    return toActionResult(error);
+  }
+}
+
+export async function toggleCommentLike(formData: FormData): Promise<ActionResult> {
+  try {
+    const user = await requireMember();
+    const commentId = getId<CommentId>(formData, 'commentId');
+
+    await applicationContext()
+      .get('LikeCommandUseCase')
+      .toggleCommentLike({ commentId, userId: user.id });
 
     return success();
   } catch (error) {
