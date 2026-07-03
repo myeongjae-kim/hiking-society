@@ -111,11 +111,36 @@ export const articleMediaTable = pgTable(
     durationMs: integer('duration_ms'),
     width: integer('width'),
     height: integer('height'),
-    originalMetadata: jsonb('original_metadata').$type<Record<string, unknown> | null>(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex('article_media_article_id_order_unique').on(table.articleId, table.order),
+  ],
+);
+
+export const articleMediaMetadataTable = pgTable(
+  'article_media_metadata',
+  {
+    id: serial('id').primaryKey(),
+    articleMediaId: integer('article_media_id')
+      .notNull()
+      .references(() => articleMediaTable.id, { onDelete: 'cascade' }),
+    originalMetadata: jsonb('original_metadata').$type<Record<string, unknown>>().notNull(),
+    make: text('make'),
+    model: text('model'),
+    fNumber: text('f_number'),
+    dateTime: text('date_time'),
+    focalLengthIn35mmFilm: text('focal_length_in_35mm_film'),
+    exposureTime: text('exposure_time'),
+    isoSpeedRatings: text('iso_speed_ratings'),
+    shutterSpeedValue: text('shutter_speed_value'),
+    gpsAltitude: doublePrecision('gps_altitude'),
+    gpsLatitude: doublePrecision('gps_latitude'),
+    gpsLongitude: doublePrecision('gps_longitude'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('article_media_metadata_article_media_id_unique').on(table.articleMediaId),
   ],
 );
 
