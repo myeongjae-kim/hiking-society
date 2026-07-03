@@ -105,12 +105,6 @@ export function ArticlePanel({
         aria-label={`${article.authorName} 게시글 댓글`}
       >
         <Command>comments.list --count={getVisibleCommentCount(comments)}</Command>
-        <CommentForm
-          error={errorByKey[`comment-new-${article.id}`]}
-          key={`comment-new-${article.id}-${commentFormResetKey}`}
-          onSubmit={(body) => onCreateComment(article.id, body, null)}
-          prompt="comment.new>"
-        />
         {visibleCommentThreads.map(({ comment, visibleReplies }) => (
           <div className="grid min-w-0 gap-2" key={comment.id}>
             <CommentLine
@@ -153,6 +147,12 @@ export function ArticlePanel({
             ))}
           </div>
         ))}
+        <CommentForm
+          error={errorByKey[`comment-new-${article.id}`]}
+          key={`comment-new-${article.id}-${commentFormResetKey}`}
+          onSubmit={(body) => onCreateComment(article.id, body, null)}
+          prompt="comment.new>"
+        />
       </section>
     </article>
   );
