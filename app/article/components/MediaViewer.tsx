@@ -172,6 +172,13 @@ export function MediaViewer({
       if (event.pointerType === 'touch') {
         touchPointerIdsRef.current.add(event.pointerId);
 
+        if (blockTouchSwipe()) {
+          shouldSuppressStageClickRef.current = true;
+          dragStateRef.current = null;
+          resetMediaDragFeedback(false);
+          return;
+        }
+
         if (touchPointerIdsRef.current.size > 1) {
           const dragState = dragStateRef.current;
 
@@ -201,7 +208,7 @@ export function MediaViewer({
         event.currentTarget.setPointerCapture(event.pointerId);
       }
     },
-    [hasMultipleMedia, resetMediaDragFeedback],
+    [blockTouchSwipe, hasMultipleMedia, resetMediaDragFeedback],
   );
 
   const resetMediaDrag = useCallback(
@@ -443,7 +450,9 @@ export function MediaViewer({
         <Dialog.Overlay className={photoDialogOverlayClassName} />
         <Dialog.Content
           aria-describedby={descriptionId}
-          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
+          className={`inset-0 z-[60] grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:fixed sm:p-5 ${
+            isZoomed ? 'absolute' : 'fixed'
+          }`}
           onClick={closeOnBackdropClick}
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
@@ -486,9 +495,7 @@ export function MediaViewer({
 
             <div
               className={`grid h-full min-h-0 w-full place-items-center select-none ${
-                isZoomed
-                  ? '[touch-action:pan-x_pan-y_pinch-zoom]'
-                  : '[touch-action:pan-y_pinch-zoom]'
+                isZoomed ? '[touch-action:auto]' : '[touch-action:pan-y_pinch-zoom]'
               }`}
               data-media-modal-surface
               onClick={handleMediaStageClick}
