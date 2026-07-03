@@ -1,10 +1,10 @@
 'use client';
 
+import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { loginWithGoogleCode } from '../actions/fetchPayloadFromGoogle';
 
 export const LoginButton = () => {
@@ -16,8 +16,7 @@ export const LoginButton = () => {
       setIsPending(true);
       loginWithGoogleCode(tokenResponse.code)
         .then(() => {
-          router.push('/feed');
-          router.refresh();
+          window.location.href = '/feed';
         })
         .catch((error: unknown) => {
           toast.error(error instanceof Error ? error.message : 'Login Failed.', {
