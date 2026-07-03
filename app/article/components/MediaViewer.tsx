@@ -43,12 +43,20 @@ type PinchGesture = {
   startScale: number;
 };
 
+type SwipeGesture = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+};
+
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
 const mediaNavigationClickZoneRatio = 0.3;
 const mediaMinScale = 1;
 const mediaMaxScale = 4;
 const mediaPanClickSuppressThresholdPx = 6;
+const mediaSwipeThresholdPx = 48;
+const mediaHorizontalSwipeRatio = 1.25;
 const initialMediaTransform: MediaTransform = {
   scale: mediaMinScale,
   translateX: 0,
@@ -85,6 +93,7 @@ export function MediaViewer({
   const pinchGestureRef = useRef<PinchGesture | null>(null);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const shouldSuppressStageClickRef = useRef(false);
+  const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const [open, setOpen] = useState(false);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
@@ -120,6 +129,7 @@ export function MediaViewer({
     panGestureRef.current = null;
     pinchGestureRef.current = null;
     shouldSuppressStageClickRef.current = false;
+    swipeGestureRef.current = null;
     setIsMediaGestureActive(false);
     setMediaTransformState(initialMediaTransform);
   }, [setMediaTransformState]);
@@ -208,6 +218,12 @@ export function MediaViewer({
         return;
       }
 
+      const selectedMediaSurface = selectedMediaSurfaceRef.current;
+
+      if (!(event.target instanceof Node) || !selectedMediaSurface?.contains(event.target)) {
+        return;
+      }
+
       activePointersRef.current.set(event.pointerId, {
         x: event.clientX,
         y: event.clientY,
@@ -224,13 +240,20 @@ export function MediaViewer({
           startScale: mediaTransformRef.current.scale,
         };
         shouldSuppressStageClickRef.current = true;
+        swipeGestureRef.current = null;
         return;
       }
 
       if (mediaTransformRef.current.scale <= mediaMinScale) {
+        swipeGestureRef.current = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+        };
         return;
       }
 
+      swipeGestureRef.current = null;
       panGestureRef.current = {
         pointerId: event.pointerId,
         startTranslateX: mediaTransformRef.current.translateX,
@@ -256,6 +279,7 @@ export function MediaViewer({
       const activePointers = Array.from(activePointersRef.current.values());
 
       if (activePointers.length >= 2) {
+        swipeGestureRef.current = null;
         const pinchGesture = pinchGestureRef.current;
 
         if (!pinchGesture || pinchGesture.startDistance === 0) {
@@ -275,6 +299,25 @@ export function MediaViewer({
           translateX: mediaTransformRef.current.translateX,
           translateY: mediaTransformRef.current.translateY,
         });
+        return;
+      }
+
+      const swipeGesture = swipeGestureRef.current;
+
+      if (
+        swipeGesture?.pointerId === event.pointerId &&
+        mediaTransformRef.current.scale <= mediaMinScale
+      ) {
+        const deltaX = event.clientX - swipeGesture.startX;
+        const deltaY = event.clientY - swipeGesture.startY;
+
+        if (
+          Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
+          Math.abs(deltaY) >= mediaPanClickSuppressThresholdPx
+        ) {
+          shouldSuppressStageClickRef.current = true;
+        }
+
         return;
       }
 
@@ -303,46 +346,82 @@ export function MediaViewer({
     [selectedMediaIsVideo, setMediaTransformState],
   );
 
-  const finishImageGesture = useCallback((event: PointerEvent<HTMLDivElement>) => {
-    if (!activePointersRef.current.has(event.pointerId)) {
-      return;
-    }
+  const finishImageGesture = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (!activePointersRef.current.has(event.pointerId)) {
+        return;
+      }
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
 
-    activePointersRef.current.delete(event.pointerId);
+      activePointersRef.current.delete(event.pointerId);
 
-    const activePointers = Array.from(activePointersRef.current.entries());
+      const activePointers = Array.from(activePointersRef.current.entries());
+      const swipeGesture = swipeGestureRef.current;
 
-    if (activePointers.length >= 2) {
-      const [, firstPointer] = activePointers[0];
-      const [, secondPointer] = activePointers[1];
-      pinchGestureRef.current = {
-        startDistance: getPointerDistance(firstPointer, secondPointer),
-        startScale: mediaTransformRef.current.scale,
-      };
-      return;
-    }
+      if (
+        swipeGesture?.pointerId === event.pointerId &&
+        hasMultipleMedia &&
+        mediaTransformRef.current.scale <= mediaMinScale
+      ) {
+        const pointer = {
+          x: event.clientX,
+          y: event.clientY,
+        };
+        const deltaX = pointer.x - swipeGesture.startX;
+        const deltaY = pointer.y - swipeGesture.startY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+        const isSwipe =
+          absDeltaX >= mediaSwipeThresholdPx && absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
 
-    pinchGestureRef.current = null;
+        swipeGestureRef.current = null;
 
-    if (activePointers.length === 1 && mediaTransformRef.current.scale > mediaMinScale) {
-      const [pointerId, pointer] = activePointers[0];
-      panGestureRef.current = {
-        pointerId,
-        startTranslateX: mediaTransformRef.current.translateX,
-        startTranslateY: mediaTransformRef.current.translateY,
-        startX: pointer.x,
-        startY: pointer.y,
-      };
-      return;
-    }
+        if (isSwipe) {
+          shouldSuppressStageClickRef.current = true;
 
-    panGestureRef.current = null;
-    setIsMediaGestureActive(false);
-  }, []);
+          if (deltaX > 0) {
+            showPreviousMedia();
+          } else {
+            showNextMedia();
+          }
+
+          return;
+        }
+      }
+
+      if (activePointers.length >= 2) {
+        const [, firstPointer] = activePointers[0];
+        const [, secondPointer] = activePointers[1];
+        pinchGestureRef.current = {
+          startDistance: getPointerDistance(firstPointer, secondPointer),
+          startScale: mediaTransformRef.current.scale,
+        };
+        return;
+      }
+
+      pinchGestureRef.current = null;
+      swipeGestureRef.current = null;
+
+      if (activePointers.length === 1 && mediaTransformRef.current.scale > mediaMinScale) {
+        const [pointerId, pointer] = activePointers[0];
+        panGestureRef.current = {
+          pointerId,
+          startTranslateX: mediaTransformRef.current.translateX,
+          startTranslateY: mediaTransformRef.current.translateY,
+          startX: pointer.x,
+          startY: pointer.y,
+        };
+        return;
+      }
+
+      panGestureRef.current = null;
+      setIsMediaGestureActive(false);
+    },
+    [hasMultipleMedia, showNextMedia, showPreviousMedia],
+  );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target;
