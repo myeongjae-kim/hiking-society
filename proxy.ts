@@ -22,27 +22,15 @@ async function getValidAccessPayload(request: NextRequest) {
   return applicationContext().get('VerifyAccessTokenUseCase').verifyAccessToken(accessToken);
 }
 
-export async function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname === '/' && (await getValidAccessPayload(request))) {
-    return NextResponse.redirect(new URL('/feed', request.url));
-  }
-
-  if (!isProtectedPath(request.nextUrl.pathname)) {
-    return NextResponse.next();
-  }
-
+async function issueAccessTokenFromRefreshToken(request: NextRequest, response: NextResponse) {
   const refreshToken = request.cookies.get(refreshTokenCookieName)?.value;
-
-  if (await getValidAccessPayload(request)) {
-    return NextResponse.next();
-  }
 
   const refreshPayload = refreshToken
     ? await applicationContext().get('VerifyRefreshTokenUseCase').verifyRefreshToken(refreshToken)
     : null;
 
   if (!refreshPayload) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return null;
   }
 
   const session = await applicationContext()
@@ -50,10 +38,8 @@ export async function proxy(request: NextRequest) {
     .getSessionSnapshotByUserId(refreshPayload.userId);
 
   if (!session) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return null;
   }
-
-  const response = NextResponse.next();
 
   const { accessToken: nextAccessToken } = await applicationContext()
     .get('CreateSessionTokenUseCase')
@@ -73,6 +59,33 @@ export async function proxy(request: NextRequest) {
   );
 
   return response;
+}
+
+export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === '/') {
+    if (await getValidAccessPayload(request)) {
+      return NextResponse.redirect(new URL('/feed', request.url));
+    }
+
+    const response = await issueAccessTokenFromRefreshToken(
+      request,
+      NextResponse.redirect(new URL('/feed', request.url)),
+    );
+
+    return response ?? NextResponse.next();
+  }
+
+  if (!isProtectedPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
+  if (await getValidAccessPayload(request)) {
+    return NextResponse.next();
+  }
+
+  const response = await issueAccessTokenFromRefreshToken(request, NextResponse.next());
+
+  return response ?? NextResponse.redirect(new URL('/', request.url));
 }
 
 export const config = {
