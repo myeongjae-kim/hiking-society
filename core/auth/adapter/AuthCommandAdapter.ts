@@ -72,7 +72,6 @@ export class AuthCommandAdapter implements AuthCommandPort {
               lastLoginAt: now,
               name: payload.displayName,
               profileImageUrl: payload.profileImageUrl,
-              role: 'member', // TODO: 초기 회원 가입하면 이 행 제거해서 associate로 가입되게 하기
             })
             .returning()
         )[0];
