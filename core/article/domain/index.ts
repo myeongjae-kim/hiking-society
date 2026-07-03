@@ -3,21 +3,28 @@ import type { HikingId } from '@/core/hiking/domain';
 
 export type ArticleId = Brand<string, 'ArticleId'>;
 
-export type ArticlePhoto = {
+export type ArticleMediaType = 'image' | 'video';
+
+export type ArticleMedia = {
   readonly byteSize?: number;
   readonly contentType?: string;
+  readonly durationMs?: number | null;
+  readonly height?: number | null;
+  readonly mediaType: ArticleMediaType;
   readonly objectKey?: string;
+  readonly thumbnailUrl?: string | null;
   readonly url: string;
   readonly order: number;
+  readonly width?: number | null;
 };
 
-export type ArticlePhotos = readonly [ArticlePhoto, ...ArticlePhoto[]];
+export type ArticleMediaItems = readonly [ArticleMedia, ...ArticleMedia[]];
 
 export type Article = {
   readonly id: ArticleId;
   readonly authorUserId?: number;
   readonly hikingId: HikingId;
-  readonly photos: ArticlePhotos;
+  readonly media: ArticleMediaItems;
   readonly body: string;
   readonly authorName: AuthorName;
   readonly authorProfileImageUrl: string | null;
@@ -30,11 +37,11 @@ export type Article = {
 export type CreateArticleInput = {
   readonly authorUserId: number;
   readonly hikingId: HikingId;
-  readonly photos: ArticlePhotos;
+  readonly media: ArticleMediaItems;
   readonly body: string;
 };
 
 export type UpdateArticleInput = {
-  readonly photos?: ArticlePhotos;
+  readonly media?: ArticleMediaItems;
   readonly body?: string;
 };

@@ -1,13 +1,14 @@
-import type { ArticlePhoto } from '@/core/article/domain';
+import type { ArticleMedia } from '@/core/article/domain';
 
-export type DraftPhoto = ArticlePhoto & {
+export type DraftMedia = ArticleMedia & {
   readonly file?: File;
   readonly fileName: string;
   readonly fileSize?: number;
   readonly lastModified?: number;
+  readonly thumbnailFile?: File;
 };
 
 export type ArticleFormValues = {
   body: string;
-  photos: DraftPhoto[];
+  media: DraftMedia[];
 };

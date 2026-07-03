@@ -1,6 +1,9 @@
 'use server';
 
-import type { ExistingArticlePhotoInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
+import type {
+  ArticleMediaUpload,
+  ExistingArticleMediaInput,
+} from '@/core/article/application/port/in/ArticleCommandUseCase';
 import type { ArticleId } from '@/core/article/domain';
 import type { CommentId } from '@/core/comment/domain';
 import type {
@@ -112,33 +115,72 @@ function parseHikingValues(formData: FormData) {
   };
 }
 
-async function parsePhotoUploads(formData: FormData) {
-  const files = formData.getAll('photos').filter((value): value is File => value instanceof File);
-  const orders = formData.getAll('photoOrders').map((value) => Number(value));
+async function parseMediaUploads(formData: FormData): Promise<ArticleMediaUpload[]> {
+  const files = formData.getAll('media').filter((value): value is File => value instanceof File);
+  const orders = formData.getAll('mediaOrders').map((value) => Number(value));
+  const mediaTypes = formData.getAll('mediaTypes').map((value) => String(value));
+  const durationMsValues = formData.getAll('mediaDurationMs').map((value) => Number(value));
+  const widthValues = formData.getAll('mediaWidths').map((value) => Number(value));
+  const heightValues = formData.getAll('mediaHeights').map((value) => Number(value));
 
   return Promise.all(
     files.map(async (file, index) => {
-      if (!file.type.startsWith('image/')) {
-        throw new Error('사진 파일만 업로드할 수 있습니다.');
+      const rawMediaType = mediaTypes[index];
+      const order = Number.isInteger(orders[index]) ? orders[index] : index + 1;
+      const rawThumbnail = formData.get(`mediaThumbnail-${order}`);
+      const thumbnail = rawThumbnail instanceof File && rawThumbnail.size > 0 ? rawThumbnail : null;
+
+      if (rawMediaType !== 'image' && rawMediaType !== 'video') {
+        throw new Error('지원하지 않는 미디어 형식입니다.');
       }
 
-      if (file.type !== 'image/webp') {
-        throw new Error('게시글 사진은 WEBP 형식이어야 합니다.');
+      const mediaType: ArticleMediaUpload['mediaType'] =
+        rawMediaType === 'video' ? 'video' : 'image';
+
+      if (mediaType === 'image' && file.type !== 'image/webp') {
+        throw new Error('게시글 이미지는 WEBP 형식이어야 합니다.');
+      }
+
+      if (mediaType === 'video' && file.type !== 'video/mp4') {
+        throw new Error('게시글 동영상은 MP4 형식이어야 합니다.');
+      }
+
+      if (mediaType === 'video' && thumbnail?.type !== 'image/webp') {
+        throw new Error('게시글 동영상 썸네일은 WEBP 형식이어야 합니다.');
       }
 
       return {
         byteSize: file.size,
         bytes: new Uint8Array(await file.arrayBuffer()),
         contentType: file.type,
+        durationMs:
+          Number.isFinite(durationMsValues[index]) && durationMsValues[index] > 0
+            ? durationMsValues[index]
+            : null,
         fileName: file.name,
-        order: Number.isInteger(orders[index]) ? orders[index] : index + 1,
+        height:
+          Number.isFinite(heightValues[index]) && heightValues[index] > 0
+            ? heightValues[index]
+            : null,
+        mediaType,
+        order,
+        thumbnailUpload: thumbnail
+          ? {
+              byteSize: thumbnail.size,
+              bytes: new Uint8Array(await thumbnail.arrayBuffer()),
+              contentType: thumbnail.type,
+              fileName: thumbnail.name,
+            }
+          : undefined,
+        width:
+          Number.isFinite(widthValues[index]) && widthValues[index] > 0 ? widthValues[index] : null,
       };
     }),
   );
 }
 
-function parseExistingPhotos(formData: FormData): ExistingArticlePhotoInput[] {
-  const raw = getString(formData, 'existingPhotos');
+function parseExistingMedia(formData: FormData): ExistingArticleMediaInput[] {
+  const raw = getString(formData, 'existingMedia');
 
   if (!raw) {
     return [];
@@ -149,9 +191,14 @@ function parseExistingPhotos(formData: FormData): ExistingArticlePhotoInput[] {
       z.object({
         byteSize: z.number().optional(),
         contentType: z.string().optional(),
+        durationMs: z.number().nullable().optional(),
+        height: z.number().nullable().optional(),
+        mediaType: z.enum(['image', 'video']),
         objectKey: z.string().optional(),
         order: z.number().int().positive(),
+        thumbnailUrl: z.string().nullable().optional(),
         url: z.string().min(1),
+        width: z.number().nullable().optional(),
       }),
     )
     .parse(JSON.parse(raw));
@@ -210,17 +257,17 @@ export async function createArticle(formData: FormData): Promise<ActionResult> {
     const user = await requireMember();
     const hikingId = getId<HikingId>(formData, 'hikingId');
     const values = articleSchema.parse({ body: getString(formData, 'body') });
-    const photos = await parsePhotoUploads(formData);
+    const media = await parseMediaUploads(formData);
 
-    if (photos.length === 0) {
-      throw new Error('게시글은 사진 없이 저장할 수 없습니다.');
+    if (media.length === 0) {
+      throw new Error('게시글은 미디어 없이 저장할 수 없습니다.');
     }
 
     await applicationContext().get('ArticleCommandUseCase').create({
       authorUserId: user.id,
       body: values.body,
       hikingId,
-      photos,
+      media,
     });
 
     return success();
@@ -234,18 +281,18 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
     const user = await requireMember();
     const articleId = getId<ArticleId>(formData, 'articleId');
     const values = articleSchema.parse({ body: getString(formData, 'body') });
-    const photos = [...parseExistingPhotos(formData), ...(await parsePhotoUploads(formData))].sort(
+    const media = [...parseExistingMedia(formData), ...(await parseMediaUploads(formData))].sort(
       (left, right) => left.order - right.order,
     );
 
-    if (photos.length === 0) {
-      throw new Error('게시글은 사진 없이 저장할 수 없습니다.');
+    if (media.length === 0) {
+      throw new Error('게시글은 미디어 없이 저장할 수 없습니다.');
     }
 
     await applicationContext().get('ArticleCommandUseCase').update({
       articleId,
       body: values.body,
-      photos,
+      media,
       userId: user.id,
     });
 

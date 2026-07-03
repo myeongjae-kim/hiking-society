@@ -1,5 +1,5 @@
-import type { ExistingArticlePhotoInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
-import type { Article, ArticleId, ArticlePhoto, ArticlePhotos } from '@/core/article/domain';
+import type { ExistingArticleMediaInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
+import type { Article, ArticleId, ArticleMedia, ArticleMediaItems } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type {
   AuthorName,
@@ -11,13 +11,13 @@ import type {
 } from '@/core/common/domain';
 import type {
   FeedCommandPort,
-  StoredArticlePhoto,
+  StoredArticleMedia,
 } from '@/core/feed/application/port/out/FeedCommandPort';
 import type { FeedQueryPort } from '@/core/feed/application/port/out/FeedQueryPort';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import { db } from '@/lib/db/drizzle';
 import {
-  articlePhotoTable,
+  articleMediaTable,
   articleTable,
   commentTable,
   hikingTable,
@@ -47,27 +47,32 @@ function toAuthorName(row: {
   return (row.displayName ?? row.name ?? row.email ?? '회원') as AuthorName;
 }
 
-function toArticlePhotos(photos: readonly ArticlePhoto[]): ArticlePhotos | null {
-  if (photos.length === 0) {
+function toArticleMedia(media: readonly ArticleMedia[]): ArticleMediaItems | null {
+  if (media.length === 0) {
     return null;
   }
 
-  return [photos[0], ...photos.slice(1)];
+  return [media[0], ...media.slice(1)];
 }
 
-function getExistingPhotoInput(photo: ExistingArticlePhotoInput): StoredArticlePhoto {
+function getExistingMediaInput(media: ExistingArticleMediaInput): StoredArticleMedia {
   return {
-    byteSize: photo.byteSize ?? 0,
-    contentType: photo.contentType ?? 'image/*',
-    objectKey: photo.objectKey ?? photo.url,
-    order: photo.order,
-    url: photo.url,
+    byteSize: media.byteSize ?? 0,
+    contentType: media.contentType ?? (media.mediaType === 'video' ? 'video/mp4' : 'image/webp'),
+    durationMs: media.durationMs ?? null,
+    height: media.height ?? null,
+    mediaType: media.mediaType,
+    objectKey: media.objectKey ?? media.url,
+    order: media.order,
+    thumbnailUrl: media.thumbnailUrl ?? null,
+    url: media.url,
+    width: media.width ?? null,
   };
 }
 
 export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
   async list() {
-    const [hikingRows, articleRows, photoRows, commentRows] = await Promise.all([
+    const [hikingRows, articleRows, mediaRows, commentRows] = await Promise.all([
       db
         .select({
           authorUserId: hikingTable.authorUserId,
@@ -107,7 +112,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         .from(articleTable)
         .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
         .where(isNull(userTable.deletedAt)),
-      db.select().from(articlePhotoTable).orderBy(articlePhotoTable.order),
+      db.select().from(articleMediaTable).orderBy(articleMediaTable.order),
       db
         .select({
           articleId: commentTable.articleId,
@@ -128,18 +133,23 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         .where(isNull(userTable.deletedAt)),
     ]);
 
-    const photosByArticleId = new Map<number, ArticlePhoto[]>();
+    const mediaByArticleId = new Map<number, ArticleMedia[]>();
 
-    for (const photo of photoRows) {
-      const photos = photosByArticleId.get(photo.articleId) ?? [];
-      photos.push({
-        byteSize: photo.byteSize,
-        contentType: photo.contentType,
-        objectKey: photo.objectKey,
-        order: photo.order,
-        url: photo.url,
+    for (const media of mediaRows) {
+      const articleMedia = mediaByArticleId.get(media.articleId) ?? [];
+      articleMedia.push({
+        byteSize: media.byteSize,
+        contentType: media.contentType,
+        durationMs: media.durationMs,
+        height: media.height,
+        mediaType: media.mediaType,
+        objectKey: media.objectKey,
+        order: media.order,
+        thumbnailUrl: media.thumbnailUrl,
+        url: media.url,
+        width: media.width,
       });
-      photosByArticleId.set(photo.articleId, photos);
+      mediaByArticleId.set(media.articleId, articleMedia);
     }
 
     const hikings: Hiking[] = hikingRows.map((row) => ({
@@ -160,9 +170,9 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
     }));
 
     const articles: Article[] = articleRows.flatMap((row) => {
-      const photos = toArticlePhotos(photosByArticleId.get(row.id) ?? []);
+      const media = toArticleMedia(mediaByArticleId.get(row.id) ?? []);
 
-      if (!photos) {
+      if (!media) {
         return [];
       }
 
@@ -177,7 +187,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           edited: row.updatedAt.getTime() !== row.createdAt.getTime(),
           hikingId: String(row.hikingId) as HikingId,
           id: String(row.id) as ArticleId,
-          photos,
+          media,
           updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
         },
       ];
@@ -296,14 +306,19 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('게시글을 저장하지 못했습니다.');
       }
 
-      await tx.insert(articlePhotoTable).values(
-        input.storedPhotos.map((photo) => ({
+      await tx.insert(articleMediaTable).values(
+        input.storedMedia.map((media) => ({
           articleId: article.id,
-          byteSize: photo.byteSize,
-          contentType: photo.contentType,
-          objectKey: photo.objectKey,
-          order: photo.order,
-          url: photo.url,
+          byteSize: media.byteSize,
+          contentType: media.contentType,
+          durationMs: media.durationMs,
+          height: media.height,
+          mediaType: media.mediaType,
+          objectKey: media.objectKey,
+          order: media.order,
+          thumbnailUrl: media.thumbnailUrl,
+          url: media.url,
+          width: media.width,
         })),
       );
     });
@@ -311,7 +326,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
 
   async updateArticle(input: Parameters<FeedCommandPort['updateArticle']>[0]) {
     const articleId = toNumericId(input.articleId);
-    const storedPhotos: StoredArticlePhoto[] = input.storedPhotos.map(getExistingPhotoInput);
+    const storedMedia: StoredArticleMedia[] = input.storedMedia.map(getExistingMediaInput);
 
     await db.transaction(async (tx) => {
       const [updated] = await tx
@@ -324,15 +339,20 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('게시글을 수정할 권한이 없거나 게시글을 찾을 수 없습니다.');
       }
 
-      await tx.delete(articlePhotoTable).where(eq(articlePhotoTable.articleId, articleId));
-      await tx.insert(articlePhotoTable).values(
-        storedPhotos.map((photo) => ({
+      await tx.delete(articleMediaTable).where(eq(articleMediaTable.articleId, articleId));
+      await tx.insert(articleMediaTable).values(
+        storedMedia.map((media) => ({
           articleId,
-          byteSize: photo.byteSize,
-          contentType: photo.contentType,
-          objectKey: photo.objectKey,
-          order: photo.order,
-          url: photo.url,
+          byteSize: media.byteSize,
+          contentType: media.contentType,
+          durationMs: media.durationMs,
+          height: media.height,
+          mediaType: media.mediaType,
+          objectKey: media.objectKey,
+          order: media.order,
+          thumbnailUrl: media.thumbnailUrl,
+          url: media.url,
+          width: media.width,
         })),
       );
     });

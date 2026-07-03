@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'member', 'associate']);
+export const articleMediaTypeEnum = pgEnum('article_media_type', ['image', 'video']);
 
 export const userTable = pgTable('user', {
   id: serial('id').primaryKey(),
@@ -84,8 +85,8 @@ export const articleTable = pgTable('article', {
   deletedAt: timestamp('deleted_at'),
 });
 
-export const articlePhotoTable = pgTable(
-  'article_photo',
+export const articleMediaTable = pgTable(
+  'article_media',
   {
     id: serial('id').primaryKey(),
     articleId: integer('article_id')
@@ -94,12 +95,17 @@ export const articlePhotoTable = pgTable(
     url: varchar('url', { length: 2048 }).notNull(),
     objectKey: varchar('object_key', { length: 1024 }).notNull(),
     order: integer('order').notNull(),
+    mediaType: articleMediaTypeEnum('media_type').notNull().default('image'),
     contentType: varchar('content_type', { length: 120 }).notNull(),
     byteSize: integer('byte_size').notNull(),
+    thumbnailUrl: varchar('thumbnail_url', { length: 2048 }),
+    durationMs: integer('duration_ms'),
+    width: integer('width'),
+    height: integer('height'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('article_photo_article_id_order_unique').on(table.articleId, table.order),
+    uniqueIndex('article_media_article_id_order_unique').on(table.articleId, table.order),
   ],
 );
 

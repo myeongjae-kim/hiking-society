@@ -15,15 +15,15 @@ import {
 } from '@/app/common/components/styles';
 import type { Article } from '@/core/article/domain';
 
-import type { ArticleFormValues, DraftPhoto } from './articleFormTypes';
+import type { ArticleFormValues, DraftMedia } from './articleFormTypes';
 import {
-  createCompressedDraftPhoto,
+  createCompressedDraftMedia,
   getArticleFormDefaults,
-  getDuplicatePhotoKeys,
-  getPhotoDuplicateKey,
-  revokeDraftPhotoUrl,
+  getDuplicateMediaKeys,
+  getMediaDuplicateKey,
+  revokeDraftMediaUrl,
 } from './articleFormUtils';
-import { PhotoViewer } from './PhotoViewer';
+import { MediaViewer } from './MediaViewer';
 
 type ArticleFormProps = {
   article?: Article;
@@ -33,9 +33,9 @@ type ArticleFormProps = {
   submitting?: boolean;
 };
 
-function reorderDraftPhotos(photos: readonly DraftPhoto[]) {
-  return photos.map((photo, index) => ({
-    ...photo,
+function reorderDraftMedias(media: readonly DraftMedia[]) {
+  return media.map((media, index) => ({
+    ...media,
     order: index + 1,
   }));
 }
@@ -48,12 +48,13 @@ export function ArticleForm({
   submitting = false,
 }: ArticleFormProps) {
   const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
-  const [draggedPhotoOrder, setDraggedPhotoOrder] = useState<number | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+  const [processingLabel, setProcessingLabel] = useState('미디어 처리 중');
+  const [draggedMediaOrder, setDraggedMediaOrder] = useState<number | null>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const valuesRef = useRef(values);
-  const disabled = isProcessingPhotos || submitting;
+  const disabled = isProcessingMedia || submitting;
 
   useEffect(() => {
     valuesRef.current = values;
@@ -63,17 +64,17 @@ export function ArticleForm({
     return () => {
       dragPreviewRef.current?.remove();
       dragPreviewRef.current = null;
-      valuesRef.current.photos.forEach(revokeDraftPhotoUrl);
+      valuesRef.current.media.forEach(revokeDraftMediaUrl);
     };
   }, []);
 
-  const removePhotoDragPreview = () => {
+  const removeMediaDragPreview = () => {
     dragPreviewRef.current?.remove();
     dragPreviewRef.current = null;
   };
 
-  const setPhotoDragPreview = (event: DragEvent<HTMLLIElement>) => {
-    removePhotoDragPreview();
+  const setMediaDragPreview = (event: DragEvent<HTMLLIElement>) => {
+    removeMediaDragPreview();
 
     const sourceCard = event.currentTarget;
     const sourceRect = sourceCard.getBoundingClientRect();
@@ -96,7 +97,7 @@ export function ArticleForm({
     event.dataTransfer.setDragImage(previewCard, offsetX, offsetY);
   };
 
-  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const files = Array.from(input.files ?? []);
 
@@ -106,93 +107,102 @@ export function ArticleForm({
 
     input.value = '';
 
-    setPhotoError(null);
-    setIsProcessingPhotos(true);
+    setMediaError(null);
+    setIsProcessingMedia(true);
 
     try {
-      const settledPhotos = await Promise.allSettled(
+      const settledMedias = await Promise.allSettled(
         files.map(async (file, index) => {
           try {
-            return await createCompressedDraftPhoto(file, index + 1);
-          } catch {
-            throw new Error(`${file.name} 이미지를 변환하지 못했습니다.`);
+            return await createCompressedDraftMedia(file, index + 1, (progress) => {
+              setProcessingLabel(
+                `${file.name} 변환 중 ${Math.round(Math.max(0, Math.min(progress, 1)) * 100)}%`,
+              );
+            });
+          } catch (error) {
+            throw new Error(
+              error instanceof Error
+                ? `${file.name}: ${error.message}`
+                : `${file.name}: 미디어를 변환하지 못했습니다.`,
+            );
           }
         }),
       );
-      const compressedPhotos = settledPhotos.flatMap((result) =>
+      const compressedMedias = settledMedias.flatMap((result) =>
         result.status === 'fulfilled' ? [result.value] : [],
       );
-      const failedFileNames = settledPhotos.flatMap((result) =>
+      const failedFileNames = settledMedias.flatMap((result) =>
         result.status === 'rejected' && result.reason instanceof Error
           ? [result.reason.message]
           : [],
       );
 
       if (failedFileNames.length > 0) {
-        setPhotoError(failedFileNames.join(' '));
+        setMediaError(failedFileNames.join(' '));
       }
 
-      if (compressedPhotos.length === 0) {
+      if (compressedMedias.length === 0) {
         return;
       }
 
       setValues((currentValues) => {
-        const appendedPhotos = [
-          ...currentValues.photos,
-          ...compressedPhotos.map((photo, index) => ({
-            ...photo,
-            order: currentValues.photos.length + index + 1,
+        const appendedMedias = [
+          ...currentValues.media,
+          ...compressedMedias.map((media, index) => ({
+            ...media,
+            order: currentValues.media.length + index + 1,
           })),
         ];
 
         return {
           ...currentValues,
-          photos: reorderDraftPhotos(appendedPhotos),
+          media: reorderDraftMedias(appendedMedias),
         };
       });
     } finally {
-      setIsProcessingPhotos(false);
+      setProcessingLabel('미디어 처리 중');
+      setIsProcessingMedia(false);
     }
   };
 
-  const movePhoto = (fromOrder: number, toOrder: number) => {
+  const moveMedia = (fromOrder: number, toOrder: number) => {
     if (fromOrder === toOrder) {
       return;
     }
 
     setValues((currentValues) => {
-      const fromIndex = currentValues.photos.findIndex((photo) => photo.order === fromOrder);
-      const toIndex = currentValues.photos.findIndex((photo) => photo.order === toOrder);
+      const fromIndex = currentValues.media.findIndex((media) => media.order === fromOrder);
+      const toIndex = currentValues.media.findIndex((media) => media.order === toOrder);
 
       if (fromIndex === -1 || toIndex === -1) {
         return currentValues;
       }
 
-      const reorderedPhotos = [...currentValues.photos];
-      const [movedPhoto] = reorderedPhotos.splice(fromIndex, 1);
+      const reorderedMedias = [...currentValues.media];
+      const [movedMedia] = reorderedMedias.splice(fromIndex, 1);
 
-      if (!movedPhoto) {
+      if (!movedMedia) {
         return currentValues;
       }
 
-      reorderedPhotos.splice(toIndex, 0, movedPhoto);
+      reorderedMedias.splice(toIndex, 0, movedMedia);
 
       return {
         ...currentValues,
-        photos: reorderDraftPhotos(reorderedPhotos),
+        media: reorderDraftMedias(reorderedMedias),
       };
     });
   };
 
-  const handlePhotoDragStart = (event: DragEvent<HTMLLIElement>, order: number) => {
+  const handleMediaDragStart = (event: DragEvent<HTMLLIElement>, order: number) => {
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(order));
-    setPhotoDragPreview(event);
-    setDraggedPhotoOrder(order);
+    setMediaDragPreview(event);
+    setDraggedMediaOrder(order);
   };
 
-  const handlePhotoDragOver = (event: DragEvent<HTMLLIElement>, order: number) => {
-    if (draggedPhotoOrder === null || draggedPhotoOrder === order) {
+  const handleMediaDragOver = (event: DragEvent<HTMLLIElement>, order: number) => {
+    if (draggedMediaOrder === null || draggedMediaOrder === order) {
       return;
     }
 
@@ -200,35 +210,35 @@ export function ArticleForm({
     event.dataTransfer.dropEffect = 'move';
   };
 
-  const handlePhotoDrop = (event: DragEvent<HTMLLIElement>, order: number) => {
+  const handleMediaDrop = (event: DragEvent<HTMLLIElement>, order: number) => {
     event.preventDefault();
 
     const transferOrder = Number(event.dataTransfer.getData('text/plain'));
-    const fromOrder = draggedPhotoOrder ?? transferOrder;
+    const fromOrder = draggedMediaOrder ?? transferOrder;
 
     if (Number.isFinite(fromOrder)) {
-      movePhoto(fromOrder, order);
+      moveMedia(fromOrder, order);
     }
 
-    setDraggedPhotoOrder(null);
-    removePhotoDragPreview();
+    setDraggedMediaOrder(null);
+    removeMediaDragPreview();
   };
 
-  const removePhoto = (order: number) => {
+  const removeMedia = (order: number) => {
     setValues((currentValues) => ({
       ...currentValues,
-      photos: currentValues.photos
-        .filter((photo) => {
-          const keepPhoto = photo.order !== order;
+      media: currentValues.media
+        .filter((media) => {
+          const keepMedia = media.order !== order;
 
-          if (!keepPhoto) {
-            revokeDraftPhotoUrl(photo);
+          if (!keepMedia) {
+            revokeDraftMediaUrl(media);
           }
 
-          return keepPhoto;
+          return keepMedia;
         })
-        .map((photo, index) => ({
-          ...photo,
+        .map((media, index) => ({
+          ...media,
           order: index + 1,
         })),
     }));
@@ -245,11 +255,11 @@ export function ArticleForm({
   };
 
   const handleCancel = () => {
-    values.photos.forEach(revokeDraftPhotoUrl);
+    values.media.forEach(revokeDraftMediaUrl);
     onCancel();
   };
 
-  const duplicatePhotoKeys = getDuplicatePhotoKeys(values.photos);
+  const duplicateMediaKeys = getDuplicateMediaKeys(values.media);
 
   return (
     <>
@@ -259,34 +269,34 @@ export function ArticleForm({
         onSubmit={handleSubmit}
       >
         <Command>{article ? `article.edit ${article.id}` : 'article.new'}</Command>
-        <FieldLabel label="사진">
+        <FieldLabel label="미디어">
           <label
             className={`${inlineButtonClassName} ${disabled ? 'cursor-not-allowed opacity-45' : ''}`}
           >
-            사진 선택
+            미디어 선택
             <input
-              accept="image/*,.heic,.heif,image/heic,image/heif"
+              accept="image/*,.heic,.heif,image/heic,image/heif,video/*"
               className={hiddenFileInputClassName}
               disabled={disabled}
               multiple
-              onChange={handlePhotoChange}
+              onChange={handleMediaChange}
               type="file"
             />
           </label>
         </FieldLabel>
-        {photoError ? <p className="m-0 text-sm text-[var(--red)]">{photoError}</p> : null}
-        {values.photos.length > 0 ? (
+        {mediaError ? <p className="m-0 text-sm text-[var(--red)]">{mediaError}</p> : null}
+        {values.media.length > 0 ? (
           <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
-            {values.photos.map((photo: DraftPhoto) => {
-              const duplicateKey = getPhotoDuplicateKey(photo);
-              const isDuplicate = duplicateKey !== null && duplicatePhotoKeys.has(duplicateKey);
-              const isDragged = draggedPhotoOrder === photo.order;
-              const canMoveUp = photo.order > 1;
-              const canMoveDown = photo.order < values.photos.length;
+            {values.media.map((media: DraftMedia) => {
+              const duplicateKey = getMediaDuplicateKey(media);
+              const isDuplicate = duplicateKey !== null && duplicateMediaKeys.has(duplicateKey);
+              const isDragged = draggedMediaOrder === media.order;
+              const canMoveUp = media.order > 1;
+              const canMoveDown = media.order < values.media.length;
 
               return (
                 <li
-                  aria-label={`선택한 게시글 사진 ${photo.order}번째`}
+                  aria-label={`선택한 게시글 미디어 ${media.order}번째`}
                   className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
                     isDuplicate
                       ? 'border-2 border-[var(--peach)]'
@@ -297,55 +307,62 @@ export function ArticleForm({
                       : 'hover:border-[var(--blue)]'
                   }`}
                   draggable
-                  key={`${photo.fileName}-${photo.order}`}
+                  key={`${media.fileName}-${media.order}`}
                   onDragEnd={() => {
-                    setDraggedPhotoOrder(null);
-                    removePhotoDragPreview();
+                    setDraggedMediaOrder(null);
+                    removeMediaDragPreview();
                   }}
-                  onDragOver={(event) => handlePhotoDragOver(event, photo.order)}
-                  onDragStart={(event) => handlePhotoDragStart(event, photo.order)}
-                  onDrop={(event) => handlePhotoDrop(event, photo.order)}
+                  onDragOver={(event) => handleMediaDragOver(event, media.order)}
+                  onDragStart={(event) => handleMediaDragStart(event, media.order)}
+                  onDrop={(event) => handleMediaDrop(event, media.order)}
                 >
-                  <PhotoViewer
+                  <MediaViewer
                     articleId={article?.id ?? 'draft'}
                     authorName="선택한 게시글"
-                    initialIndex={photo.order - 1}
-                    photos={values.photos}
+                    initialIndex={media.order - 1}
+                    media={values.media}
                     trigger={
-                      <img
-                        alt={`선택한 게시글 사진 ${photo.order}`}
-                        className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                        draggable={false}
-                        src={photo.url}
-                      />
+                      <span className="relative block">
+                        <img
+                          alt={`선택한 게시글 미디어 ${media.order}`}
+                          className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                          draggable={false}
+                          src={media.thumbnailUrl ?? media.url}
+                        />
+                        {media.mediaType === 'video' ? (
+                          <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+                            video
+                          </span>
+                        ) : null}
+                      </span>
                     }
                     triggerClassName="group block h-auto w-full appearance-none !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                    viewerCommand="article.photo.preview"
-                    viewerLabel="선택한 게시글 사진"
+                    viewerCommand="article.media.preview"
+                    viewerLabel="선택한 게시글 미디어"
                   />
                   <div className="grid gap-2 px-3 py-2">
                     <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
-                      order={photo.order} {photo.fileName}
+                      order={media.order} {media.fileName}
                     </span>
                     {isDuplicate ? (
                       <span className="text-sm leading-[1.35] text-[var(--peach)]">
-                        동일한 사진이 선택되었습니다.
+                        동일한 미디어가 선택되었습니다.
                       </span>
                     ) : null}
                     <div className="grid grid-cols-3 gap-2">
                       <ActionButton
                         disabled={!canMoveUp}
-                        onClick={() => movePhoto(photo.order, photo.order - 1)}
+                        onClick={() => moveMedia(media.order, media.order - 1)}
                       >
                         위로
                       </ActionButton>
                       <ActionButton
                         disabled={!canMoveDown}
-                        onClick={() => movePhoto(photo.order, photo.order + 1)}
+                        onClick={() => moveMedia(media.order, media.order + 1)}
                       >
                         아래로
                       </ActionButton>
-                      <ActionButton onClick={() => removePhoto(photo.order)} tone="danger">
+                      <ActionButton onClick={() => removeMedia(media.order)} tone="danger">
                         제거
                       </ActionButton>
                     </div>
@@ -355,7 +372,7 @@ export function ArticleForm({
             })}
           </ol>
         ) : (
-          <p className="m-0 text-sm text-[var(--subtext0)]">사진을 1개 이상 선택해야 합니다.</p>
+          <p className="m-0 text-sm text-[var(--subtext0)]">미디어를 1개 이상 선택해야 합니다.</p>
         )}
         <FieldLabel label="본문">
           <textarea
@@ -382,7 +399,7 @@ export function ArticleForm({
           </ActionButton>
         </div>
       </form>
-      <LoadingOverlay label="사진 처리 중" open={isProcessingPhotos} />
+      <LoadingOverlay label={processingLabel} open={isProcessingMedia} />
     </>
   );
 }

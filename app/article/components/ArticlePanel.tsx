@@ -1,4 +1,4 @@
-import { PhotoViewer } from '@/app/article/components/PhotoViewer';
+import { MediaViewer } from '@/app/article/components/MediaViewer';
 import { CommentForm } from '@/app/comment/components/CommentForm';
 import { CommentLine } from '@/app/comment/components/CommentLine';
 import { getThreadedComments, getVisibleCommentCount } from '@/app/comment/components/commentUtils';
@@ -95,10 +95,10 @@ export function ArticlePanel({
       </header>
 
       <div className="mx-[-1.25rem] w-[calc(100%_+_2.5rem)] sm:mx-0 sm:w-full">
-        <PhotoViewer
+        <MediaViewer
           articleId={article.id}
           authorName={article.authorName}
-          photos={article.photos}
+          media={article.media}
           thumbnailGridClassName="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))]"
         />
       </div>

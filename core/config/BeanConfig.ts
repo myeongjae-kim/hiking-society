@@ -1,8 +1,8 @@
 import { BeanConfig } from 'inversify-typesafe-spring-like';
-import { S3PhotoStorageAdapter } from '../article/adapter/S3PhotoStorageAdapter';
+import { S3MediaStorageAdapter } from '../article/adapter/S3MediaStorageAdapter';
 import { ArticleCommandService } from '../article/application/ArticleCommandService';
 import { ArticleCommandUseCase } from '../article/application/port/in/ArticleCommandUseCase';
-import { PhotoStoragePort } from '../article/application/port/out/PhotoStoragePort';
+import { MediaStoragePort } from '../article/application/port/out/MediaStoragePort';
 import { AuthCommandAdapter } from '../auth/adapter/AuthCommandAdapter';
 import { AuthQueryAdapter } from '../auth/adapter/AuthQueryAdapter';
 import { GoogleOAuthAdapter } from '../auth/adapter/GoogleOAuthAdapter';
@@ -56,7 +56,7 @@ export type Beans = {
   HikingCommandUseCase: HikingCommandUseCase;
   ListFeedUseCase: ListFeedUseCase;
   LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
-  PhotoStoragePort: PhotoStoragePort;
+  MediaStoragePort: MediaStoragePort;
   VerifyAccessTokenUseCase: VerifyAccessTokenUseCase;
   VerifyRefreshTokenUseCase: VerifyRefreshTokenUseCase;
   CreateSessionTokenUseCase: CreateSessionTokenUseCase;
@@ -88,7 +88,7 @@ export const beanConfig: BeanConfig<Beans> = {
   HikingCommandUseCase: (bind) => bind().to(HikingCommandService),
   ListFeedUseCase: (bind) => bind().to(ListFeedService),
   LoginWithGoogleCodeUseCase: (bind) => bind().to(LoginWithGoogleCodeService),
-  PhotoStoragePort: (bind) => bind().to(S3PhotoStorageAdapter),
+  MediaStoragePort: (bind) => bind().to(S3MediaStorageAdapter),
   VerifyAccessTokenUseCase: (bind) => bind().to(VerifyTokenService),
   VerifyRefreshTokenUseCase: (bind) => bind().to(VerifyTokenService),
   CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),

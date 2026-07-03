@@ -1,25 +1,37 @@
 import type { Article } from '@/core/article/domain';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
+import { createCompressedMp4File } from '@/app/common/utils/videoCompression';
 
-import type { DraftPhoto } from './articleFormTypes';
+import type { DraftMedia } from './articleFormTypes';
 
 const maxCompressedPhotoWidth = 1600;
+const maxCompressedVideoWidth = 720;
+const maxVideoDurationMs = 90 * 1000;
+const maxVideoSourceBytes = 120 * 1024 * 1024;
 const webpQuality = 85;
 
 export function getArticleFormDefaults(article?: Article) {
   return {
     body: article?.body ?? '',
-    photos:
-      article?.photos.map((photo) => ({
-        ...photo,
-        fileName: photo.url.split('/').at(-1) ?? `photo-${photo.order}`,
-        fileSize: photo.byteSize,
+    media:
+      article?.media.map((media) => ({
+        ...media,
+        fileName: media.url.split('/').at(-1) ?? `media-${media.order}`,
+        fileSize: media.byteSize,
       })) ?? [],
   };
 }
 
-export function createDraftPhoto(file: File, order: number): DraftPhoto {
+export function createDraftMedia(
+  file: File,
+  order: number,
+  metadata: Pick<
+    DraftMedia,
+    'durationMs' | 'height' | 'mediaType' | 'thumbnailFile' | 'thumbnailUrl' | 'width'
+  >,
+): DraftMedia {
   return {
+    ...metadata,
     fileName: file.name,
     file,
     fileSize: file.size,
@@ -29,45 +41,78 @@ export function createDraftPhoto(file: File, order: number): DraftPhoto {
   };
 }
 
-export async function createCompressedDraftPhoto(file: File, order: number): Promise<DraftPhoto> {
+export async function createCompressedDraftMedia(
+  file: File,
+  order: number,
+  onProgress?: (progress: number) => void,
+): Promise<DraftMedia> {
+  if (file.type.startsWith('video/')) {
+    const compressedVideo = await createCompressedMp4File(file, {
+      maxDurationMs: maxVideoDurationMs,
+      maxSourceBytes: maxVideoSourceBytes,
+      maxWidth: maxCompressedVideoWidth,
+      onProgress,
+    });
+
+    return createDraftMedia(compressedVideo.file, order, {
+      durationMs: compressedVideo.durationMs,
+      height: compressedVideo.height,
+      mediaType: 'video',
+      thumbnailFile: compressedVideo.thumbnailFile,
+      thumbnailUrl: URL.createObjectURL(compressedVideo.thumbnailFile),
+      width: compressedVideo.width,
+    });
+  }
+
   const compressedFile = await createCompressedWebpFile(file, {
     maxWidth: maxCompressedPhotoWidth,
     quality: webpQuality,
   });
 
-  return createDraftPhoto(compressedFile, order);
+  return createDraftMedia(compressedFile, order, {
+    durationMs: null,
+    height: null,
+    mediaType: 'image',
+    thumbnailFile: undefined,
+    thumbnailUrl: null,
+    width: null,
+  });
 }
 
-export function getPhotoDuplicateKey(photo: DraftPhoto) {
-  if (typeof photo.fileSize !== 'number' || typeof photo.lastModified !== 'number') {
+export function getMediaDuplicateKey(media: DraftMedia) {
+  if (typeof media.fileSize !== 'number' || typeof media.lastModified !== 'number') {
     return null;
   }
 
-  return `${photo.fileName}:${photo.fileSize}:${photo.lastModified}`;
+  return `${media.fileName}:${media.fileSize}:${media.lastModified}`;
 }
 
-export function getDuplicatePhotoKeys(photos: readonly DraftPhoto[]) {
-  const photoKeyCounts = new Map<string, number>();
+export function getDuplicateMediaKeys(mediaItems: readonly DraftMedia[]) {
+  const mediaKeyCounts = new Map<string, number>();
 
-  for (const photo of photos) {
-    const duplicateKey = getPhotoDuplicateKey(photo);
+  for (const media of mediaItems) {
+    const duplicateKey = getMediaDuplicateKey(media);
 
     if (duplicateKey === null) {
       continue;
     }
 
-    photoKeyCounts.set(duplicateKey, (photoKeyCounts.get(duplicateKey) ?? 0) + 1);
+    mediaKeyCounts.set(duplicateKey, (mediaKeyCounts.get(duplicateKey) ?? 0) + 1);
   }
 
   return new Set(
-    [...photoKeyCounts.entries()]
+    [...mediaKeyCounts.entries()]
       .filter(([, count]) => count > 1)
       .map(([duplicateKey]) => duplicateKey),
   );
 }
 
-export function revokeDraftPhotoUrl(photo: DraftPhoto) {
-  if (photo.url.startsWith('blob:')) {
-    URL.revokeObjectURL(photo.url);
+export function revokeDraftMediaUrl(media: DraftMedia) {
+  if (media.url.startsWith('blob:')) {
+    URL.revokeObjectURL(media.url);
+  }
+
+  if (media.thumbnailUrl?.startsWith('blob:')) {
+    URL.revokeObjectURL(media.thumbnailUrl);
   }
 }

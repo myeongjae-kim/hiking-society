@@ -1,5 +1,5 @@
-import type { ExistingArticlePhotoInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
-import type { ArticleId, ArticlePhoto, UpdateArticleInput } from '@/core/article/domain';
+import type { ExistingArticleMediaInput } from '@/core/article/application/port/in/ArticleCommandUseCase';
+import type { ArticleId, ArticleMedia, UpdateArticleInput } from '@/core/article/domain';
 import type {
   CommentId,
   CreateCommentInput,
@@ -8,7 +8,7 @@ import type {
 } from '@/core/comment/domain';
 import type { CreateHikingInput, HikingId, UpdateHikingInput } from '@/core/hiking/domain';
 
-export type StoredArticlePhoto = ArticlePhoto & {
+export type StoredArticleMedia = ArticleMedia & {
   readonly byteSize: number;
   readonly contentType: string;
   readonly objectKey: string;
@@ -26,11 +26,11 @@ export interface FeedCommandPort {
     authorUserId: number;
     body: string;
     hikingId: HikingId;
-    storedPhotos: readonly StoredArticlePhoto[];
+    storedMedia: readonly StoredArticleMedia[];
   }): Promise<void>;
   updateArticle(input: {
     articleId: ArticleId;
-    storedPhotos: readonly (StoredArticlePhoto | ExistingArticlePhotoInput)[];
+    storedMedia: readonly (StoredArticleMedia | ExistingArticleMediaInput)[];
     userId: number;
     values: UpdateArticleInput;
   }): Promise<void>;

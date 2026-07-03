@@ -9,7 +9,7 @@ export function getArticleMeta(article: Article, commentCount: number): ReactNod
       key: `${article.id}-created-at`,
       value: article.createdAt,
     }),
-    `${article.photos.length} photos`,
+    `${article.media.length} media`,
     `${commentCount} comments`,
     ...(article.edited ? ['edited'] : []),
   ];

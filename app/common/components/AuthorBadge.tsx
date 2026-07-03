@@ -1,6 +1,6 @@
 'use client';
 
-import { PhotoViewer } from '@/app/article/components/PhotoViewer';
+import { MediaViewer } from '@/app/article/components/MediaViewer';
 
 type AuthorBadgeProps = {
   name: string;
@@ -33,10 +33,10 @@ export function AuthorBadge({ name, profileImageUrl, size = 'sm' }: AuthorBadgeP
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5 align-middle">
       {profileImageUrl ? (
-        <PhotoViewer
+        <MediaViewer
           articleId={`profile-${name}`}
           authorName={name}
-          photos={[{ order: 1, url: profileImageUrl }]}
+          media={[{ mediaType: 'image', order: 1, url: profileImageUrl }]}
           trigger={avatar}
           viewerLabel={`${name} 프로필 사진`}
         />

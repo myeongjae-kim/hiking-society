@@ -1,17 +1,17 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { MouseEvent, PointerEvent, ReactNode } from 'react';
+import type { MouseEvent, PointerEvent, ReactNode, RefObject } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { photoDialogOverlayClassName } from '@/app/common/components/styles';
-import type { ArticlePhoto } from '@/core/article/domain';
+import type { ArticleMedia } from '@/core/article/domain';
 
-type PhotoViewerProps = {
+type MediaViewerProps = {
   articleId: string;
   authorName: string;
   initialIndex?: number;
-  photos: readonly ArticlePhoto[];
+  media: readonly ArticleMedia[];
   thumbnailGridClassName?: string;
   trigger?: ReactNode;
   triggerClassName?: string;
@@ -25,7 +25,7 @@ type DragState = {
   startY: number;
 };
 
-const photoControlClassName =
+const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
 const swipeThresholdPx = 48;
 const horizontalSwipeRatio = 1.25;
@@ -41,76 +41,76 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export function PhotoViewer({
+export function MediaViewer({
   articleId,
   authorName,
   initialIndex = 0,
-  photos,
+  media,
   thumbnailGridClassName = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3',
   trigger,
   triggerClassName = 'inline-flex !h-auto appearance-none items-center justify-center overflow-hidden rounded-full !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]',
   viewerCommand,
   viewerLabel,
-}: PhotoViewerProps) {
+}: MediaViewerProps) {
   const viewerId = useId();
   const dragStateRef = useRef<DragState | null>(null);
   const isPinchGestureRef = useRef(false);
-  const selectedPhotoImageRef = useRef<HTMLImageElement>(null);
+  const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const shouldSuppressStageClickRef = useRef(false);
   const touchPointerIdsRef = useRef<Set<number>>(new Set());
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const hasMultiplePhotos = photos.length > 1;
-  const selectedPhoto = photos[selectedIndex] ?? photos[0];
-  const title = viewerLabel ?? `${authorName}의 산행 사진`;
-  const descriptionId = `photo-viewer-description-${viewerId}`;
+  const hasMultipleMedia = media.length > 1;
+  const selectedMedia = media[selectedIndex] ?? media[0];
+  const title = viewerLabel ?? `${authorName}의 산행 미디어`;
+  const descriptionId = `media-viewer-description-${viewerId}`;
   const displayCommand =
-    viewerCommand ?? (viewerLabel ? 'profile.photo' : `article.photo ${articleId}`);
-  const description = hasMultiplePhotos
-    ? '좌우 화살표로 사진을 이동하고 Escape 키로 닫을 수 있습니다.'
+    viewerCommand ?? (viewerLabel ? 'profile.media' : `article.media ${articleId}`);
+  const description = hasMultipleMedia
+    ? '좌우 화살표로 미디어를 이동하고 Escape 키로 닫을 수 있습니다.'
     : 'Escape 키로 닫을 수 있습니다.';
 
-  const showPreviousPhoto = useCallback(() => {
-    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex - 1, photos.length));
-  }, [photos.length]);
+  const showPreviousMedia = useCallback(() => {
+    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex - 1, media.length));
+  }, [media.length]);
 
-  const showNextPhoto = useCallback(() => {
-    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, photos.length));
-  }, [photos.length]);
+  const showNextMedia = useCallback(() => {
+    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, media.length));
+  }, [media.length]);
 
-  const resetPhotoDragFeedback = useCallback((withTransition: boolean) => {
-    const selectedPhotoImage = selectedPhotoImageRef.current;
+  const resetMediaDragFeedback = useCallback((withTransition: boolean) => {
+    const selectedMediaSurface = selectedMediaSurfaceRef.current;
 
-    if (!selectedPhotoImage) {
+    if (!selectedMediaSurface) {
       return;
     }
 
     const canAnimate =
       withTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    selectedPhotoImage.style.transition = canAnimate
+    selectedMediaSurface.style.transition = canAnimate
       ? 'transform 160ms ease-out, opacity 160ms ease-out'
       : '';
-    selectedPhotoImage.style.transform = '';
-    selectedPhotoImage.style.opacity = '';
+    selectedMediaSurface.style.transform = '';
+    selectedMediaSurface.style.opacity = '';
 
     if (!canAnimate) {
       return;
     }
 
     window.setTimeout(() => {
-      if (selectedPhotoImageRef.current !== selectedPhotoImage) {
+      if (selectedMediaSurfaceRef.current !== selectedMediaSurface) {
         return;
       }
 
-      selectedPhotoImage.style.transition = '';
+      selectedMediaSurface.style.transition = '';
     }, 180);
   }, []);
 
-  const updatePhotoDragFeedback = useCallback((deltaX: number) => {
-    const selectedPhotoImage = selectedPhotoImageRef.current;
+  const updateMediaDragFeedback = useCallback((deltaX: number) => {
+    const selectedMediaSurface = selectedMediaSurfaceRef.current;
 
-    if (!selectedPhotoImage) {
+    if (!selectedMediaSurface) {
       return;
     }
 
@@ -118,14 +118,14 @@ export function PhotoViewer({
     const dragProgress = Math.min(Math.abs(offsetX) / dragFeedbackMaxOffsetPx, 1);
     const opacity = 1 - (1 - dragFeedbackMinOpacity) * dragProgress;
 
-    selectedPhotoImage.style.transition = '';
-    selectedPhotoImage.style.transform = `translateX(${offsetX}px)`;
-    selectedPhotoImage.style.opacity = String(opacity);
+    selectedMediaSurface.style.transition = '';
+    selectedMediaSurface.style.transform = `translateX(${offsetX}px)`;
+    selectedMediaSurface.style.opacity = String(opacity);
   }, []);
 
-  const startPhotoDrag = useCallback(
+  const startMediaDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      if (!hasMultiplePhotos) {
+      if (!hasMultipleMedia) {
         return;
       }
 
@@ -146,7 +146,7 @@ export function PhotoViewer({
           isPinchGestureRef.current = true;
           shouldSuppressStageClickRef.current = true;
           dragStateRef.current = null;
-          resetPhotoDragFeedback(false);
+          resetMediaDragFeedback(false);
 
           if (dragState && event.currentTarget.hasPointerCapture(dragState.pointerId)) {
             event.currentTarget.releasePointerCapture(dragState.pointerId);
@@ -162,16 +162,16 @@ export function PhotoViewer({
         startY: event.clientY,
       };
       shouldSuppressStageClickRef.current = false;
-      resetPhotoDragFeedback(false);
+      resetMediaDragFeedback(false);
 
       if (event.pointerType !== 'touch') {
         event.currentTarget.setPointerCapture(event.pointerId);
       }
     },
-    [hasMultiplePhotos, resetPhotoDragFeedback],
+    [hasMultipleMedia, resetMediaDragFeedback],
   );
 
-  const resetPhotoDrag = useCallback(
+  const resetMediaDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>, withTransition = true) => {
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
@@ -186,12 +186,12 @@ export function PhotoViewer({
       }
 
       dragStateRef.current = null;
-      resetPhotoDragFeedback(withTransition);
+      resetMediaDragFeedback(withTransition);
     },
-    [resetPhotoDragFeedback],
+    [resetMediaDragFeedback],
   );
 
-  const updatePhotoDrag = useCallback(
+  const updateMediaDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
 
@@ -213,12 +213,12 @@ export function PhotoViewer({
         shouldSuppressStageClickRef.current = true;
       }
 
-      updatePhotoDragFeedback(deltaX);
+      updateMediaDragFeedback(deltaX);
     },
-    [updatePhotoDragFeedback],
+    [updateMediaDragFeedback],
   );
 
-  const finishPhotoDrag = useCallback(
+  const finishMediaDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
       const wasPinchGesture =
@@ -235,7 +235,7 @@ export function PhotoViewer({
 
       if (wasPinchGesture) {
         dragStateRef.current = null;
-        resetPhotoDragFeedback(false);
+        resetMediaDragFeedback(false);
         return;
       }
 
@@ -254,7 +254,7 @@ export function PhotoViewer({
         shouldSuppressStageClickRef.current = true;
       }
 
-      resetPhotoDrag(event, !isSwipe);
+      resetMediaDrag(event, !isSwipe);
 
       if (!isSwipe) {
         return;
@@ -263,18 +263,18 @@ export function PhotoViewer({
       event.preventDefault();
 
       if (deltaX > 0) {
-        showPreviousPhoto();
+        showPreviousMedia();
         return;
       }
 
-      showNextPhoto();
+      showNextMedia();
     },
-    [resetPhotoDrag, resetPhotoDragFeedback, showNextPhoto, showPreviousPhoto],
+    [resetMediaDrag, resetMediaDragFeedback, showNextMedia, showPreviousMedia],
   );
 
-  const handlePhotoStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+  const handleMediaStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (!shouldSuppressStageClickRef.current) {
-      if (event.target === selectedPhotoImageRef.current) {
+      if (event.target === selectedMediaSurfaceRef.current) {
         return;
       }
 
@@ -292,7 +292,7 @@ export function PhotoViewer({
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target;
 
-    if (target instanceof Element && !target.closest('[data-photo-modal-surface]')) {
+    if (target instanceof Element && !target.closest('[data-media-modal-surface]')) {
       event.preventDefault();
       event.stopPropagation();
       setOpen(false);
@@ -300,19 +300,19 @@ export function PhotoViewer({
   };
 
   useEffect(() => {
-    if (!open || !hasMultiplePhotos) {
+    if (!open || !hasMultipleMedia) {
       return;
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        showPreviousPhoto();
+        showPreviousMedia();
       }
 
       if (event.key === 'ArrowRight') {
         event.preventDefault();
-        showNextPhoto();
+        showNextMedia();
       }
     }
 
@@ -321,7 +321,7 @@ export function PhotoViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [hasMultiplePhotos, open, showNextPhoto, showPreviousPhoto]);
+  }, [hasMultipleMedia, open, showNextMedia, showPreviousMedia]);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -330,7 +330,7 @@ export function PhotoViewer({
           <button
             className={triggerClassName}
             onClick={() => {
-              setSelectedIndex(clamp(initialIndex, 0, Math.max(photos.length - 1, 0)));
+              setSelectedIndex(clamp(initialIndex, 0, Math.max(media.length - 1, 0)));
             }}
             type="button"
           >
@@ -339,10 +339,10 @@ export function PhotoViewer({
         </Dialog.Trigger>
       ) : (
         <div className={thumbnailGridClassName}>
-          {photos.map((photo, index) => (
+          {media.map((item, index) => (
             <figure
               className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
-              key={`${articleId}-${photo.order}`}
+              key={`${articleId}-${item.order}`}
             >
               <Dialog.Trigger asChild>
                 <button
@@ -352,15 +352,22 @@ export function PhotoViewer({
                   }}
                   type="button"
                 >
-                  <img
-                    alt={`${authorName}의 산행 사진 ${photo.order}`}
-                    className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                    src={photo.url}
-                  />
+                  <span className="relative block">
+                    <img
+                      alt={`${authorName}의 산행 미디어 ${item.order}`}
+                      className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                      src={item.thumbnailUrl ?? item.url}
+                    />
+                    {item.mediaType === 'video' ? (
+                      <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+                        video
+                      </span>
+                    ) : null}
+                  </span>
                 </button>
               </Dialog.Trigger>
               <figcaption className="px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
-                photo {photo.order}/{photos.length}
+                {item.mediaType} {item.order}/{media.length}
               </figcaption>
             </figure>
           ))}
@@ -381,15 +388,15 @@ export function PhotoViewer({
 
           <div
             className="flex items-center justify-between gap-3 font-mono text-sm"
-            data-photo-modal-surface
+            data-media-modal-surface
           >
             <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1">
               {displayCommand}
             </span>
             <Dialog.Close asChild>
               <button
-                aria-label="사진 닫기"
-                className={`${photoControlClassName} !size-10 text-2xl`}
+                aria-label="미디어 닫기"
+                className={`${mediaControlClassName} !size-10 text-2xl`}
                 type="button"
               >
                 ×
@@ -398,12 +405,12 @@ export function PhotoViewer({
           </div>
 
           <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-            {hasMultiplePhotos ? (
+            {hasMultipleMedia ? (
               <button
-                aria-label="이전 사진"
-                className={`${photoControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
-                data-photo-modal-surface
-                onClick={showPreviousPhoto}
+                aria-label="이전 미디어"
+                className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
+                data-media-modal-surface
+                onClick={showPreviousMedia}
                 type="button"
               >
                 ←
@@ -414,28 +421,40 @@ export function PhotoViewer({
 
             <div
               className="grid h-full min-h-0 w-full [touch-action:pan-y_pinch-zoom] place-items-center select-none"
-              data-photo-modal-surface
-              onClick={handlePhotoStageClick}
-              onPointerCancel={resetPhotoDrag}
-              onPointerDown={startPhotoDrag}
-              onPointerMove={updatePhotoDrag}
-              onPointerUp={finishPhotoDrag}
+              data-media-modal-surface
+              onClick={handleMediaStageClick}
+              onPointerCancel={resetMediaDrag}
+              onPointerDown={startMediaDrag}
+              onPointerMove={updateMediaDrag}
+              onPointerUp={finishMediaDrag}
             >
-              <img
-                alt={`${authorName}의 산행 사진 ${selectedPhoto.order}`}
-                className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
-                draggable={false}
-                ref={selectedPhotoImageRef}
-                src={selectedPhoto.url}
-              />
+              {selectedMedia.mediaType === 'video' ? (
+                <video
+                  className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none"
+                  controls
+                  playsInline
+                  poster={selectedMedia.thumbnailUrl ?? undefined}
+                  preload="metadata"
+                  ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
+                  src={selectedMedia.url}
+                />
+              ) : (
+                <img
+                  alt={`${authorName}의 산행 미디어 ${selectedMedia.order}`}
+                  className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
+                  draggable={false}
+                  ref={selectedMediaSurfaceRef as RefObject<HTMLImageElement>}
+                  src={selectedMedia.url}
+                />
+              )}
             </div>
 
-            {hasMultiplePhotos ? (
+            {hasMultipleMedia ? (
               <button
-                aria-label="다음 사진"
-                className={`${photoControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
-                data-photo-modal-surface
-                onClick={showNextPhoto}
+                aria-label="다음 미디어"
+                className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
+                data-media-modal-surface
+                onClick={showNextMedia}
                 type="button"
               >
                 →
@@ -447,9 +466,9 @@ export function PhotoViewer({
 
           <p
             className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
-            data-photo-modal-surface
+            data-media-modal-surface
           >
-            photo {selectedIndex + 1}/{photos.length}
+            {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
           </p>
         </Dialog.Content>
       </Dialog.Portal>

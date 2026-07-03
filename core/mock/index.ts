@@ -95,7 +95,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-1-1' as Article['id'],
     hikingId: 'hiking-1' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '백운대 올라가는 길에 바람이 좋아서 다들 말수가 줄었다.',
     authorName: '민재' as AuthorName,
     authorProfileImageUrl: null,
@@ -107,9 +107,9 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-1-2' as Article['id'],
     hikingId: 'hiking-1' as Hiking['id'],
-    photos: [
-      { url: thumbnailUrl, order: 1 },
-      { url: thumbnailUrl, order: 2 },
+    media: [
+      { mediaType: 'image', url: thumbnailUrl, order: 1 },
+      { mediaType: 'image', url: thumbnailUrl, order: 2 },
     ],
     body: '하산길 계곡 앞에서 쉬었던 시간이 오늘의 베스트.',
     authorName: '서연' as AuthorName,
@@ -122,7 +122,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-1-3' as Article['id'],
     hikingId: 'hiking-1' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '정상 사진보다 김밥 사진이 더 많은 산행.',
     authorName: '지훈' as AuthorName,
     authorProfileImageUrl: null,
@@ -134,7 +134,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-2-1' as Article['id'],
     hikingId: 'hiking-2' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '관악산은 짧다고 방심하면 계단에서 바로 혼난다.',
     authorName: '서연' as AuthorName,
     authorProfileImageUrl: null,
@@ -146,10 +146,10 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-2-2' as Article['id'],
     hikingId: 'hiking-2' as Hiking['id'],
-    photos: [
-      { url: thumbnailUrl, order: 1 },
-      { url: thumbnailUrl, order: 2 },
-      { url: thumbnailUrl, order: 3 },
+    media: [
+      { mediaType: 'image', url: thumbnailUrl, order: 1 },
+      { mediaType: 'image', url: thumbnailUrl, order: 2 },
+      { mediaType: 'image', url: thumbnailUrl, order: 3 },
     ],
     body: '연주대 근처에서 본 서울 시야가 생각보다 선명했다.',
     authorName: '도윤' as AuthorName,
@@ -162,7 +162,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-2-3' as Article['id'],
     hikingId: 'hiking-2' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '하산 후 칼국수까지 포함해야 완성되는 코스.',
     authorName: '하린' as AuthorName,
     authorProfileImageUrl: null,
@@ -174,7 +174,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-3-1' as Article['id'],
     hikingId: 'hiking-3' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '새벽 출발은 힘들었지만 설악산 능선은 보상 이상이었다.',
     authorName: '도윤' as AuthorName,
     authorProfileImageUrl: null,
@@ -186,9 +186,9 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-3-2' as Article['id'],
     hikingId: 'hiking-3' as Hiking['id'],
-    photos: [
-      { url: thumbnailUrl, order: 1 },
-      { url: thumbnailUrl, order: 2 },
+    media: [
+      { mediaType: 'image', url: thumbnailUrl, order: 1 },
+      { mediaType: 'image', url: thumbnailUrl, order: 2 },
     ],
     body: '공룡능선은 이름부터 이미 경고였다는 걸 뒤늦게 알았다.',
     authorName: '하린' as AuthorName,
@@ -201,7 +201,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-3-3' as Article['id'],
     hikingId: 'hiking-3' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '오늘의 교훈: 양말은 여분이 아니라 필수 장비.',
     authorName: '유진' as AuthorName,
     authorProfileImageUrl: null,
@@ -213,7 +213,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-4-1' as Article['id'],
     hikingId: 'hiking-4' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '한라산 정상의 구름은 거의 무대 장치 같았다.',
     authorName: '나래' as AuthorName,
     authorProfileImageUrl: null,
@@ -225,9 +225,9 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-4-2' as Article['id'],
     hikingId: 'hiking-4' as Hiking['id'],
-    photos: [
-      { url: thumbnailUrl, order: 1 },
-      { url: thumbnailUrl, order: 2 },
+    media: [
+      { mediaType: 'image', url: thumbnailUrl, order: 1 },
+      { mediaType: 'image', url: thumbnailUrl, order: 2 },
     ],
     body: '성판악 코스는 길고 조용해서 페이스 조절이 중요했다.',
     authorName: '유진' as AuthorName,
@@ -240,7 +240,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-4-3' as Article['id'],
     hikingId: 'hiking-4' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '식당 주소를 못 정한 산행이지만 귤은 충분했다.',
     authorName: '재현' as AuthorName,
     authorProfileImageUrl: null,
@@ -252,7 +252,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-5-1' as Article['id'],
     hikingId: 'hiking-5' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '지리산은 길게 걸을수록 조용해지는 산이었다.',
     authorName: '지훈' as AuthorName,
     authorProfileImageUrl: null,
@@ -264,9 +264,9 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-5-2' as Article['id'],
     hikingId: 'hiking-5' as Hiking['id'],
-    photos: [
-      { url: thumbnailUrl, order: 1 },
-      { url: thumbnailUrl, order: 2 },
+    media: [
+      { mediaType: 'image', url: thumbnailUrl, order: 1 },
+      { mediaType: 'image', url: thumbnailUrl, order: 2 },
     ],
     body: '능선에서 먹은 초콜릿 하나가 오늘 제일 큰 이벤트.',
     authorName: '민재' as AuthorName,
@@ -279,7 +279,7 @@ export const mockArticles: readonly Article[] = [
   {
     id: 'article-5-3' as Article['id'],
     hikingId: 'hiking-5' as Hiking['id'],
-    photos: [{ url: thumbnailUrl, order: 1 }],
+    media: [{ mediaType: 'image', url: thumbnailUrl, order: 1 }],
     body: '다음에는 하산 시간을 한 시간 더 여유롭게 잡자.',
     authorName: '하린' as AuthorName,
     authorProfileImageUrl: null,

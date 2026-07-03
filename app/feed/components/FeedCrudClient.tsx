@@ -199,14 +199,19 @@ export function FeedCrudClient({
     identifiers: { articleId?: ArticleId; hikingId?: HikingId },
   ) => {
     const formData = new FormData();
-    const existingPhotos = values.photos
-      .filter((photo) => !photo.file)
-      .map((photo) => ({
-        byteSize: photo.byteSize,
-        contentType: photo.contentType,
-        objectKey: photo.objectKey,
-        order: photo.order,
-        url: photo.url,
+    const existingMedia = values.media
+      .filter((media) => !media.file)
+      .map((media) => ({
+        byteSize: media.byteSize,
+        contentType: media.contentType,
+        durationMs: media.durationMs,
+        height: media.height,
+        mediaType: media.mediaType,
+        objectKey: media.objectKey,
+        order: media.order,
+        thumbnailUrl: media.thumbnailUrl,
+        url: media.url,
+        width: media.width,
       }));
 
     if (identifiers.articleId) {
@@ -218,15 +223,23 @@ export function FeedCrudClient({
     }
 
     formData.set('body', values.body);
-    formData.set('existingPhotos', JSON.stringify(existingPhotos));
+    formData.set('existingMedia', JSON.stringify(existingMedia));
 
-    for (const photo of values.photos) {
-      if (!photo.file) {
+    for (const media of values.media) {
+      if (!media.file) {
         continue;
       }
 
-      formData.append('photos', photo.file);
-      formData.append('photoOrders', String(photo.order));
+      formData.append('media', media.file);
+      formData.append('mediaOrders', String(media.order));
+      formData.append('mediaTypes', media.mediaType);
+      formData.append('mediaDurationMs', String(media.durationMs ?? ''));
+      formData.append('mediaWidths', String(media.width ?? ''));
+      formData.append('mediaHeights', String(media.height ?? ''));
+
+      if (media.thumbnailFile) {
+        formData.append(`mediaThumbnail-${media.order}`, media.thumbnailFile);
+      }
     }
 
     return formData;
@@ -277,8 +290,8 @@ export function FeedCrudClient({
   };
 
   const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
-    if (values.photos.length === 0) {
-      setError(`article-new-${hikingId}`, '게시글은 사진 없이 저장할 수 없습니다.');
+    if (values.media.length === 0) {
+      setError(`article-new-${hikingId}`, '게시글은 미디어 없이 저장할 수 없습니다.');
       return;
     }
 
@@ -290,8 +303,8 @@ export function FeedCrudClient({
   };
 
   const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
-    if (values.photos.length === 0) {
-      setError(`article-edit-${articleId}`, '게시글은 사진 없이 저장할 수 없습니다.');
+    if (values.media.length === 0) {
+      setError(`article-edit-${articleId}`, '게시글은 미디어 없이 저장할 수 없습니다.');
       return;
     }
 
