@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Command } from '@/app/common/components/Command';
+import { inlineButtonClassName } from '@/app/common/components/styles';
 import { NotificationPopover } from '@/app/notification/components/NotificationPopover';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import { roleLabels } from '@/core/auth/model/roleLabels';
@@ -29,8 +30,13 @@ export function FeedTopbar({ currentAuthorName, notificationSnapshot, user }: Fe
             {String(currentAuthorName)} · {roleLabels[user.role]}
           </span>
           <NotificationPopover notificationSnapshot={notificationSnapshot} />
-          <Link is-="button" size-="small" variant-="foreground1" href="/me">
-            마이페이지
+          <Link
+            aria-label="마이페이지"
+            className={`${inlineButtonClassName} aspect-square !min-h-8 !w-8 !px-0`}
+            href="/me"
+            title="마이페이지"
+          >
+            MY
           </Link>
         </nav>
       </div>
