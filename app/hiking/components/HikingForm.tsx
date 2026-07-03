@@ -18,6 +18,11 @@ import { readPhotoMetadataFromFile } from './exifGps';
 import type { HikingFormValues } from './hikingFormTypes';
 import { getHikingFormDefaults } from './hikingFormUtils';
 
+const exifPhotoAccept =
+  'image/jpeg,image/tiff,image/heic,image/heif,.jpg,.jpeg,.tif,.tiff,.heic,.heif';
+const exifPhotoTypes = new Set(['image/jpeg', 'image/tiff', 'image/heic', 'image/heif']);
+const exifPhotoFileNamePattern = /\.(jpe?g|tiff?|heic|heif)$/i;
+
 type HikingFormProps = {
   error?: string;
   hiking?: Hiking;
@@ -37,7 +42,7 @@ function shiftTimeValue(time: string, offsetMinutes: number) {
 }
 
 function isExifPhotoFile(file: File) {
-  return file.type === 'image/jpeg' || file.type === 'image/tiff';
+  return exifPhotoTypes.has(file.type.toLowerCase()) || exifPhotoFileNamePattern.test(file.name);
 }
 
 export function HikingForm({
@@ -68,7 +73,7 @@ export function HikingForm({
     const file = files.find(isExifPhotoFile);
 
     if (!file) {
-      setMetadataStatus('EXIF를 읽을 수 있는 JPEG/TIFF 사진만 지원합니다.');
+      setMetadataStatus('EXIF를 읽을 수 있는 JPEG/TIFF/HEIC/HEIF 사진만 지원합니다.');
       return;
     }
 
@@ -192,7 +197,7 @@ export function HikingForm({
         <label className={inlineButtonClassName}>
           사진에서 메타정보 채우기
           <input
-            accept="image/jpeg,image/tiff"
+            accept={exifPhotoAccept}
             className={hiddenFileInputClassName}
             disabled={submitting}
             onChange={handleMetadataFileChange}
