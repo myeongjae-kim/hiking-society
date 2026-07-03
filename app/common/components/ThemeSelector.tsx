@@ -1,7 +1,7 @@
 'use client';
 
 import * as Select from '@radix-ui/react-select';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   getWebtuiTheme,
@@ -15,6 +15,14 @@ type ThemeSelectorProps = {
   initialTheme: string;
 };
 
+function getInitialTheme(initialTheme: string) {
+  if (typeof document === 'undefined') {
+    return getWebtuiTheme(initialTheme);
+  }
+
+  return getWebtuiTheme(document.documentElement.getAttribute('data-webtui-theme') ?? initialTheme);
+}
+
 function persistTheme(theme: string) {
   document.documentElement.setAttribute('data-webtui-theme', theme);
   document.cookie = `${WEBTUI_THEME_COOKIE_NAME}=${encodeURIComponent(
@@ -23,22 +31,35 @@ function persistTheme(theme: string) {
 }
 
 export function ThemeSelector({ autoOpenOnMount = false, initialTheme }: ThemeSelectorProps) {
+  const keepOpenAfterSelectRef = useRef(false);
   const [open, setOpen] = useState(autoOpenOnMount);
-  const [selectedTheme, setSelectedTheme] = useState(() => getWebtuiTheme(initialTheme));
+  const [selectedTheme, setSelectedTheme] = useState(() => getInitialTheme(initialTheme));
 
   function handleThemeChange(nextValue: string) {
     const nextTheme = getWebtuiTheme(nextValue);
 
+    keepOpenAfterSelectRef.current = true;
     setSelectedTheme(nextTheme);
     setOpen(true);
     persistTheme(nextTheme);
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && keepOpenAfterSelectRef.current) {
+      keepOpenAfterSelectRef.current = false;
+      setOpen(true);
+      return;
+    }
+
+    keepOpenAfterSelectRef.current = false;
+    setOpen(nextOpen);
   }
 
   return (
     <Select.Root
       open={open}
       value={selectedTheme}
-      onOpenChange={setOpen}
+      onOpenChange={handleOpenChange}
       onValueChange={handleThemeChange}
     >
       <Select.Trigger
