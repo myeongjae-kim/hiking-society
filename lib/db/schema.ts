@@ -111,6 +111,7 @@ export const articleMediaTable = pgTable(
     durationMs: integer('duration_ms'),
     width: integer('width'),
     height: integer('height'),
+    originalMetadata: jsonb('original_metadata').$type<Record<string, unknown> | null>(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (table) => [
