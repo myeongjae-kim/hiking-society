@@ -7,6 +7,7 @@ import type {
 import type { ArticleId } from '@/core/article/domain';
 import type { CommentId } from '@/core/comment/domain';
 import type {
+  Altitude,
   IsoDateString,
   IsoDateTimeString,
   Latitude,
@@ -28,6 +29,10 @@ const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeSchema = z.string().regex(/^\d{2}:\d{2}$/);
 
 const hikingSchema = z.object({
+  altitude: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? null : value),
+    z.coerce.number().finite().nullable(),
+  ),
   completedTime: timeSchema,
   hikingDate: dateSchema,
   latitude: z.coerce.number().finite().min(-90).max(90),
@@ -110,6 +115,7 @@ function success(articleId?: ArticleId | null): ActionResult {
 
 function parseHikingValues(formData: FormData) {
   const values = hikingSchema.parse({
+    altitude: getString(formData, 'altitude'),
     completedTime: getString(formData, 'completedTime'),
     hikingDate: getString(formData, 'hikingDate'),
     latitude: getString(formData, 'latitude'),
@@ -122,6 +128,7 @@ function parseHikingValues(formData: FormData) {
   });
 
   return {
+    altitude: values.altitude === null ? null : (values.altitude as Altitude),
     completedAt: makeDateTime(values.hikingDate, values.completedTime, values.timezone),
     hikingDate: values.hikingDate as IsoDateString,
     latitude: values.latitude as Latitude,

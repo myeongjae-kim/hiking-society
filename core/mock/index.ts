@@ -1,6 +1,7 @@
 import type { Article } from '@/core/article/domain';
 import type { Comment } from '@/core/comment/domain';
 import type {
+  Altitude,
   AuthorName,
   IsoDateString,
   IsoDateTimeString,
@@ -21,6 +22,7 @@ export const mockHikings: readonly Hiking[] = [
     timezone,
     latitude: 37.6584 as Latitude,
     longitude: 126.977 as Longitude,
+    altitude: 836 as Altitude,
     startedAt: '2026-07-01T08:10:00+09:00' as IsoDateTimeString,
     completedAt: '2026-07-01T14:35:00+09:00' as IsoDateTimeString,
     participantsCsv: '민재,서연,지훈,나래',
@@ -36,6 +38,7 @@ export const mockHikings: readonly Hiking[] = [
     timezone,
     latitude: 37.445 as Latitude,
     longitude: 126.964 as Longitude,
+    altitude: 632 as Altitude,
     startedAt: '2026-05-30T09:00:00+09:00' as IsoDateTimeString,
     completedAt: '2026-05-30T13:20:00+09:00' as IsoDateTimeString,
     participantsCsv: '서연,도윤,하린,재현,민재',
@@ -51,6 +54,7 @@ export const mockHikings: readonly Hiking[] = [
     timezone,
     latitude: 38.1195 as Latitude,
     longitude: 128.4656 as Longitude,
+    altitude: 1708 as Altitude,
     startedAt: '2026-05-02T06:30:00+09:00' as IsoDateTimeString,
     completedAt: '2026-05-02T16:50:00+09:00' as IsoDateTimeString,
     participantsCsv: '도윤,하린,지훈,유진',
@@ -66,6 +70,7 @@ export const mockHikings: readonly Hiking[] = [
     timezone,
     latitude: 33.3617 as Latitude,
     longitude: 126.5292 as Longitude,
+    altitude: 1947 as Altitude,
     startedAt: '2026-04-11T07:20:00+09:00' as IsoDateTimeString,
     completedAt: '2026-04-11T15:40:00+09:00' as IsoDateTimeString,
     participantsCsv: '나래,유진,서연,재현',
@@ -81,6 +86,7 @@ export const mockHikings: readonly Hiking[] = [
     timezone,
     latitude: 35.3369 as Latitude,
     longitude: 127.7306 as Longitude,
+    altitude: 1915 as Altitude,
     startedAt: '2026-03-21T06:50:00+09:00' as IsoDateTimeString,
     completedAt: '2026-03-21T17:15:00+09:00' as IsoDateTimeString,
     participantsCsv: '지훈,민재,하린,도윤,유진',

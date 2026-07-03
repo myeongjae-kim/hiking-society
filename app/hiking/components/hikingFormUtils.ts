@@ -14,6 +14,8 @@ function todayIsoDate() {
 
 export function getHikingFormDefaults(hiking?: Hiking): HikingFormValues {
   return {
+    altitude:
+      hiking?.altitude === null || hiking?.altitude === undefined ? '' : String(hiking.altitude),
     completedTime: hiking ? getTimeValue(hiking.completedAt) : '',
     hikingDate: hiking?.hikingDate ?? todayIsoDate(),
     latitude: hiking ? String(hiking.latitude) : '',
@@ -42,5 +44,6 @@ export function getHikingMeta(hiking: Hiking) {
     `done=${formatTimeLabel(hiking.completedAt)}`,
     `lat=${hiking.latitude}`,
     `lng=${hiking.longitude}`,
+    ...(hiking.altitude === null ? [] : [`alt=${hiking.altitude}m`]),
   ];
 }

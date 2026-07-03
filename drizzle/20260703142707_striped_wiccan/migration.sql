@@ -1,0 +1,1 @@
+ALTER TABLE "hiking" ADD COLUMN "altitude" double precision;

@@ -67,6 +67,7 @@ export const hikingTable = pgTable('hiking', {
   timezone: varchar('timezone', { length: 80 }).notNull(),
   latitude: doublePrecision('latitude').notNull(),
   longitude: doublePrecision('longitude').notNull(),
+  altitude: doublePrecision('altitude'),
   startedAt: varchar('started_at', { length: 40 }).notNull(),
   completedAt: varchar('completed_at', { length: 40 }).notNull(),
   participantsCsv: text('participants_csv').notNull(),

@@ -45,6 +45,10 @@ function isExifPhotoFile(file: File) {
   return exifPhotoTypes.has(file.type.toLowerCase()) || exifPhotoFileNamePattern.test(file.name);
 }
 
+function formatAltitudeValue(value: number) {
+  return String(Math.round(value * 10) / 10);
+}
+
 export function HikingForm({
   error,
   hiking,
@@ -54,7 +58,7 @@ export function HikingForm({
 }: HikingFormProps) {
   const [values, setValues] = useState(() => getHikingFormDefaults(hiking));
   const [metadataStatus, setMetadataStatus] = useState(
-    '사진을 선택하거나 드롭하면 EXIF 좌표와 촬영시각을 채웁니다.',
+    '사진을 선택하거나 드롭하면 EXIF 좌표, 고도, 촬영시각을 채웁니다.',
   );
   const [isMetadataDropActive, setIsMetadataDropActive] = useState(false);
 
@@ -83,16 +87,23 @@ export function HikingForm({
       const metadata = await readPhotoMetadataFromFile(file);
       const hasGps =
         typeof metadata.latitude === 'number' && typeof metadata.longitude === 'number';
+      const altitude = metadata.altitude;
+      const hasAltitude = typeof altitude === 'number';
       const appliedLabels: string[] = [];
       const missingLabels: string[] = [];
 
-      if (!hasGps && !metadata.takenAt) {
-        setMetadataStatus('이 사진에서 EXIF 좌표와 촬영시각을 찾지 못했습니다.');
+      if (!hasGps && !hasAltitude && !metadata.takenAt) {
+        setMetadataStatus('이 사진에서 EXIF 좌표, 고도, 촬영시각을 찾지 못했습니다.');
         return;
       }
 
       setValues((currentValues) => ({
         ...currentValues,
+        ...(hasAltitude
+          ? {
+              altitude: formatAltitudeValue(altitude),
+            }
+          : {}),
         ...(hasGps
           ? {
               latitude: metadata.latitude?.toFixed(6) ?? currentValues.latitude,
@@ -112,6 +123,12 @@ export function HikingForm({
         appliedLabels.push('좌표');
       } else {
         missingLabels.push('좌표');
+      }
+
+      if (hasAltitude) {
+        appliedLabels.push(`고도 ${formatAltitudeValue(altitude)}m`);
+      } else {
+        missingLabels.push('고도');
       }
 
       if (metadata.takenAt) {
@@ -274,6 +291,14 @@ export function HikingForm({
             onChange={(event) => updateValue('longitude', event.currentTarget.value)}
             required
             value={values.longitude}
+          />
+        </FieldLabel>
+        <FieldLabel label="고도(m)">
+          <input
+            className={fieldClassName}
+            inputMode="decimal"
+            onChange={(event) => updateValue('altitude', event.currentTarget.value)}
+            value={values.altitude}
           />
         </FieldLabel>
         <FieldLabel label="식당 주소 (생략 가능)">

@@ -2,6 +2,7 @@ import type { ExistingArticleMediaInput } from '@/core/article/application/port/
 import type { Article, ArticleId, ArticleMedia, ArticleMediaItems } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type {
+  Altitude,
   AuthorName,
   IsoDateString,
   IsoDateTimeString,
@@ -92,6 +93,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
             id: hikingTable.id,
             latitude: hikingTable.latitude,
             longitude: hikingTable.longitude,
+            altitude: hikingTable.altitude,
             mountainName: hikingTable.mountainName,
             name: userTable.name,
             participantsCsv: hikingTable.participantsCsv,
@@ -207,6 +209,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       id: String(row.id) as HikingId,
       latitude: row.latitude as Latitude,
       longitude: row.longitude as Longitude,
+      altitude: row.altitude as Altitude | null,
       mountainName: row.mountainName,
       participantsCsv: row.participantsCsv,
       restaurantAddress: row.restaurantAddress,
@@ -267,6 +270,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       hikingDate: input.hikingDate,
       latitude: input.latitude,
       longitude: input.longitude,
+      altitude: input.altitude,
       mountainName: input.mountainName,
       participantsCsv: input.participantsCsv,
       restaurantAddress: input.restaurantAddress,

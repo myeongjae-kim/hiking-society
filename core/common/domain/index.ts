@@ -8,6 +8,8 @@ export type IsoDateTimeString = Brand<string, 'IsoDateTimeString'>;
 
 export type Timezone = Brand<string, 'Timezone'>;
 
+export type Altitude = Brand<number, 'Altitude'>;
+
 export type Latitude = Brand<number, 'Latitude'>;
 
 export type Longitude = Brand<number, 'Longitude'>;

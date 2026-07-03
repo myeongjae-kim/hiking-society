@@ -1,6 +1,7 @@
 import type { ExpandedTags, IncludeTagsOptions } from 'exifreader';
 
 type PhotoMetadata = {
+  altitude?: number;
   latitude?: number;
   longitude?: number;
   takenAt?: {
@@ -24,6 +25,8 @@ const metadataIncludeTags: IncludeTagsOptions = {
     'GPSLatitudeRef',
     'GPSLongitude',
     'GPSLongitudeRef',
+    'GPSAltitude',
+    'GPSAltitudeRef',
   ],
   gps: true,
 };
@@ -97,6 +100,32 @@ function readCoordinateValues(tag: ExifTagValue | undefined) {
   return null;
 }
 
+function readNumberValue(tag: ExifTagValue | undefined) {
+  if (!tag) {
+    return null;
+  }
+
+  if (isFiniteNumber(tag.computed)) {
+    return tag.computed;
+  }
+
+  if (isFiniteNumber(tag.value)) {
+    return tag.value;
+  }
+
+  if (
+    Array.isArray(tag.value) &&
+    tag.value.length >= 2 &&
+    isFiniteNumber(tag.value[0]) &&
+    isFiniteNumber(tag.value[1])
+  ) {
+    const [numerator, denominator] = tag.value;
+    return denominator === 0 ? null : numerator / denominator;
+  }
+
+  return null;
+}
+
 function parseGpsFromExifTags(tags: ExpandedTags) {
   const latitude = tags.gps?.Latitude;
   const longitude = tags.gps?.Longitude;
@@ -118,6 +147,23 @@ function parseGpsFromExifTags(tags: ExpandedTags) {
     latitude: parseExifGpsCoordinate(latitudeValues, latitudeRef),
     longitude: parseExifGpsCoordinate(longitudeValues, longitudeRef),
   };
+}
+
+function parseAltitudeFromExifTags(tags: ExpandedTags) {
+  const altitude = tags.gps?.Altitude;
+
+  if (isFiniteNumber(altitude)) {
+    return altitude;
+  }
+
+  const altitudeValue = readNumberValue(tags.exif?.GPSAltitude);
+  const altitudeRef = readNumberValue(tags.exif?.GPSAltitudeRef);
+
+  if (altitudeValue === null) {
+    return undefined;
+  }
+
+  return altitudeRef === 1 ? -altitudeValue : altitudeValue;
 }
 
 function parseExifDateTime(value: string | null) {
@@ -163,6 +209,7 @@ export async function readPhotoMetadataFromFile(file: File): Promise<PhotoMetada
   }
 
   return {
+    altitude: parseAltitudeFromExifTags(tags),
     ...parseGpsFromExifTags(tags),
     takenAt: parseTakenAt(tags),
   };

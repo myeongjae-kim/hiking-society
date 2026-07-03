@@ -1,4 +1,5 @@
 export type HikingFormValues = {
+  altitude: string;
   completedTime: string;
   hikingDate: string;
   latitude: string;

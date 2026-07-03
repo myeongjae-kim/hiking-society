@@ -1,4 +1,5 @@
 import type {
+  Altitude,
   AuthorName,
   Brand,
   IsoDateString,
@@ -18,6 +19,7 @@ export type Hiking = {
   readonly timezone: Timezone;
   readonly latitude: Latitude;
   readonly longitude: Longitude;
+  readonly altitude: Altitude | null;
   readonly startedAt: IsoDateTimeString;
   readonly completedAt: IsoDateTimeString;
   readonly participantsCsv: string;
@@ -34,6 +36,7 @@ export type CreateHikingInput = {
   readonly timezone: Timezone;
   readonly latitude: Latitude;
   readonly longitude: Longitude;
+  readonly altitude: Altitude | null;
   readonly startedAt: IsoDateTimeString;
   readonly completedAt: IsoDateTimeString;
   readonly participantsCsv: string;
@@ -46,6 +49,7 @@ export type UpdateHikingInput = {
   readonly timezone?: Timezone;
   readonly latitude?: Latitude;
   readonly longitude?: Longitude;
+  readonly altitude?: Altitude | null;
   readonly startedAt?: IsoDateTimeString;
   readonly completedAt?: IsoDateTimeString;
   readonly participantsCsv?: string;
