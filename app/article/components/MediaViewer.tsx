@@ -62,12 +62,12 @@ export function MediaViewer({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
-  const title = viewerLabel ?? `${authorName}의 산행 미디어`;
+  const title = viewerLabel ?? `${authorName}의 산행 사진이나 동영상`;
   const descriptionId = `media-viewer-description-${viewerId}`;
   const displayCommand =
     viewerCommand ?? (viewerLabel ? 'profile.media' : `article.media ${articleId}`);
   const description = hasMultipleMedia
-    ? '좌우 화살표로 미디어를 이동하고 Escape 키로 닫을 수 있습니다.'
+    ? '좌우 화살표로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
     : 'Escape 키로 닫을 수 있습니다.';
 
   const showPreviousMedia = useCallback(() => {
@@ -354,7 +354,7 @@ export function MediaViewer({
                 >
                   <span className="relative block">
                     <img
-                      alt={`${authorName}의 산행 미디어 ${item.order}`}
+                      alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
                       className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
                       src={item.thumbnailUrl ?? item.url}
                     />
@@ -395,7 +395,7 @@ export function MediaViewer({
             </span>
             <Dialog.Close asChild>
               <button
-                aria-label="미디어 닫기"
+                aria-label="사진이나 동영상 닫기"
                 className={`${mediaControlClassName} !size-10 text-2xl`}
                 type="button"
               >
@@ -407,7 +407,7 @@ export function MediaViewer({
           <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
             {hasMultipleMedia ? (
               <button
-                aria-label="이전 미디어"
+                aria-label="이전 사진이나 동영상"
                 className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
                 data-media-modal-surface
                 onClick={showPreviousMedia}
@@ -440,7 +440,7 @@ export function MediaViewer({
                 />
               ) : (
                 <img
-                  alt={`${authorName}의 산행 미디어 ${selectedMedia.order}`}
+                  alt={`${authorName}의 산행 사진이나 동영상 ${selectedMedia.order}`}
                   className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
                   draggable={false}
                   ref={selectedMediaSurfaceRef as RefObject<HTMLImageElement>}
@@ -451,7 +451,7 @@ export function MediaViewer({
 
             {hasMultipleMedia ? (
               <button
-                aria-label="다음 미디어"
+                aria-label="다음 사진이나 동영상"
                 className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
                 data-media-modal-surface
                 onClick={showNextMedia}

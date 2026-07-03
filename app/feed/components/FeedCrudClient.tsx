@@ -291,7 +291,7 @@ export function FeedCrudClient({
 
   const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
     if (values.media.length === 0) {
-      setError(`article-new-${hikingId}`, '게시글은 미디어 없이 저장할 수 없습니다.');
+      setError(`article-new-${hikingId}`, '게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
       return;
     }
 
@@ -304,7 +304,7 @@ export function FeedCrudClient({
 
   const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
     if (values.media.length === 0) {
-      setError(`article-edit-${articleId}`, '게시글은 미디어 없이 저장할 수 없습니다.');
+      setError(`article-edit-${articleId}`, '게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
       return;
     }
 

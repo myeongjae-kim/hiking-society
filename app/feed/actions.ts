@@ -131,7 +131,7 @@ async function parseMediaUploads(formData: FormData): Promise<ArticleMediaUpload
       const thumbnail = rawThumbnail instanceof File && rawThumbnail.size > 0 ? rawThumbnail : null;
 
       if (rawMediaType !== 'image' && rawMediaType !== 'video') {
-        throw new Error('지원하지 않는 미디어 형식입니다.');
+        throw new Error('지원하지 않는 사진이나 동영상 형식입니다.');
       }
 
       const mediaType: ArticleMediaUpload['mediaType'] =
@@ -260,7 +260,7 @@ export async function createArticle(formData: FormData): Promise<ActionResult> {
     const media = await parseMediaUploads(formData);
 
     if (media.length === 0) {
-      throw new Error('게시글은 미디어 없이 저장할 수 없습니다.');
+      throw new Error('게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
     }
 
     await applicationContext().get('ArticleCommandUseCase').create({
@@ -286,7 +286,7 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
     );
 
     if (media.length === 0) {
-      throw new Error('게시글은 미디어 없이 저장할 수 없습니다.');
+      throw new Error('게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
     }
 
     await applicationContext().get('ArticleCommandUseCase').update({
