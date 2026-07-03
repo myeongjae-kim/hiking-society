@@ -1,7 +1,7 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { MouseEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import type { MouseEvent, ReactNode, RefObject } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { photoDialogOverlayClassName } from '@/app/common/components/styles';
@@ -19,21 +19,9 @@ type MediaViewerProps = {
   viewerLabel?: string;
 };
 
-type DragState = {
-  pointerId: number;
-  startX: number;
-  startY: number;
-};
-
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
-const swipeThresholdPx = 48;
-const horizontalSwipeRatio = 1.25;
-const dragFeedbackMaxOffsetPx = 96;
-const dragFeedbackMinOpacity = 0.86;
-const dragClickSuppressThresholdPx = 8;
-const pinchGestureCooldownMs = 350;
-const viewportZoomThreshold = 1.01;
+const mediaNavigationClickZoneRatio = 0.3;
 
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
@@ -41,10 +29,6 @@ function getWrappedIndex(index: number, length: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
-}
-
-function isViewportZoomed() {
-  return (window.visualViewport?.scale ?? 1) > viewportZoomThreshold;
 }
 
 export function MediaViewer({
@@ -59,23 +43,18 @@ export function MediaViewer({
   viewerLabel,
 }: MediaViewerProps) {
   const viewerId = useId();
-  const dragStateRef = useRef<DragState | null>(null);
-  const isPinchGestureRef = useRef(false);
-  const pinchGestureUntilRef = useRef(0);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
-  const shouldSuppressStageClickRef = useRef(false);
-  const touchPointerIdsRef = useRef<Set<number>>(new Set());
   const [open, setOpen] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
+  const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
   const title = viewerLabel ?? `${authorName}의 산행 사진이나 동영상`;
   const descriptionId = `media-viewer-description-${viewerId}`;
   const displayCommand =
     viewerCommand ?? (viewerLabel ? 'profile.media' : `article.media ${articleId}`);
   const description = hasMultipleMedia
-    ? '좌우 화살표로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
+    ? '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
     : 'Escape 키로 닫을 수 있습니다.';
 
   const showPreviousMedia = useCallback(() => {
@@ -86,246 +65,49 @@ export function MediaViewer({
     setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, media.length));
   }, [media.length]);
 
-  const blockTouchSwipe = useCallback(() => {
-    return (
-      isPinchGestureRef.current ||
-      Date.now() < pinchGestureUntilRef.current ||
-      isZoomed ||
-      isViewportZoomed()
-    );
-  }, [isZoomed]);
-
-  const resetMediaDragFeedback = useCallback((withTransition: boolean) => {
-    const selectedMediaSurface = selectedMediaSurfaceRef.current;
-
-    if (!selectedMediaSurface) {
-      return;
-    }
-
-    const canAnimate =
-      withTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    selectedMediaSurface.style.transition = canAnimate
-      ? 'transform 160ms ease-out, opacity 160ms ease-out'
-      : '';
-    selectedMediaSurface.style.transform = '';
-    selectedMediaSurface.style.opacity = '';
-
-    if (!canAnimate) {
-      return;
-    }
-
-    window.setTimeout(() => {
-      if (selectedMediaSurfaceRef.current !== selectedMediaSurface) {
-        return;
-      }
-
-      selectedMediaSurface.style.transition = '';
-    }, 180);
-  }, []);
-
-  const updateZoomState = useCallback(() => {
-    const nextIsZoomed = isViewportZoomed();
-    setIsZoomed((currentIsZoomed) =>
-      currentIsZoomed === nextIsZoomed ? currentIsZoomed : nextIsZoomed,
-    );
-  }, []);
-
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     setOpen(nextOpen);
-
-    if (!nextOpen) {
-      setIsZoomed(false);
-    }
   }, []);
 
-  const updateMediaDragFeedback = useCallback((deltaX: number) => {
-    const selectedMediaSurface = selectedMediaSurfaceRef.current;
+  const handleMediaStageClick = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      const selectedMediaSurface = selectedMediaSurfaceRef.current;
+      const isSelectedMediaClick = selectedMediaSurface?.contains(event.target as Node) ?? false;
 
-    if (!selectedMediaSurface) {
-      return;
-    }
-
-    const offsetX = clamp(deltaX, -dragFeedbackMaxOffsetPx, dragFeedbackMaxOffsetPx);
-    const dragProgress = Math.min(Math.abs(offsetX) / dragFeedbackMaxOffsetPx, 1);
-    const opacity = 1 - (1 - dragFeedbackMinOpacity) * dragProgress;
-
-    selectedMediaSurface.style.transition = '';
-    selectedMediaSurface.style.transform = `translateX(${offsetX}px)`;
-    selectedMediaSurface.style.opacity = String(opacity);
-  }, []);
-
-  const startMediaDrag = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      if (!hasMultipleMedia) {
+      if (selectedMediaIsVideo && isSelectedMediaClick) {
         return;
       }
 
-      if (event.pointerType === 'mouse' && event.button !== 0) {
-        return;
-      }
+      if (hasMultipleMedia) {
+        const clickPositionRatio = event.clientX / window.innerWidth;
 
-      if (event.pointerType && !['mouse', 'pen', 'touch'].includes(event.pointerType)) {
-        return;
-      }
+        if (clickPositionRatio <= mediaNavigationClickZoneRatio) {
+          event.preventDefault();
+          event.stopPropagation();
+          showPreviousMedia();
+          return;
+        }
 
-      if (event.pointerType === 'touch') {
-        touchPointerIdsRef.current.add(event.pointerId);
-
-        if (touchPointerIdsRef.current.size > 1) {
-          const dragState = dragStateRef.current;
-
-          isPinchGestureRef.current = true;
-          pinchGestureUntilRef.current = Date.now() + pinchGestureCooldownMs;
-          shouldSuppressStageClickRef.current = true;
-          dragStateRef.current = null;
-          resetMediaDragFeedback(false);
-
-          if (dragState && event.currentTarget.hasPointerCapture(dragState.pointerId)) {
-            event.currentTarget.releasePointerCapture(dragState.pointerId);
-          }
-
+        if (clickPositionRatio >= 1 - mediaNavigationClickZoneRatio) {
+          event.preventDefault();
+          event.stopPropagation();
+          showNextMedia();
           return;
         }
       }
 
-      dragStateRef.current = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-      };
-      shouldSuppressStageClickRef.current = false;
-      resetMediaDragFeedback(false);
-
-      if (event.pointerType !== 'touch') {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      }
-    },
-    [hasMultipleMedia, resetMediaDragFeedback],
-  );
-
-  const resetMediaDrag = useCallback(
-    (event: PointerEvent<HTMLDivElement>, withTransition = true) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-
-      if (event.pointerType === 'touch') {
-        touchPointerIdsRef.current.delete(event.pointerId);
-
-        if (touchPointerIdsRef.current.size === 0) {
-          isPinchGestureRef.current = false;
-        }
-      }
-
-      dragStateRef.current = null;
-      resetMediaDragFeedback(withTransition);
-    },
-    [resetMediaDragFeedback],
-  );
-
-  const updateMediaDrag = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      const dragState = dragStateRef.current;
-
-      if (!dragState || dragState.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const deltaX = event.clientX - dragState.startX;
-      const deltaY = event.clientY - dragState.startY;
-
-      if (
-        Math.abs(deltaX) >= dragClickSuppressThresholdPx ||
-        Math.abs(deltaY) >= dragClickSuppressThresholdPx
-      ) {
-        shouldSuppressStageClickRef.current = true;
-      }
-
-      if (event.pointerType === 'touch' && blockTouchSwipe()) {
-        resetMediaDragFeedback(false);
-        return;
-      }
-
-      updateMediaDragFeedback(deltaX);
-    },
-    [blockTouchSwipe, resetMediaDragFeedback, updateMediaDragFeedback],
-  );
-
-  const finishMediaDrag = useCallback(
-    (event: PointerEvent<HTMLDivElement>) => {
-      const dragState = dragStateRef.current;
-      const shouldBlockTouchSwipe =
-        event.pointerType === 'touch' &&
-        (isPinchGestureRef.current || touchPointerIdsRef.current.size > 1 || blockTouchSwipe());
-
-      if (event.pointerType === 'touch') {
-        touchPointerIdsRef.current.delete(event.pointerId);
-
-        if (touchPointerIdsRef.current.size > 0 || isPinchGestureRef.current) {
-          pinchGestureUntilRef.current = Date.now() + pinchGestureCooldownMs;
-        }
-
-        if (touchPointerIdsRef.current.size === 0) {
-          isPinchGestureRef.current = false;
-        }
-      }
-
-      if (shouldBlockTouchSwipe) {
-        dragStateRef.current = null;
-        resetMediaDragFeedback(false);
-        return;
-      }
-
-      if (!dragState || dragState.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const deltaX = event.clientX - dragState.startX;
-      const deltaY = event.clientY - dragState.startY;
-      const absDeltaX = Math.abs(deltaX);
-      const absDeltaY = Math.abs(deltaY);
-      const isSwipe =
-        absDeltaX >= swipeThresholdPx && absDeltaX >= absDeltaY * horizontalSwipeRatio;
-
-      if (absDeltaX >= dragClickSuppressThresholdPx || absDeltaY >= dragClickSuppressThresholdPx) {
-        shouldSuppressStageClickRef.current = true;
-      }
-
-      resetMediaDrag(event, !isSwipe);
-
-      if (!isSwipe) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (deltaX > 0) {
-        showPreviousMedia();
-        return;
-      }
-
-      showNextMedia();
-    },
-    [blockTouchSwipe, resetMediaDrag, resetMediaDragFeedback, showNextMedia, showPreviousMedia],
-  );
-
-  const handleMediaStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
-    if (!shouldSuppressStageClickRef.current) {
-      if (event.target === selectedMediaSurfaceRef.current) {
+      if (isSelectedMediaClick) {
+        event.preventDefault();
+        event.stopPropagation();
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
       setOpen(false);
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    shouldSuppressStageClickRef.current = false;
-  }, []);
+    },
+    [hasMultipleMedia, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
+  );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     const target = event.target;
@@ -360,33 +142,6 @@ export function MediaViewer({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [hasMultipleMedia, open, showNextMedia, showPreviousMedia]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const visualViewport = window.visualViewport;
-    let animationFrameId = window.requestAnimationFrame(updateZoomState);
-
-    const handleViewportChange = () => {
-      window.cancelAnimationFrame(animationFrameId);
-      animationFrameId = window.requestAnimationFrame(updateZoomState);
-    };
-
-    if (!visualViewport) {
-      return () => window.cancelAnimationFrame(animationFrameId);
-    }
-
-    visualViewport.addEventListener('resize', handleViewportChange);
-    visualViewport.addEventListener('scroll', handleViewportChange);
-
-    return () => {
-      window.cancelAnimationFrame(animationFrameId);
-      visualViewport.removeEventListener('resize', handleViewportChange);
-      visualViewport.removeEventListener('scroll', handleViewportChange);
-    };
-  }, [open, updateZoomState]);
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -469,11 +224,19 @@ export function MediaViewer({
             </Dialog.Close>
           </div>
 
-          <div className="grid min-h-0 grid-cols-1 items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+          <div
+            className={`grid min-h-0 items-center gap-2 ${
+              selectedMediaIsVideo
+                ? 'grid-cols-[auto_minmax(0,1fr)_auto]'
+                : 'grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)_auto]'
+            }`}
+          >
             {hasMultipleMedia ? (
               <button
                 aria-label="이전 사진이나 동영상"
-                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
+                className={`${mediaControlClassName} ${
+                  selectedMediaIsVideo ? 'grid' : 'hidden sm:grid'
+                } !size-11 font-mono text-2xl sm:!size-14`}
                 data-media-modal-surface
                 onClick={showPreviousMedia}
                 type="button"
@@ -485,17 +248,9 @@ export function MediaViewer({
             )}
 
             <div
-              className={`grid h-full min-h-0 w-full place-items-center select-none ${
-                isZoomed
-                  ? '[touch-action:pan-x_pan-y_pinch-zoom]'
-                  : '[touch-action:pan-y_pinch-zoom]'
-              }`}
+              className="grid h-full min-h-0 w-full [touch-action:manipulation] place-items-center select-none"
               data-media-modal-surface
               onClick={handleMediaStageClick}
-              onPointerCancel={resetMediaDrag}
-              onPointerDown={startMediaDrag}
-              onPointerMove={updateMediaDrag}
-              onPointerUp={finishMediaDrag}
             >
               {selectedMedia.mediaType === 'video' ? (
                 <video
@@ -521,7 +276,9 @@ export function MediaViewer({
             {hasMultipleMedia ? (
               <button
                 aria-label="다음 사진이나 동영상"
-                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
+                className={`${mediaControlClassName} ${
+                  selectedMediaIsVideo ? 'grid' : 'hidden sm:grid'
+                } !size-11 font-mono text-2xl sm:!size-14`}
                 data-media-modal-surface
                 onClick={showNextMedia}
                 type="button"
