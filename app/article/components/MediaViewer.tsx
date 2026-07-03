@@ -32,6 +32,8 @@ const horizontalSwipeRatio = 1.25;
 const dragFeedbackMaxOffsetPx = 96;
 const dragFeedbackMinOpacity = 0.86;
 const dragClickSuppressThresholdPx = 8;
+const pinchGestureCooldownMs = 350;
+const viewportZoomThreshold = 1.01;
 
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
@@ -39,6 +41,10 @@ function getWrappedIndex(index: number, length: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function isViewportZoomed() {
+  return (window.visualViewport?.scale ?? 1) > viewportZoomThreshold;
 }
 
 export function MediaViewer({
@@ -55,6 +61,7 @@ export function MediaViewer({
   const viewerId = useId();
   const dragStateRef = useRef<DragState | null>(null);
   const isPinchGestureRef = useRef(false);
+  const pinchGestureUntilRef = useRef(0);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const shouldSuppressStageClickRef = useRef(false);
   const touchPointerIdsRef = useRef<Set<number>>(new Set());
@@ -77,6 +84,12 @@ export function MediaViewer({
   const showNextMedia = useCallback(() => {
     setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, media.length));
   }, [media.length]);
+
+  const blockTouchSwipe = useCallback(() => {
+    return (
+      isPinchGestureRef.current || Date.now() < pinchGestureUntilRef.current || isViewportZoomed()
+    );
+  }, []);
 
   const resetMediaDragFeedback = useCallback((withTransition: boolean) => {
     const selectedMediaSurface = selectedMediaSurfaceRef.current;
@@ -144,6 +157,7 @@ export function MediaViewer({
           const dragState = dragStateRef.current;
 
           isPinchGestureRef.current = true;
+          pinchGestureUntilRef.current = Date.now() + pinchGestureCooldownMs;
           shouldSuppressStageClickRef.current = true;
           dragStateRef.current = null;
           resetMediaDragFeedback(false);
@@ -195,10 +209,6 @@ export function MediaViewer({
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
 
-      if (event.pointerType === 'touch' && isPinchGestureRef.current) {
-        return;
-      }
-
       if (!dragState || dragState.pointerId !== event.pointerId) {
         return;
       }
@@ -213,27 +223,36 @@ export function MediaViewer({
         shouldSuppressStageClickRef.current = true;
       }
 
+      if (event.pointerType === 'touch' && blockTouchSwipe()) {
+        resetMediaDragFeedback(false);
+        return;
+      }
+
       updateMediaDragFeedback(deltaX);
     },
-    [updateMediaDragFeedback],
+    [blockTouchSwipe, resetMediaDragFeedback, updateMediaDragFeedback],
   );
 
   const finishMediaDrag = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       const dragState = dragStateRef.current;
-      const wasPinchGesture =
+      const shouldBlockTouchSwipe =
         event.pointerType === 'touch' &&
-        (isPinchGestureRef.current || touchPointerIdsRef.current.size > 1);
+        (isPinchGestureRef.current || touchPointerIdsRef.current.size > 1 || blockTouchSwipe());
 
       if (event.pointerType === 'touch') {
         touchPointerIdsRef.current.delete(event.pointerId);
+
+        if (touchPointerIdsRef.current.size > 0 || isPinchGestureRef.current) {
+          pinchGestureUntilRef.current = Date.now() + pinchGestureCooldownMs;
+        }
 
         if (touchPointerIdsRef.current.size === 0) {
           isPinchGestureRef.current = false;
         }
       }
 
-      if (wasPinchGesture) {
+      if (shouldBlockTouchSwipe) {
         dragStateRef.current = null;
         resetMediaDragFeedback(false);
         return;
@@ -269,7 +288,7 @@ export function MediaViewer({
 
       showNextMedia();
     },
-    [resetMediaDrag, resetMediaDragFeedback, showNextMedia, showPreviousMedia],
+    [blockTouchSwipe, resetMediaDrag, resetMediaDragFeedback, showNextMedia, showPreviousMedia],
   );
 
   const handleMediaStageClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
