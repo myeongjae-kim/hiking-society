@@ -1,0 +1,22 @@
+name: "Deploy"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+  push:
+    branches:
+      - staging
+      - main
+
+jobs:
+  deploy-vercel:
+    uses: ./.github/workflows/deploy-vercel-common.yml
+    secrets: inherit
+    with:
+      VERCEL_PROJECT_NAME_STAGING: hiking-society
+      VERCEL_PROJECT_NAME_PROD: unused
+      BRANCH_NAME_STAGING: main
+      BRANCH_NAME_PROD: unused

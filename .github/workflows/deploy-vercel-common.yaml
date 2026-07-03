@@ -1,0 +1,195 @@
+name: "Deploy to Vercel"
+
+on:
+  workflow_call:
+    inputs:
+      BRANCH_NAME_STAGING:
+        description: "스테이징 환경에 배포하기 위한 브랜치 이름"
+        default: "staging"
+        required: false
+        type: string
+      BRANCH_NAME_PROD:
+        description: "운영 환경에 배포하기 위한 브랜치 이름"
+        default: "prod"
+        required: false
+        type: string
+      VERCEL_PROJECT_NAME_STAGING:
+        description: "Vercel 베타 프로젝트 이름"
+        required: true
+        type: string
+      VERCEL_PROJECT_NAME_PROD:
+        description: "Vercel 운영 프로젝트 이름"
+        required: true
+        type: string
+    secrets:
+      VERCEL_TEAM_ID: # 조직 공통
+        required: true
+      VERCEL_DEPLOYMENT_TOKEN: # 조직 공통
+        required: true
+
+# secrets을 직접 사용하지 않고 env를 통해 사용함으로써 이 action이 어떤 secret값을 필요로 하는지 한 눈에 볼 수 있도록 한다.
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 조직 공통
+  VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }} # 조직 공통
+  VERCEL_DEPLOYMENT_TOKEN: ${{ secrets.VERCEL_DEPLOYMENT_TOKEN }} # 조직 공통
+  VERCEL_PROJECT_NAME_STAGING: ${{ inputs.VERCEL_PROJECT_NAME_STAGING }} # 프로젝트별로 repository에서 지정해줘야 한다.
+  VERCEL_PROJECT_NAME_PROD: ${{ inputs.VERCEL_PROJECT_NAME_PROD }} # 프로젝트별로 repository에서 지정해줘야 한다.
+  MESSAGE_FAILURE: Vercel 배포에 실패했습니다. Github Actions 로그를 확인해주세요.
+  MESSAGE_SUCCESS: Vercel 배포 API를 호출했습니다. Vercel 플러그인의 댓글을 기다려주세요.
+  MESSAGE_SUCCESS_PROD: Vercel 배포 API를 호출했습니다. Preview 배포를 확인하고 이상이 없다면\nInspector에서 \'Promote to Production\'을 수동으로 눌러 실제 환경에 배포하세요.
+
+jobs:
+  deploy-preview-staging:
+    if: github.event_name == 'pull_request'
+    runs-on: self-hosted
+    steps:
+      - id: deploy
+        run: |
+          curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ env.VERCEL_DEPLOYMENT_TOKEN }}" \
+            -d '{
+            "name": "${{ env.VERCEL_PROJECT_NAME_STAGING }}",
+            "gitSource": {
+              "type": "github",
+              "org": "${{ github.event.repository.owner.login }}",
+              "repo": "${{ github.event.repository.name }}",
+              "ref": "${{ github.head_ref }}"
+            },
+            "projectSettings": {
+              "rootDirectory": "apps/web",
+              "sourceFilesOutsideRootDirectory": true,
+              "installCommand": "cd ../.. && pnpm install",
+              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
+              "outputDirectory": ".next",
+              "framework": "nextjs"
+            }
+          }'
+      - name: "Add PR comment when failed"
+        uses: actions/github-script@v6
+        if: failure()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ \'${{ github.workflow }}\' failed: ${{ env.MESSAGE_FAILURE }}'
+            })
+      - name: "Add PR comment when success"
+        uses: actions/github-script@v6
+        if: success()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}'
+            })
+  deploy-production-staging:
+    if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_STAGING) }}
+    runs-on: self-hosted
+    steps:
+      - id: deploy
+        run: |
+          curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ env.VERCEL_DEPLOYMENT_TOKEN }}" \
+            -d '{
+            "name": "${{ env.VERCEL_PROJECT_NAME_STAGING }}",
+            "gitSource": {
+              "type": "github",
+              "org": "${{ github.event.repository.owner.login }}",
+              "repo": "${{ github.event.repository.name }}",
+              "ref": "${{ inputs.BRANCH_NAME_STAGING }}"
+            },
+            "projectSettings": {
+              "rootDirectory": "apps/web",
+              "sourceFilesOutsideRootDirectory": true,
+              "installCommand": "cd ../.. && pnpm install",
+              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
+              "outputDirectory": ".next",
+              "framework": "nextjs"
+            },
+            "target": "production"
+          }'
+      - name: "Add commit comment when failed"
+        uses: actions/github-script@v6
+        if: failure()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: '❌ \'${{ github.workflow }}\' failed: ${{ env.MESSAGE_FAILURE }}'
+            })
+      - name: "Add commit comment when success"
+        uses: actions/github-script@v6
+        if: success()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}'
+            })
+  deploy-production-prod:
+    if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_PROD) }}
+    runs-on: self-hosted
+    steps:
+      - id: deploy
+        run: |
+          RESPONSE=$(curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ env.VERCEL_DEPLOYMENT_TOKEN }}" \
+            -d '{
+            "name": "${{ env.VERCEL_PROJECT_NAME_PROD }}",
+            "gitSource": {
+              "type": "github",
+              "org": "${{ github.event.repository.owner.login }}",
+              "repo": "${{ github.event.repository.name }}",
+              "ref": "${{ inputs.BRANCH_NAME_PROD }}"
+            },
+            "projectSettings": {
+              "rootDirectory": "apps/web",
+              "sourceFilesOutsideRootDirectory": true,
+              "installCommand": "cd ../.. && pnpm install",
+              "buildCommand": "cd ../.. && pnpm turbo build --filter=@bithumb/web",
+              "outputDirectory": ".next",
+              "framework": "nextjs"
+            },
+            "target": "production",
+            "autoAssignCustomDomains": false
+          }')
+          echo "value=$(echo $RESPONSE | jq -c '{url, inspectorUrl}')" >> $GITHUB_OUTPUT
+      - name: "Add commit comment when failed"
+        uses: actions/github-script@v6
+        if: failure()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: '❌ \'${{ github.workflow }}\' failed: ${{ env.MESSAGE_FAILURE }}'
+            })
+      - name: "Add commit comment when success"
+        uses: actions/github-script@v6
+        if: success()
+        with:
+          github-token: ${{env.GITHUB_TOKEN}}
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS_PROD }}\n| Name | Inspect | Deployment |\n| :--- | :----- | :------ |\n| **${{ env.VERCEL_PROJECT_NAME_PROD }}** | [Check Inspector](${{ fromJSON(steps.deploy.outputs.value).inspectorUrl }}) | [Visit Deployment](https://${{ fromJSON(steps.deploy.outputs.value).url }})'
+            })
