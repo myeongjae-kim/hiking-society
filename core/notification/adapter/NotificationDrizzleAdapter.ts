@@ -33,6 +33,7 @@ function toAuthorName(row: {
 export class NotificationDrizzleAdapter implements NotificationCommandPort, NotificationQueryPort {
   async list(input: Parameters<NotificationQueryPort['list']>[0]) {
     const limit = input.limit ?? 20;
+    const offset = input.offset ?? 0;
     const [rows, unreadRows] = await Promise.all([
       db
         .select({
@@ -52,7 +53,8 @@ export class NotificationDrizzleAdapter implements NotificationCommandPort, Noti
         .innerJoin(userTable, eq(userTable.id, notificationTable.actorUserId))
         .where(eq(notificationTable.recipientUserId, input.currentUserId))
         .orderBy(desc(notificationTable.createdAt))
-        .limit(limit),
+        .limit(limit + 1)
+        .offset(offset),
       db
         .select({ id: notificationTable.id })
         .from(notificationTable)
@@ -66,8 +68,9 @@ export class NotificationDrizzleAdapter implements NotificationCommandPort, Noti
     ]);
 
     return {
+      hasMoreNotifications: rows.length > limit,
       hasUnreadNotifications: unreadRows.length > 0,
-      notifications: rows.map((row) => ({
+      notifications: rows.slice(0, limit).map((row) => ({
         actorName: toAuthorName(row),
         actorProfileImageUrl: row.profileImageUrl,
         actorUserId: row.actorUserId,

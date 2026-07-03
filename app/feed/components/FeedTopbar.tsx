@@ -23,6 +23,16 @@ export function FeedTopbar({
   notificationSnapshot,
   user,
 }: FeedTopbarProps) {
+  const notificationSnapshotKey = notificationSnapshot
+    ? [
+        notificationSnapshot.hasMoreNotifications,
+        notificationSnapshot.hasUnreadNotifications,
+        notificationSnapshot.notifications.length,
+        notificationSnapshot.notifications[0]?.id ?? '',
+        notificationSnapshot.notifications.at(-1)?.id ?? '',
+      ].join(':')
+    : 'empty';
+
   return (
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -37,7 +47,10 @@ export function FeedTopbar({
           <span className="font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
             {String(currentAuthorName)} · {roleLabels[user.role]}
           </span>
-          <NotificationPopover notificationSnapshot={notificationSnapshot} />
+          <NotificationPopover
+            key={notificationSnapshotKey}
+            notificationSnapshot={notificationSnapshot}
+          />
           <Link
             aria-label="마이페이지"
             className={`${inlineButtonClassName} aspect-square !min-h-8 !w-8 !px-0`}

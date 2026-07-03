@@ -22,6 +22,7 @@ export type NotificationSummary = {
 export type Notification = NotificationSummary;
 
 export type NotificationListSnapshot = {
+  readonly hasMoreNotifications: boolean;
   readonly hasUnreadNotifications: boolean;
   readonly notifications: readonly NotificationSummary[];
 };

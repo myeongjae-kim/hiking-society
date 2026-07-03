@@ -2,11 +2,15 @@
 
 import * as Popover from '@radix-ui/react-popover';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import { inlineButtonClassName } from '@/app/common/components/styles';
-import { markAllNotificationsRead, markNotificationRead } from '@/app/notification/actions';
+import {
+  listNotificationsPage,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@/app/notification/actions';
 import type {
   NotificationListSnapshot,
   NotificationSummary,
@@ -17,9 +21,12 @@ type NotificationPopoverProps = {
 };
 
 const emptyNotificationSnapshot: NotificationListSnapshot = {
+  hasMoreNotifications: false,
   hasUnreadNotifications: false,
   notifications: [],
 };
+
+const NOTIFICATION_PAGE_SIZE = 20;
 
 const notificationItemClassName =
   'grid !h-auto !min-h-0 w-full min-w-0 appearance-none grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-2 border border-[var(--overlay0)] !bg-[var(--background1)] !bg-none px-3 py-2 text-left font-normal leading-normal !text-[var(--foreground0)] !no-underline hover:!bg-[var(--surface1)] hover:!no-underline focus:font-normal focus:!no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] active:!no-underline disabled:cursor-wait';
@@ -77,8 +84,9 @@ export function NotificationPopover({
 }: NotificationPopoverProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [snapshot, setSnapshot] = useState(() => notificationSnapshot);
   const [isPending, startTransition] = useTransition();
-  const { hasUnreadNotifications, notifications } = notificationSnapshot;
+  const { hasMoreNotifications, hasUnreadNotifications, notifications } = snapshot;
 
   const makeFormData = (notificationId?: string) => {
     const formData = new FormData();
@@ -91,6 +99,27 @@ export function NotificationPopover({
     return formData;
   };
 
+  const makePageFormData = () => {
+    const formData = new FormData();
+    formData.set('limit', String(NOTIFICATION_PAGE_SIZE));
+    formData.set('offset', String(notifications.length));
+    return formData;
+  };
+
+  const markLoadedNotificationRead = (notificationId: string) => {
+    setSnapshot((current) => ({
+      ...current,
+      notifications: current.notifications.map((notification) =>
+        notification.id === notificationId
+          ? {
+              ...notification,
+              readAt: new Date().toISOString() as NotificationSummary['readAt'],
+            }
+          : notification,
+      ),
+    }));
+  };
+
   const readNotification = (notification: NotificationSummary) => {
     startTransition(async () => {
       const result = await markNotificationRead(makeFormData(notification.id));
@@ -99,6 +128,7 @@ export function NotificationPopover({
         return;
       }
 
+      markLoadedNotificationRead(notification.id);
       router.push(getNotificationHref(notification));
       router.refresh();
     });
@@ -112,7 +142,32 @@ export function NotificationPopover({
         return;
       }
 
+      setSnapshot((current) => ({
+        ...current,
+        hasUnreadNotifications: false,
+        notifications: current.notifications.map((notification) => ({
+          ...notification,
+          readAt:
+            notification.readAt ?? (new Date().toISOString() as NotificationSummary['readAt']),
+        })),
+      }));
       router.refresh();
+    });
+  };
+
+  const loadMoreNotifications = () => {
+    startTransition(async () => {
+      const result = await listNotificationsPage(makePageFormData());
+
+      if (!result.ok) {
+        return;
+      }
+
+      setSnapshot((current) => ({
+        hasMoreNotifications: result.snapshot.hasMoreNotifications,
+        hasUnreadNotifications: result.snapshot.hasUnreadNotifications,
+        notifications: [...current.notifications, ...result.snapshot.notifications],
+      }));
     });
   };
 
@@ -155,32 +210,44 @@ export function NotificationPopover({
           </div>
           <div className="grid max-h-[min(28rem,calc(100svh-8rem))] gap-1 overflow-y-auto">
             {notifications.length > 0 ? (
-              notifications.map((notification) => {
-                const unread = notification.readAt === null;
+              <>
+                {notifications.map((notification) => {
+                  const unread = notification.readAt === null;
 
-                return (
+                  return (
+                    <button
+                      className={`${notificationItemClassName} ${
+                        unread ? 'shadow-[inset_0.25rem_0_0_var(--red)]' : 'opacity-75'
+                      }`}
+                      disabled={isPending}
+                      key={notification.id}
+                      onClick={() => readNotification(notification)}
+                      type="button"
+                    >
+                      <NotificationAvatar notification={notification} />
+                      <span className="grid min-w-0 justify-items-start gap-1">
+                        <span className="min-w-0 text-left text-sm leading-[1.4] [overflow-wrap:anywhere] !no-underline">
+                          {getNotificationMessage(notification)}
+                        </span>
+                        <DateTimeLabel
+                          className="font-mono text-xs text-[var(--subtext0)] !no-underline"
+                          value={notification.createdAt}
+                        />
+                      </span>
+                    </button>
+                  );
+                })}
+                {hasMoreNotifications ? (
                   <button
-                    className={`${notificationItemClassName} ${
-                      unread ? 'shadow-[inset_0.25rem_0_0_var(--red)]' : 'opacity-75'
-                    }`}
+                    className={`${inlineButtonClassName} !min-h-[2rem] w-full !px-3 !py-1 text-sm`}
                     disabled={isPending}
-                    key={notification.id}
-                    onClick={() => readNotification(notification)}
+                    onClick={loadMoreNotifications}
                     type="button"
                   >
-                    <NotificationAvatar notification={notification} />
-                    <span className="grid min-w-0 justify-items-start gap-1">
-                      <span className="min-w-0 text-left text-sm leading-[1.4] [overflow-wrap:anywhere] !no-underline">
-                        {getNotificationMessage(notification)}
-                      </span>
-                      <DateTimeLabel
-                        className="font-mono text-xs text-[var(--subtext0)] !no-underline"
-                        value={notification.createdAt}
-                      />
-                    </span>
+                    더 보기
                   </button>
-                );
-              })
+                ) : null}
+              </>
             ) : (
               <p className="m-0 border border-[var(--overlay0)] bg-[var(--background1)] px-3 py-4 text-sm text-[var(--subtext0)]">
                 아직 알림이 없습니다.
