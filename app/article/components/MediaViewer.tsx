@@ -404,11 +404,11 @@ export function MediaViewer({
             </Dialog.Close>
           </div>
 
-          <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+          <div className="grid min-h-0 grid-cols-1 items-center gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
             {hasMultipleMedia ? (
               <button
                 aria-label="이전 사진이나 동영상"
-                className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
+                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
                 data-media-modal-surface
                 onClick={showPreviousMedia}
                 type="button"
@@ -416,7 +416,7 @@ export function MediaViewer({
                 ←
               </button>
             ) : (
-              <span aria-hidden="true" className="size-0 sm:size-14" />
+              <span aria-hidden="true" className="hidden sm:block sm:size-14" />
             )}
 
             <div
@@ -452,7 +452,7 @@ export function MediaViewer({
             {hasMultipleMedia ? (
               <button
                 aria-label="다음 사진이나 동영상"
-                className={`${mediaControlClassName} !size-11 font-mono text-2xl sm:!size-14`}
+                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
                 data-media-modal-surface
                 onClick={showNextMedia}
                 type="button"
@@ -460,7 +460,7 @@ export function MediaViewer({
                 →
               </button>
             ) : (
-              <span aria-hidden="true" className="size-0 sm:size-14" />
+              <span aria-hidden="true" className="hidden sm:block sm:size-14" />
             )}
           </div>
 
