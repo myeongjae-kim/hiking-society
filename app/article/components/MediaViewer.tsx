@@ -66,6 +66,7 @@ export function MediaViewer({
   const shouldSuppressStageClickRef = useRef(false);
   const touchPointerIdsRef = useRef<Set<number>>(new Set());
   const [open, setOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
@@ -87,9 +88,12 @@ export function MediaViewer({
 
   const blockTouchSwipe = useCallback(() => {
     return (
-      isPinchGestureRef.current || Date.now() < pinchGestureUntilRef.current || isViewportZoomed()
+      isPinchGestureRef.current ||
+      Date.now() < pinchGestureUntilRef.current ||
+      isZoomed ||
+      isViewportZoomed()
     );
-  }, []);
+  }, [isZoomed]);
 
   const resetMediaDragFeedback = useCallback((withTransition: boolean) => {
     const selectedMediaSurface = selectedMediaSurfaceRef.current;
@@ -118,6 +122,21 @@ export function MediaViewer({
 
       selectedMediaSurface.style.transition = '';
     }, 180);
+  }, []);
+
+  const updateZoomState = useCallback(() => {
+    const nextIsZoomed = isViewportZoomed();
+    setIsZoomed((currentIsZoomed) =>
+      currentIsZoomed === nextIsZoomed ? currentIsZoomed : nextIsZoomed,
+    );
+  }, []);
+
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    setOpen(nextOpen);
+
+    if (!nextOpen) {
+      setIsZoomed(false);
+    }
   }, []);
 
   const updateMediaDragFeedback = useCallback((deltaX: number) => {
@@ -342,8 +361,35 @@ export function MediaViewer({
     };
   }, [hasMultipleMedia, open, showNextMedia, showPreviousMedia]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const visualViewport = window.visualViewport;
+    let animationFrameId = window.requestAnimationFrame(updateZoomState);
+
+    const handleViewportChange = () => {
+      window.cancelAnimationFrame(animationFrameId);
+      animationFrameId = window.requestAnimationFrame(updateZoomState);
+    };
+
+    if (!visualViewport) {
+      return () => window.cancelAnimationFrame(animationFrameId);
+    }
+
+    visualViewport.addEventListener('resize', handleViewportChange);
+    visualViewport.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      visualViewport.removeEventListener('resize', handleViewportChange);
+      visualViewport.removeEventListener('scroll', handleViewportChange);
+    };
+  }, [open, updateZoomState]);
+
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       {trigger ? (
         <Dialog.Trigger asChild>
           <button
@@ -439,7 +485,11 @@ export function MediaViewer({
             )}
 
             <div
-              className="grid h-full min-h-0 w-full [touch-action:pan-y_pinch-zoom] place-items-center select-none"
+              className={`grid h-full min-h-0 w-full place-items-center select-none ${
+                isZoomed
+                  ? '[touch-action:pan-x_pan-y_pinch-zoom]'
+                  : '[touch-action:pan-y_pinch-zoom]'
+              }`}
               data-media-modal-surface
               onClick={handleMediaStageClick}
               onPointerCancel={resetMediaDrag}
