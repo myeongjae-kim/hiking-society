@@ -11,6 +11,9 @@ on:
       - staging
       - main
 
+permissions:
+  contents: write
+
 jobs:
   deploy-vercel:
     uses: ./.github/workflows/deploy-vercel-common.yml
