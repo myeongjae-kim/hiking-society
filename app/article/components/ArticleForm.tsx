@@ -52,6 +52,7 @@ export function ArticleForm({
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [processingLabel, setProcessingLabel] = useState('사진이나 동영상 처리 중');
   const [draggedMediaOrder, setDraggedMediaOrder] = useState<number | null>(null);
+  const [isMediaDropActive, setIsMediaDropActive] = useState(false);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const valuesRef = useRef(values);
   const disabled = isProcessingMedia || submitting;
@@ -97,15 +98,10 @@ export function ArticleForm({
     event.dataTransfer.setDragImage(previewCard, offsetX, offsetY);
   };
 
-  const handleMediaChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const input = event.currentTarget;
-    const files = Array.from(input.files ?? []);
-
-    if (files.length === 0) {
+  const handleMediaFiles = async (files: File[]) => {
+    if (disabled || files.length === 0) {
       return;
     }
-
-    input.value = '';
 
     setMediaError(null);
     setIsProcessingMedia(true);
@@ -165,6 +161,37 @@ export function ArticleForm({
     }
   };
 
+  const handleMediaChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const files = Array.from(input.files ?? []);
+
+    input.value = '';
+    await handleMediaFiles(files);
+  };
+
+  const hasFileTransfer = (event: DragEvent<HTMLElement>) =>
+    Array.from(event.dataTransfer.types).includes('Files');
+
+  const handleMediaDropAreaDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (disabled || !hasFileTransfer(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsMediaDropActive(true);
+  };
+
+  const handleMediaDropAreaDrop = async (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFileTransfer(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    setIsMediaDropActive(false);
+    await handleMediaFiles(Array.from(event.dataTransfer.files));
+  };
+
   const moveMedia = (fromOrder: number, toOrder: number) => {
     if (fromOrder === toOrder) {
       return;
@@ -202,6 +229,10 @@ export function ArticleForm({
   };
 
   const handleMediaDragOver = (event: DragEvent<HTMLLIElement>, order: number) => {
+    if (hasFileTransfer(event)) {
+      return;
+    }
+
     if (draggedMediaOrder === null || draggedMediaOrder === order) {
       return;
     }
@@ -211,6 +242,10 @@ export function ArticleForm({
   };
 
   const handleMediaDrop = (event: DragEvent<HTMLLIElement>, order: number) => {
+    if (hasFileTransfer(event)) {
+      return;
+    }
+
     event.preventDefault();
 
     const transferOrder = Number(event.dataTransfer.getData('text/plain'));
@@ -269,113 +304,133 @@ export function ArticleForm({
         onSubmit={handleSubmit}
       >
         <Command>{article ? `article.edit ${article.id}` : 'article.new'}</Command>
-        <FieldLabel label="사진이나 동영상">
-          <label
-            className={`${inlineButtonClassName} ${disabled ? 'cursor-not-allowed opacity-45' : ''}`}
-          >
-            사진이나 동영상 선택
-            <input
-              accept="image/*,.heic,.heif,image/heic,image/heif,video/*"
-              className={hiddenFileInputClassName}
-              disabled={disabled}
-              multiple
-              onChange={handleMediaChange}
-              type="file"
-            />
-          </label>
-        </FieldLabel>
-        {mediaError ? <p className="m-0 text-sm text-[var(--red)]">{mediaError}</p> : null}
-        {values.media.length > 0 ? (
-          <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
-            {values.media.map((media: DraftMedia) => {
-              const duplicateKey = getMediaDuplicateKey(media);
-              const isDuplicate = duplicateKey !== null && duplicateMediaKeys.has(duplicateKey);
-              const isDragged = draggedMediaOrder === media.order;
-              const canMoveUp = media.order > 1;
-              const canMoveDown = media.order < values.media.length;
-
-              return (
-                <li
-                  aria-label={`선택한 게시글 사진이나 동영상 ${media.order}번째`}
-                  className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
-                    isDuplicate
-                      ? 'border-2 border-[var(--peach)]'
-                      : 'border border-[var(--overlay0)]'
-                  } ${
-                    isDragged
-                      ? '!border-[var(--blue)] !bg-[var(--surface1)] opacity-70'
-                      : 'hover:border-[var(--blue)]'
-                  }`}
-                  draggable
-                  key={`${media.fileName}-${media.order}`}
-                  onDragEnd={() => {
-                    setDraggedMediaOrder(null);
-                    removeMediaDragPreview();
-                  }}
-                  onDragOver={(event) => handleMediaDragOver(event, media.order)}
-                  onDragStart={(event) => handleMediaDragStart(event, media.order)}
-                  onDrop={(event) => handleMediaDrop(event, media.order)}
-                >
-                  <MediaViewer
-                    articleId={article?.id ?? 'draft'}
-                    authorName="선택한 게시글"
-                    initialIndex={media.order - 1}
-                    media={values.media}
-                    trigger={
-                      <span className="relative block">
-                        <img
-                          alt={`선택한 게시글 사진이나 동영상 ${media.order}`}
-                          className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                          draggable={false}
-                          src={media.thumbnailUrl ?? media.url}
-                        />
-                        {media.mediaType === 'video' ? (
-                          <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
-                            video
-                          </span>
-                        ) : null}
-                      </span>
-                    }
-                    triggerClassName="group block h-auto w-full appearance-none !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                    viewerCommand="article.media.preview"
-                    viewerLabel="선택한 게시글 사진이나 동영상"
-                  />
-                  <div className="grid gap-2 px-3 py-2">
-                    <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
-                      order={media.order} {media.fileName}
-                    </span>
-                    {isDuplicate ? (
-                      <span className="text-sm leading-[1.35] text-[var(--peach)]">
-                        동일한 사진이나 동영상이 선택되었습니다.
-                      </span>
-                    ) : null}
-                    <div className="grid grid-cols-3 gap-2">
-                      <ActionButton
-                        disabled={!canMoveUp}
-                        onClick={() => moveMedia(media.order, media.order - 1)}
-                      >
-                        위로
-                      </ActionButton>
-                      <ActionButton
-                        disabled={!canMoveDown}
-                        onClick={() => moveMedia(media.order, media.order + 1)}
-                      >
-                        아래로
-                      </ActionButton>
-                      <ActionButton onClick={() => removeMedia(media.order)} tone="danger">
-                        제거
-                      </ActionButton>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <p className="m-0 text-sm text-[var(--subtext0)]">
-            사진이나 동영상을 1개 이상 선택해야 합니다.
+        <div
+          className={`grid gap-3 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
+            disabled ? 'opacity-70' : ''
+          } ${
+            isMediaDropActive
+              ? 'border-[var(--blue)] bg-[var(--surface1)]'
+              : 'border-[var(--overlay0)] bg-[var(--background0)]'
+          }`}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setIsMediaDropActive(false);
+            }
+          }}
+          onDragOver={handleMediaDropAreaDragOver}
+          onDrop={handleMediaDropAreaDrop}
+        >
+          <FieldLabel label="사진이나 동영상">
+            <label
+              className={`${inlineButtonClassName} ${disabled ? 'cursor-not-allowed opacity-45' : ''}`}
+            >
+              사진이나 동영상 선택
+              <input
+                accept="image/*,.heic,.heif,image/heic,image/heif,video/*"
+                className={hiddenFileInputClassName}
+                disabled={disabled}
+                multiple
+                onChange={handleMediaChange}
+                type="file"
+              />
+            </label>
+          </FieldLabel>
+          <p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">
+            파일을 이 영역에 드롭해도 추가됩니다.
           </p>
-        )}
+          {mediaError ? <p className="m-0 text-sm text-[var(--red)]">{mediaError}</p> : null}
+          {values.media.length > 0 ? (
+            <ol className="m-0 flex list-none flex-wrap gap-3 p-0">
+              {values.media.map((media: DraftMedia) => {
+                const duplicateKey = getMediaDuplicateKey(media);
+                const isDuplicate = duplicateKey !== null && duplicateMediaKeys.has(duplicateKey);
+                const isDragged = draggedMediaOrder === media.order;
+                const canMoveUp = media.order > 1;
+                const canMoveDown = media.order < values.media.length;
+
+                return (
+                  <li
+                    aria-label={`선택한 게시글 사진이나 동영상 ${media.order}번째`}
+                    className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
+                      isDuplicate
+                        ? 'border-2 border-[var(--peach)]'
+                        : 'border border-[var(--overlay0)]'
+                    } ${
+                      isDragged
+                        ? '!border-[var(--blue)] !bg-[var(--surface1)] opacity-70'
+                        : 'hover:border-[var(--blue)]'
+                    }`}
+                    draggable
+                    key={`${media.fileName}-${media.order}`}
+                    onDragEnd={() => {
+                      setDraggedMediaOrder(null);
+                      removeMediaDragPreview();
+                    }}
+                    onDragOver={(event) => handleMediaDragOver(event, media.order)}
+                    onDragStart={(event) => handleMediaDragStart(event, media.order)}
+                    onDrop={(event) => handleMediaDrop(event, media.order)}
+                  >
+                    <MediaViewer
+                      articleId={article?.id ?? 'draft'}
+                      authorName="선택한 게시글"
+                      initialIndex={media.order - 1}
+                      media={values.media}
+                      trigger={
+                        <span className="relative block">
+                          <img
+                            alt={`선택한 게시글 사진이나 동영상 ${media.order}`}
+                            className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                            draggable={false}
+                            src={media.thumbnailUrl ?? media.url}
+                          />
+                          {media.mediaType === 'video' ? (
+                            <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+                              video
+                            </span>
+                          ) : null}
+                        </span>
+                      }
+                      triggerClassName="group block h-auto w-full appearance-none !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                      viewerCommand="article.media.preview"
+                      viewerLabel="선택한 게시글 사진이나 동영상"
+                    />
+                    <div className="grid gap-2 px-3 py-2">
+                      <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
+                        order={media.order} {media.fileName}
+                      </span>
+                      {isDuplicate ? (
+                        <span className="text-sm leading-[1.35] text-[var(--peach)]">
+                          동일한 사진이나 동영상이 선택되었습니다.
+                        </span>
+                      ) : null}
+                      <div className="grid grid-cols-3 gap-2">
+                        <ActionButton
+                          disabled={!canMoveUp}
+                          onClick={() => moveMedia(media.order, media.order - 1)}
+                        >
+                          위로
+                        </ActionButton>
+                        <ActionButton
+                          disabled={!canMoveDown}
+                          onClick={() => moveMedia(media.order, media.order + 1)}
+                        >
+                          아래로
+                        </ActionButton>
+                        <ActionButton onClick={() => removeMedia(media.order)} tone="danger">
+                          제거
+                        </ActionButton>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="m-0 text-sm text-[var(--subtext0)]">
+              사진이나 동영상을 1개 이상 선택해야 합니다.
+            </p>
+          )}
+        </div>
         <FieldLabel label="본문">
           <textarea
             className={`${fieldClassName} min-h-[8rem] resize-y`}

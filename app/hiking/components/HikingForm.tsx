@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 import { useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
@@ -36,6 +36,10 @@ function shiftTimeValue(time: string, offsetMinutes: number) {
   return `${String(shiftedHour).padStart(2, '0')}:${String(shiftedMinute).padStart(2, '0')}`;
 }
 
+function isExifPhotoFile(file: File) {
+  return file.type === 'image/jpeg' || file.type === 'image/tiff';
+}
+
 export function HikingForm({
   error,
   hiking,
@@ -45,8 +49,9 @@ export function HikingForm({
 }: HikingFormProps) {
   const [values, setValues] = useState(() => getHikingFormDefaults(hiking));
   const [metadataStatus, setMetadataStatus] = useState(
-    '사진을 선택하면 EXIF 좌표와 촬영시각을 채웁니다.',
+    '사진을 선택하거나 드롭하면 EXIF 좌표와 촬영시각을 채웁니다.',
   );
+  const [isMetadataDropActive, setIsMetadataDropActive] = useState(false);
 
   const updateValue = (key: keyof HikingFormValues, value: string) => {
     setValues((currentValues) => ({
@@ -55,11 +60,15 @@ export function HikingForm({
     }));
   };
 
-  const handleMetadataFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const input = event.currentTarget;
-    const file = input.files?.[0];
+  const readMetadataFromFiles = async (files: File[]) => {
+    if (submitting || files.length === 0) {
+      return;
+    }
+
+    const file = files.find(isExifPhotoFile);
 
     if (!file) {
+      setMetadataStatus('EXIF를 읽을 수 있는 JPEG/TIFF 사진만 지원합니다.');
       return;
     }
 
@@ -113,9 +122,38 @@ export function HikingForm({
       );
     } catch {
       setMetadataStatus('EXIF 메타정보를 읽지 못했습니다.');
-    } finally {
-      input.value = '';
     }
+  };
+
+  const handleMetadataFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const files = Array.from(input.files ?? []);
+
+    input.value = '';
+    await readMetadataFromFiles(files);
+  };
+
+  const hasFileTransfer = (event: DragEvent<HTMLElement>) =>
+    Array.from(event.dataTransfer.types).includes('Files');
+
+  const handleMetadataDropAreaDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (submitting || !hasFileTransfer(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsMetadataDropActive(true);
+  };
+
+  const handleMetadataDropAreaDrop = async (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFileTransfer(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    setIsMetadataDropActive(false);
+    await readMetadataFromFiles(Array.from(event.dataTransfer.files));
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -135,12 +173,28 @@ export function HikingForm({
       onSubmit={handleSubmit}
     >
       <Command>{hiking ? `산행 수정: ${hiking.id}` : '산행 등록'}</Command>
-      <div className="grid gap-1.5">
+      <div
+        className={`grid gap-1.5 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
+          submitting ? 'opacity-70' : ''
+        } ${
+          isMetadataDropActive
+            ? 'border-[var(--blue)] bg-[var(--surface1)]'
+            : 'border-[var(--overlay0)] bg-[var(--background0)]'
+        }`}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setIsMetadataDropActive(false);
+          }
+        }}
+        onDragOver={handleMetadataDropAreaDragOver}
+        onDrop={handleMetadataDropAreaDrop}
+      >
         <label className={inlineButtonClassName}>
           사진에서 메타정보 채우기
           <input
             accept="image/jpeg,image/tiff"
             className={hiddenFileInputClassName}
+            disabled={submitting}
             onChange={handleMetadataFileChange}
             type="file"
           />
