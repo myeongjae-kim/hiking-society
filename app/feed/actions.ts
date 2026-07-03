@@ -233,6 +233,19 @@ function parseExistingMedia(formData: FormData): ExistingArticleMediaInput[] {
         durationMs: z.number().nullable().optional(),
         height: z.number().nullable().optional(),
         mediaType: z.enum(['image', 'video']),
+        metadata: z
+          .object({
+            dateTime: z.string().nullable().optional(),
+            exposureTime: z.string().nullable().optional(),
+            fNumber: z.string().nullable().optional(),
+            focalLengthIn35mmFilm: z.string().nullable().optional(),
+            isoSpeedRatings: z.string().nullable().optional(),
+            make: z.string().nullable().optional(),
+            model: z.string().nullable().optional(),
+            shutterSpeedValue: z.string().nullable().optional(),
+          })
+          .nullable()
+          .optional(),
         objectKey: z.string().optional(),
         order: z.number().int().positive(),
         thumbnailUrl: z.string().nullable().optional(),

@@ -23,7 +23,7 @@ import {
   getMediaDuplicateKey,
   revokeDraftMediaUrl,
 } from './articleFormUtils';
-import { MediaViewer } from './MediaViewer';
+import { getMediaTakenTimeLabel, MediaViewer } from './MediaViewer';
 
 type ArticleFormProps = {
   article?: Article;
@@ -347,6 +347,7 @@ export function ArticleForm({
                 const isDragged = draggedMediaOrder === media.order;
                 const canMoveUp = media.order > 1;
                 const canMoveDown = media.order < values.media.length;
+                const takenTime = getMediaTakenTimeLabel(media);
 
                 return (
                   <li
@@ -397,6 +398,12 @@ export function ArticleForm({
                     <div className="grid gap-2 px-3 py-2">
                       <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
                         order={media.order} {media.fileName}
+                      </span>
+                      <span className="flex min-w-0 items-center justify-between gap-2 font-mono text-sm leading-none text-[var(--subtext0)]">
+                        <span>
+                          {media.mediaType} {media.order}/{values.media.length}
+                        </span>
+                        {takenTime ? <span>{takenTime}</span> : null}
                       </span>
                       {isDuplicate ? (
                         <span className="text-sm leading-[1.35] text-[var(--peach)]">

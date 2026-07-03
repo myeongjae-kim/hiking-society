@@ -232,6 +232,7 @@ export function FeedCrudClient({
         durationMs: media.durationMs,
         height: media.height,
         mediaType: media.mediaType,
+        metadata: media.metadata,
         objectKey: media.objectKey,
         order: media.order,
         thumbnailUrl: media.thumbnailUrl,

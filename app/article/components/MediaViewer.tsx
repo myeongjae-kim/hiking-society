@@ -77,6 +77,35 @@ function normalizeMetadataValue(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
+export function getMediaTakenTimeLabel(media: ArticleMedia) {
+  if (media.mediaType !== 'image') {
+    return null;
+  }
+
+  const dateTime = normalizeMetadataValue(media.metadata?.dateTime);
+
+  if (!dateTime) {
+    return null;
+  }
+
+  const match = dateTime.match(
+    /^(?:(?:\d{4}[:/-]\d{2}[:/-]\d{2})[ T])?(\d{1,2}):(\d{2})(?::\d{2})?/,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour > 23 || minute > 59) {
+    return null;
+  }
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 function getCameraLabel(media: ArticleMedia) {
   const make = normalizeMetadataValue(media.metadata?.make);
   const model = normalizeMetadataValue(media.metadata?.model);
@@ -555,39 +584,46 @@ export function MediaViewer({
         </Dialog.Trigger>
       ) : (
         <div className={thumbnailGridClassName}>
-          {media.map((item, index) => (
-            <figure
-              className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
-              key={`${articleId}-${item.order}`}
-            >
-              <Dialog.Trigger asChild>
-                <button
-                  className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                  onClick={() => {
-                    resetMediaGesture();
-                    setSelectedIndex(index);
-                  }}
-                  type="button"
-                >
-                  <span className="relative block">
-                    <img
-                      alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
-                      className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                      src={item.thumbnailUrl ?? item.url}
-                    />
-                    {item.mediaType === 'video' ? (
-                      <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
-                        video
-                      </span>
-                    ) : null}
+          {media.map((item, index) => {
+            const takenTime = getMediaTakenTimeLabel(item);
+
+            return (
+              <figure
+                className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
+                key={`${articleId}-${item.order}`}
+              >
+                <Dialog.Trigger asChild>
+                  <button
+                    className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                    onClick={() => {
+                      resetMediaGesture();
+                      setSelectedIndex(index);
+                    }}
+                    type="button"
+                  >
+                    <span className="relative block">
+                      <img
+                        alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
+                        className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                        src={item.thumbnailUrl ?? item.url}
+                      />
+                      {item.mediaType === 'video' ? (
+                        <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+                          video
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                </Dialog.Trigger>
+                <figcaption className="flex min-w-0 items-center justify-between gap-2 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+                  <span>
+                    {item.mediaType} {item.order}/{media.length}
                   </span>
-                </button>
-              </Dialog.Trigger>
-              <figcaption className="px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
-                {item.mediaType} {item.order}/{media.length}
-              </figcaption>
-            </figure>
-          ))}
+                  {takenTime ? <span>{takenTime}</span> : null}
+                </figcaption>
+              </figure>
+            );
+          })}
         </div>
       )}
 
