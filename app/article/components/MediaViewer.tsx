@@ -22,6 +22,7 @@ type MediaViewerProps = {
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
 const mediaNavigationClickZoneRatio = 0.3;
+const viewportZoomThreshold = 1.01;
 
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
@@ -29,6 +30,10 @@ function getWrappedIndex(index: number, length: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function isViewportZoomed() {
+  return (window.visualViewport?.scale ?? 1) > viewportZoomThreshold;
 }
 
 export function MediaViewer({
@@ -45,6 +50,7 @@ export function MediaViewer({
   const viewerId = useId();
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
@@ -67,6 +73,17 @@ export function MediaViewer({
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     setOpen(nextOpen);
+
+    if (!nextOpen) {
+      setIsZoomed(false);
+    }
+  }, []);
+
+  const updateZoomState = useCallback(() => {
+    const nextIsZoomed = isViewportZoomed();
+    setIsZoomed((currentIsZoomed) =>
+      currentIsZoomed === nextIsZoomed ? currentIsZoomed : nextIsZoomed,
+    );
   }, []);
 
   const handleMediaStageClick = useCallback(
@@ -75,6 +92,12 @@ export function MediaViewer({
       const isSelectedMediaClick = selectedMediaSurface?.contains(event.target as Node) ?? false;
 
       if (selectedMediaIsVideo && isSelectedMediaClick) {
+        return;
+      }
+
+      if (isZoomed) {
+        event.preventDefault();
+        event.stopPropagation();
         return;
       }
 
@@ -106,7 +129,7 @@ export function MediaViewer({
       event.stopPropagation();
       setOpen(false);
     },
-    [hasMultipleMedia, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
+    [hasMultipleMedia, isZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
   );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -142,6 +165,33 @@ export function MediaViewer({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [hasMultipleMedia, open, showNextMedia, showPreviousMedia]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const visualViewport = window.visualViewport;
+    let animationFrameId = window.requestAnimationFrame(updateZoomState);
+
+    const handleViewportChange = () => {
+      window.cancelAnimationFrame(animationFrameId);
+      animationFrameId = window.requestAnimationFrame(updateZoomState);
+    };
+
+    if (!visualViewport) {
+      return () => window.cancelAnimationFrame(animationFrameId);
+    }
+
+    visualViewport.addEventListener('resize', handleViewportChange);
+    visualViewport.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      visualViewport.removeEventListener('resize', handleViewportChange);
+      visualViewport.removeEventListener('scroll', handleViewportChange);
+    };
+  }, [open, updateZoomState]);
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -248,7 +298,9 @@ export function MediaViewer({
             )}
 
             <div
-              className="grid h-full min-h-0 w-full [touch-action:manipulation] place-items-center select-none"
+              className={`grid h-full min-h-0 w-full place-items-center select-none ${
+                isZoomed ? '[touch-action:pan-x_pan-y_pinch-zoom]' : '[touch-action:manipulation]'
+              }`}
               data-media-modal-surface
               onClick={handleMediaStageClick}
             >
