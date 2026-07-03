@@ -16,6 +16,7 @@ import type {
 } from '@/core/common/domain';
 import { applicationContext } from '@/core/config/applicationContext';
 import type { HikingId } from '@/core/hiking/domain';
+import { sanitizeOriginalPhotoMetadata } from '@/app/common/utils/photoMetadata';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireCurrentUser } from '../auth/actions/session';
@@ -47,6 +48,8 @@ const hikingSchema = z.object({
 const articleSchema = z.object({
   body: z.string().trim().min(1),
 });
+
+const originalMetadataSchema = z.record(z.string(), z.unknown()).nullable();
 
 const commentSchema = z.object({
   body: z.string().trim().min(1),
@@ -84,6 +87,14 @@ function getOptionalId<T extends string>(formData: FormData, key: string) {
   }
 
   return value as T;
+}
+
+function parseOriginalMetadata(value: unknown) {
+  if (typeof value !== 'string' || value === '') {
+    return null;
+  }
+
+  return sanitizeOriginalPhotoMetadata(originalMetadataSchema.parse(JSON.parse(value)));
 }
 
 async function requireMember() {
@@ -148,6 +159,7 @@ async function parseMediaUploads(formData: FormData): Promise<ArticleMediaUpload
   const durationMsValues = formData.getAll('mediaDurationMs').map((value) => Number(value));
   const widthValues = formData.getAll('mediaWidths').map((value) => Number(value));
   const heightValues = formData.getAll('mediaHeights').map((value) => Number(value));
+  const metadataValues = formData.getAll('mediaMetadata');
 
   return Promise.all(
     files.map(async (file, index) => {
@@ -189,6 +201,7 @@ async function parseMediaUploads(formData: FormData): Promise<ArticleMediaUpload
             ? heightValues[index]
             : null,
         mediaType,
+        originalMetadata: parseOriginalMetadata(metadataValues[index]),
         order,
         thumbnailUpload: thumbnail
           ? {

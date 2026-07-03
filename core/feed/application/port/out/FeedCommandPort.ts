@@ -12,6 +12,7 @@ export type StoredArticleMedia = ArticleMedia & {
   readonly byteSize: number;
   readonly contentType: string;
   readonly objectKey: string;
+  readonly originalMetadata?: Record<string, unknown> | null;
 };
 
 export interface FeedCommandPort {

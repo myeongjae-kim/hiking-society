@@ -1,5 +1,6 @@
 import type { Article } from '@/core/article/domain';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
+import { readOriginalPhotoMetadata } from '@/app/common/utils/photoMetadata';
 import { createCompressedMp4File } from '@/app/common/utils/videoCompression';
 
 import type { DraftMedia } from './articleFormTypes';
@@ -27,7 +28,13 @@ export function createDraftMedia(
   order: number,
   metadata: Pick<
     DraftMedia,
-    'durationMs' | 'height' | 'mediaType' | 'thumbnailFile' | 'thumbnailUrl' | 'width'
+    | 'durationMs'
+    | 'height'
+    | 'mediaType'
+    | 'originalMetadata'
+    | 'thumbnailFile'
+    | 'thumbnailUrl'
+    | 'width'
   >,
 ): DraftMedia {
   return {
@@ -58,21 +65,26 @@ export async function createCompressedDraftMedia(
       durationMs: compressedVideo.durationMs,
       height: compressedVideo.height,
       mediaType: 'video',
+      originalMetadata: null,
       thumbnailFile: compressedVideo.thumbnailFile,
       thumbnailUrl: URL.createObjectURL(compressedVideo.thumbnailFile),
       width: compressedVideo.width,
     });
   }
 
-  const compressedFile = await createCompressedWebpFile(file, {
-    maxWidth: maxCompressedPhotoWidth,
-    quality: webpQuality,
-  });
+  const [compressedFile, originalMetadata] = await Promise.all([
+    createCompressedWebpFile(file, {
+      maxWidth: maxCompressedPhotoWidth,
+      quality: webpQuality,
+    }),
+    readOriginalPhotoMetadata(file),
+  ]);
 
   return createDraftMedia(compressedFile, order, {
     durationMs: null,
     height: null,
     mediaType: 'image',
+    originalMetadata,
     thumbnailFile: undefined,
     thumbnailUrl: null,
     width: null,

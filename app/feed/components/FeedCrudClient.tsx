@@ -261,6 +261,7 @@ export function FeedCrudClient({
       formData.append('mediaDurationMs', String(media.durationMs ?? ''));
       formData.append('mediaWidths', String(media.width ?? ''));
       formData.append('mediaHeights', String(media.height ?? ''));
+      formData.append('mediaMetadata', JSON.stringify(media.originalMetadata ?? null));
 
       if (media.thumbnailFile) {
         formData.append(`mediaThumbnail-${media.order}`, media.thumbnailFile);

@@ -12,6 +12,7 @@ export type ArticleMediaUpload = {
   readonly fileName: string;
   readonly height?: number | null;
   readonly mediaType: ArticleMediaType;
+  readonly originalMetadata?: Record<string, unknown> | null;
   readonly order: number;
   readonly bytes: Uint8Array;
   readonly thumbnailUpload?: {

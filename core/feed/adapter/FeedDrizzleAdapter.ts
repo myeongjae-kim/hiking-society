@@ -18,8 +18,9 @@ import type { FeedQueryPort } from '@/core/feed/application/port/out/FeedQueryPo
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import { db } from '@/lib/db/drizzle';
 import {
-  articleMediaTable,
   articleLikeTable,
+  articleMediaMetadataTable,
+  articleMediaTable,
   articleTable,
   commentLikeTable,
   commentTable,
@@ -27,7 +28,7 @@ import {
   notificationTable,
   userTable,
 } from '@/lib/db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 
 function toNumericId(id: string) {
   const numericId = Number(id);
@@ -57,6 +58,90 @@ function toArticleMedia(media: readonly ArticleMedia[]): ArticleMediaItems | nul
   }
 
   return [media[0], ...media.slice(1)];
+}
+
+function toOriginalMetadata(value: unknown) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return toOriginalMetadata(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function toRequiredOriginalMetadataJsonb(value: Record<string, unknown>) {
+  return sql`${JSON.stringify(value)}::jsonb`;
+}
+
+function getMetadataDescription(metadata: Record<string, unknown>, tagName: string) {
+  const exif = metadata.exif;
+
+  if (typeof exif !== 'object' || exif === null || Array.isArray(exif)) {
+    return null;
+  }
+
+  const tag = (exif as Record<string, unknown>)[tagName];
+
+  if (typeof tag !== 'object' || tag === null || Array.isArray(tag)) {
+    return null;
+  }
+
+  const description = (tag as Record<string, unknown>).description;
+
+  if (typeof description === 'string') {
+    return description;
+  }
+
+  if (typeof description === 'number' && Number.isFinite(description)) {
+    return String(description);
+  }
+
+  return null;
+}
+
+function getGpsNumber(metadata: Record<string, unknown>, tagName: string) {
+  const gps = metadata.gps;
+
+  if (typeof gps !== 'object' || gps === null || Array.isArray(gps)) {
+    return null;
+  }
+
+  const value = (gps as Record<string, unknown>)[tagName];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getMetadataInsert(mediaId: number, metadata: Record<string, unknown> | null | undefined) {
+  if (!metadata) {
+    return null;
+  }
+
+  return {
+    articleMediaId: mediaId,
+    dateTime: getMetadataDescription(metadata, 'DateTime'),
+    exposureTime: getMetadataDescription(metadata, 'ExposureTime'),
+    fNumber: getMetadataDescription(metadata, 'FNumber'),
+    focalLengthIn35mmFilm: getMetadataDescription(metadata, 'FocalLengthIn35mmFilm'),
+    gpsAltitude: getGpsNumber(metadata, 'Altitude'),
+    gpsLatitude: getGpsNumber(metadata, 'Latitude'),
+    gpsLongitude: getGpsNumber(metadata, 'Longitude'),
+    isoSpeedRatings: getMetadataDescription(metadata, 'ISOSpeedRatings'),
+    make: getMetadataDescription(metadata, 'Make'),
+    model: getMetadataDescription(metadata, 'Model'),
+    originalMetadata: toRequiredOriginalMetadataJsonb(metadata),
+    shutterSpeedValue: getMetadataDescription(metadata, 'ShutterSpeedValue'),
+  };
 }
 
 function getExistingMediaInput(media: ExistingArticleMediaInput): StoredArticleMedia {
@@ -360,27 +445,47 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('게시글을 저장하지 못했습니다.');
       }
 
-      await tx.insert(articleMediaTable).values(
-        input.storedMedia.map((media) => ({
-          articleId: article.id,
-          byteSize: media.byteSize,
-          contentType: media.contentType,
-          durationMs: media.durationMs,
-          height: media.height,
-          mediaType: media.mediaType,
-          objectKey: media.objectKey,
-          order: media.order,
-          thumbnailUrl: media.thumbnailUrl,
-          url: media.url,
-          width: media.width,
-        })),
-      );
+      const insertedMedia = await tx
+        .insert(articleMediaTable)
+        .values(
+          input.storedMedia.map((media) => ({
+            articleId: article.id,
+            byteSize: media.byteSize,
+            contentType: media.contentType,
+            durationMs: media.durationMs,
+            height: media.height,
+            mediaType: media.mediaType,
+            objectKey: media.objectKey,
+            order: media.order,
+            thumbnailUrl: media.thumbnailUrl,
+            url: media.url,
+            width: media.width,
+          })),
+        )
+        .returning({
+          id: articleMediaTable.id,
+          mediaType: articleMediaTable.mediaType,
+          order: articleMediaTable.order,
+        });
+
+      const metadataRows = insertedMedia.flatMap((media) => {
+        if (media.mediaType !== 'image') {
+          return [];
+        }
+
+        const storedMedia = input.storedMedia.find((item) => item.order === media.order);
+        const metadata = getMetadataInsert(media.id, storedMedia?.originalMetadata);
+        return metadata ? [metadata] : [];
+      });
+
+      if (metadataRows.length > 0) {
+        await tx.insert(articleMediaMetadataTable).values(metadataRows);
+      }
     });
   }
 
   async updateArticle(input: Parameters<FeedCommandPort['updateArticle']>[0]) {
     const articleId = toNumericId(input.articleId);
-    const storedMedia: StoredArticleMedia[] = input.storedMedia.map(getExistingMediaInput);
 
     await db.transaction(async (tx) => {
       const [updated] = await tx
@@ -393,22 +498,80 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('게시글을 수정할 권한이 없거나 게시글을 찾을 수 없습니다.');
       }
 
+      const existingMediaRows = await tx
+        .select({
+          objectKey: articleMediaTable.objectKey,
+          originalMetadata: articleMediaMetadataTable.originalMetadata,
+          url: articleMediaTable.url,
+        })
+        .from(articleMediaTable)
+        .leftJoin(
+          articleMediaMetadataTable,
+          eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
+        )
+        .where(eq(articleMediaTable.articleId, articleId));
+      const existingMetadataByKey = new Map<string, Record<string, unknown>>();
+
+      for (const media of existingMediaRows) {
+        const metadata = toOriginalMetadata(media.originalMetadata);
+
+        if (!metadata) {
+          continue;
+        }
+
+        existingMetadataByKey.set(media.objectKey, metadata);
+        existingMetadataByKey.set(media.url, metadata);
+      }
+
+      const storedMedia: StoredArticleMedia[] = input.storedMedia.map((media) => {
+        const normalized = getExistingMediaInput(media);
+        const uploadedMetadata = 'originalMetadata' in media ? media.originalMetadata : null;
+        const originalMetadata =
+          uploadedMetadata ??
+          existingMetadataByKey.get(normalized.objectKey) ??
+          existingMetadataByKey.get(normalized.url) ??
+          null;
+
+        return { ...normalized, originalMetadata };
+      });
+
       await tx.delete(articleMediaTable).where(eq(articleMediaTable.articleId, articleId));
-      await tx.insert(articleMediaTable).values(
-        storedMedia.map((media) => ({
-          articleId,
-          byteSize: media.byteSize,
-          contentType: media.contentType,
-          durationMs: media.durationMs,
-          height: media.height,
-          mediaType: media.mediaType,
-          objectKey: media.objectKey,
-          order: media.order,
-          thumbnailUrl: media.thumbnailUrl,
-          url: media.url,
-          width: media.width,
-        })),
-      );
+      const insertedMedia = await tx
+        .insert(articleMediaTable)
+        .values(
+          storedMedia.map((media) => ({
+            articleId,
+            byteSize: media.byteSize,
+            contentType: media.contentType,
+            durationMs: media.durationMs,
+            height: media.height,
+            mediaType: media.mediaType,
+            objectKey: media.objectKey,
+            order: media.order,
+            thumbnailUrl: media.thumbnailUrl,
+            url: media.url,
+            width: media.width,
+          })),
+        )
+        .returning({
+          id: articleMediaTable.id,
+          mediaType: articleMediaTable.mediaType,
+          order: articleMediaTable.order,
+        });
+
+      const metadataRows = insertedMedia.flatMap((media) => {
+        if (media.mediaType !== 'image') {
+          return [];
+        }
+
+        const stored = storedMedia.find((item) => item.order === media.order);
+        const metadata = getMetadataInsert(media.id, stored?.originalMetadata);
+        return metadata ? [metadata] : [];
+      });
+
+      if (metadataRows.length > 0) {
+        await tx.insert(articleMediaMetadataTable).values(metadataRows);
+      }
     });
   }
 

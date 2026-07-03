@@ -5,6 +5,7 @@ export type DraftMedia = ArticleMedia & {
   readonly fileName: string;
   readonly fileSize?: number;
   readonly lastModified?: number;
+  readonly originalMetadata?: Record<string, unknown> | null;
   readonly thumbnailFile?: File;
 };
 

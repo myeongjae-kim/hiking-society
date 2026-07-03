@@ -62,6 +62,7 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
       height: input.height,
       mediaType: input.mediaType,
       objectKey,
+      originalMetadata: input.originalMetadata ?? null,
       order: input.order,
       thumbnailUrl: thumbnailObjectKey
         ? joinPublicUrl(env.S3_PUBLIC_BASE_URL, thumbnailObjectKey)
