@@ -44,6 +44,14 @@ import { UpdateMemberRoleUseCase } from '../member/application/port/in/UpdateMem
 import { MemberCommandPort } from '../member/application/port/out/MemberCommandPort';
 import { MemberQueryPort } from '../member/application/port/out/MemberQueryPort';
 import { UpdateMemberRoleService } from '../member/application/UpdateMemberRoleService';
+import { NotificationDrizzleAdapter } from '../notification/adapter/NotificationDrizzleAdapter';
+import { ListNotificationsService } from '../notification/application/ListNotificationsService';
+import { MarkNotificationReadService } from '../notification/application/MarkNotificationReadService';
+import { ListNotificationsUseCase } from '../notification/application/port/in/ListNotificationsUseCase';
+import { MarkAllNotificationsReadUseCase } from '../notification/application/port/in/MarkAllNotificationsReadUseCase';
+import { MarkNotificationReadUseCase } from '../notification/application/port/in/MarkNotificationReadUseCase';
+import { NotificationCommandPort } from '../notification/application/port/out/NotificationCommandPort';
+import { NotificationQueryPort } from '../notification/application/port/out/NotificationQueryPort';
 import { ProfileDrizzleAdapter } from '../profile/adapter/ProfileDrizzleAdapter';
 import { S3ProfileImageStorageAdapter } from '../profile/adapter/S3ProfileImageStorageAdapter';
 import { UpdateProfileService } from '../profile/application/UpdateProfileService';
@@ -76,7 +84,12 @@ export type Beans = {
   GetArticleDetailUseCase: GetArticleDetailUseCase;
   MemberCommandPort: MemberCommandPort;
   MemberQueryPort: MemberQueryPort;
+  NotificationCommandPort: NotificationCommandPort;
+  NotificationQueryPort: NotificationQueryPort;
   ListMembersUseCase: ListMembersUseCase;
+  ListNotificationsUseCase: ListNotificationsUseCase;
+  MarkAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
+  MarkNotificationReadUseCase: MarkNotificationReadUseCase;
   UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
   ProfileCommandPort: ProfileCommandPort;
   ProfileImageStoragePort: ProfileImageStoragePort;
@@ -112,7 +125,12 @@ export const beanConfig: BeanConfig<Beans> = {
   GetArticleDetailUseCase: (bind) => bind().to(GetArticleDetailService),
   MemberCommandPort: (bind) => bind().to(MemberCommandAdapter),
   MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
+  NotificationCommandPort: (bind) => bind().to(NotificationDrizzleAdapter),
+  NotificationQueryPort: (bind) => bind().to(NotificationDrizzleAdapter),
   ListMembersUseCase: (bind) => bind().to(ListMembersService),
+  ListNotificationsUseCase: (bind) => bind().to(ListNotificationsService),
+  MarkAllNotificationsReadUseCase: (bind) => bind().to(MarkNotificationReadService),
+  MarkNotificationReadUseCase: (bind) => bind().to(MarkNotificationReadService),
   UpdateMemberRoleUseCase: (bind) => bind().to(UpdateMemberRoleService),
   ProfileCommandPort: (bind) => bind().to(ProfileDrizzleAdapter),
   ProfileImageStoragePort: (bind) => bind().to(S3ProfileImageStorageAdapter),

@@ -28,6 +28,7 @@ import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
+import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import {
   createArticle as createArticleAction,
   createComment as createCommentAction,
@@ -55,6 +56,7 @@ type FeedCrudClientProps = {
   currentTheme: string;
   currentUser: AuthenticatedUser;
   hikings: readonly Hiking[];
+  notificationSnapshot: NotificationListSnapshot;
 };
 
 type ActiveArticleForm =
@@ -70,6 +72,7 @@ export function FeedCrudClient({
   currentTheme,
   currentUser,
   hikings: initialHikings,
+  notificationSnapshot,
 }: FeedCrudClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -436,7 +439,11 @@ export function FeedCrudClient({
 
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
-      <FeedTopbar currentAuthorName={currentAuthorName} user={currentUser} />
+      <FeedTopbar
+        currentAuthorName={currentAuthorName}
+        notificationSnapshot={notificationSnapshot}
+        user={currentUser}
+      />
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 px-1.5 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
         <section className={gridStackClassName} aria-label="산행 게시글 피드">

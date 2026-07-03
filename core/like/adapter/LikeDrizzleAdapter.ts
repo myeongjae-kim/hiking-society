@@ -1,5 +1,11 @@
 import { db } from '@/lib/db/drizzle';
-import { articleLikeTable, articleTable, commentLikeTable, commentTable } from '@/lib/db/schema';
+import {
+  articleLikeTable,
+  articleTable,
+  commentLikeTable,
+  commentTable,
+  notificationTable,
+} from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { LikeCommandPort } from '../application/port/out/LikeCommandPort';
 
@@ -19,7 +25,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 
     await db.transaction(async (tx) => {
       const [article] = await tx
-        .select({ id: articleTable.id })
+        .select({ authorUserId: articleTable.authorUserId, id: articleTable.id })
         .from(articleTable)
         .where(and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)))
         .limit(1);
@@ -42,6 +48,16 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
       }
 
       await tx.insert(articleLikeTable).values({ articleId, userId: input.userId });
+
+      if (article.authorUserId !== input.userId) {
+        await tx.insert(notificationTable).values({
+          actorUserId: input.userId,
+          articleId,
+          commentId: null,
+          recipientUserId: article.authorUserId,
+          type: 'article_like',
+        });
+      }
     });
   }
 
@@ -50,9 +66,20 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 
     await db.transaction(async (tx) => {
       const [comment] = await tx
-        .select({ id: commentTable.id })
+        .select({
+          articleId: commentTable.articleId,
+          authorUserId: commentTable.authorUserId,
+          id: commentTable.id,
+        })
         .from(commentTable)
-        .where(and(eq(commentTable.id, commentId), isNull(commentTable.deletedAt)))
+        .innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+        .where(
+          and(
+            eq(commentTable.id, commentId),
+            isNull(commentTable.deletedAt),
+            isNull(articleTable.deletedAt),
+          ),
+        )
         .limit(1);
 
       if (!comment) {
@@ -73,6 +100,16 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
       }
 
       await tx.insert(commentLikeTable).values({ commentId, userId: input.userId });
+
+      if (comment.authorUserId !== input.userId) {
+        await tx.insert(notificationTable).values({
+          actorUserId: input.userId,
+          articleId: comment.articleId,
+          commentId,
+          recipientUserId: comment.authorUserId,
+          type: 'comment_like',
+        });
+      }
     });
   }
 }

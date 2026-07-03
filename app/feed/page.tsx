@@ -12,9 +12,11 @@ export default async function FeedPage() {
     return <AssociateFeedNotice user={user} />;
   }
 
-  const { articles, comments, hikings } = await applicationContext()
-    .get('ListFeedUseCase')
-    .list({ currentUserId: user.id });
+  const context = applicationContext();
+  const [{ articles, comments, hikings }, notificationSnapshot] = await Promise.all([
+    context.get('ListFeedUseCase').list({ currentUserId: user.id }),
+    context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
+  ]);
   const cookieStore = await cookies();
   const theme = getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value);
 
@@ -25,6 +27,7 @@ export default async function FeedPage() {
       currentTheme={theme}
       currentUser={user}
       hikings={hikings}
+      notificationSnapshot={notificationSnapshot}
     />
   );
 }

@@ -22,6 +22,7 @@ import { getAuthorName } from '@/app/feed/utils/feed-crud-utils';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
+import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import { ArticleFormDialog } from './ArticleFormDialog';
 import type { ArticleFormValues } from './articleFormTypes';
 import { ArticlePanel } from './ArticlePanel';
@@ -31,6 +32,7 @@ type ArticleDetailClientProps = {
   comments: readonly Comment[];
   currentUser: AuthenticatedUser;
   highlightedCommentId: CommentId | null;
+  notificationSnapshot: NotificationListSnapshot;
 };
 
 type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
@@ -40,6 +42,7 @@ export function ArticleDetailClient({
   comments,
   currentUser,
   highlightedCommentId,
+  notificationSnapshot,
 }: ArticleDetailClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -260,7 +263,11 @@ export function ArticleDetailClient({
 
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
-      <FeedTopbar currentAuthorName={currentAuthorName} user={currentUser} />
+      <FeedTopbar
+        currentAuthorName={currentAuthorName}
+        notificationSnapshot={notificationSnapshot}
+        user={currentUser}
+      />
       <div className="mx-auto grid w-[min(100%,62rem)] gap-4 px-1.5 py-4 sm:px-4 lg:p-5">
         <section
           className={`flex flex-wrap items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-4 ${boxBorderClassName}`}

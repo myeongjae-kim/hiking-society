@@ -1,16 +1,19 @@
 import Link from 'next/link';
 
 import { Command } from '@/app/common/components/Command';
+import { NotificationPopover } from '@/app/notification/components/NotificationPopover';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import { roleLabels } from '@/core/auth/model/roleLabels';
 import type { AuthorName } from '@/core/common/domain';
+import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 
 type FeedTopbarProps = {
   currentAuthorName: AuthorName;
+  notificationSnapshot?: NotificationListSnapshot;
   user: AuthenticatedUser;
 };
 
-export function FeedTopbar({ currentAuthorName, user }: FeedTopbarProps) {
+export function FeedTopbar({ currentAuthorName, notificationSnapshot, user }: FeedTopbarProps) {
   return (
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
@@ -25,6 +28,7 @@ export function FeedTopbar({ currentAuthorName, user }: FeedTopbarProps) {
           <span className="font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
             {String(currentAuthorName)} · {roleLabels[user.role]}
           </span>
+          <NotificationPopover notificationSnapshot={notificationSnapshot} />
           <Link is-="button" size-="small" variant-="foreground1" href="/me">
             마이페이지
           </Link>

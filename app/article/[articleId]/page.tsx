@@ -41,9 +41,13 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
     return <AssociateFeedNotice user={user} />;
   }
 
-  const snapshot = await applicationContext()
-    .get('GetArticleDetailUseCase')
-    .get({ articleId: articleId as ArticleId, currentUserId: user.id });
+  const context = applicationContext();
+  const [snapshot, notificationSnapshot] = await Promise.all([
+    context
+      .get('GetArticleDetailUseCase')
+      .get({ articleId: articleId as ArticleId, currentUserId: user.id }),
+    context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
+  ]);
 
   if (!snapshot) {
     notFound();
@@ -55,6 +59,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       comments={snapshot.comments}
       currentUser={user}
       highlightedCommentId={toCommentId(query.commentId)}
+      notificationSnapshot={notificationSnapshot}
     />
   );
 }

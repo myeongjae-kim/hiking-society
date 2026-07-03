@@ -23,6 +23,7 @@ import {
   commentLikeTable,
   commentTable,
   hikingTable,
+  notificationTable,
   userTable,
 } from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
@@ -431,7 +432,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         'parentCommentId' in input ? toNumericId(input.parentCommentId) : null;
 
       const [article] = await tx
-        .select({ id: articleTable.id })
+        .select({ authorUserId: articleTable.authorUserId, id: articleTable.id })
         .from(articleTable)
         .where(and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)))
         .limit(1);
@@ -440,9 +441,21 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         throw new Error('댓글을 작성할 게시글을 찾을 수 없습니다.');
       }
 
+      let parent:
+        | {
+            articleId: number;
+            authorUserId: number;
+            deletedAt: Date | null;
+          }
+        | undefined;
+
       if (parentCommentId !== null) {
-        const [parent] = await tx
-          .select({ articleId: commentTable.articleId, deletedAt: commentTable.deletedAt })
+        [parent] = await tx
+          .select({
+            articleId: commentTable.articleId,
+            authorUserId: commentTable.authorUserId,
+            deletedAt: commentTable.deletedAt,
+          })
           .from(commentTable)
           .where(eq(commentTable.id, parentCommentId))
           .limit(1);
@@ -452,12 +465,47 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
         }
       }
 
-      await tx.insert(commentTable).values({
-        articleId,
-        authorUserId: input.authorUserId,
-        body: input.body,
-        parentCommentId,
-      });
+      const [comment] = await tx
+        .insert(commentTable)
+        .values({
+          articleId,
+          authorUserId: input.authorUserId,
+          body: input.body,
+          parentCommentId,
+        })
+        .returning({ id: commentTable.id });
+
+      if (!comment) {
+        throw new Error('댓글을 저장하지 못했습니다.');
+      }
+
+      const notificationsByRecipientId = new Map<number, typeof notificationTable.$inferInsert>();
+
+      if (article.authorUserId !== input.authorUserId) {
+        notificationsByRecipientId.set(article.authorUserId, {
+          actorUserId: input.authorUserId,
+          articleId,
+          commentId: comment.id,
+          recipientUserId: article.authorUserId,
+          type: parentCommentId === null ? 'article_comment' : 'article_reply',
+        });
+      }
+
+      if (parentCommentId !== null && parent && parent.authorUserId !== input.authorUserId) {
+        notificationsByRecipientId.set(parent.authorUserId, {
+          actorUserId: input.authorUserId,
+          articleId,
+          commentId: comment.id,
+          recipientUserId: parent.authorUserId,
+          type: 'comment_reply',
+        });
+      }
+
+      const notifications = [...notificationsByRecipientId.values()];
+
+      if (notifications.length > 0) {
+        await tx.insert(notificationTable).values(notifications);
+      }
     });
   }
 
