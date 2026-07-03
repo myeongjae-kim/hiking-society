@@ -41,7 +41,7 @@ env:
 jobs:
   deploy-preview-staging:
     if: github.event_name == 'pull_request'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - id: deploy
         run: |
@@ -91,7 +91,7 @@ jobs:
             })
   deploy-production-staging:
     if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_STAGING) }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - id: deploy
         run: |
@@ -142,7 +142,7 @@ jobs:
             })
   deploy-production-prod:
     if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_PROD) }}
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - id: deploy
         run: |
