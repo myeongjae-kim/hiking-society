@@ -258,8 +258,11 @@ export function FeedCrudClient({
   };
 
   const copyHikingLink = (hiking: Hiking) => {
-    const url = new URL('/feed', window.location.origin);
-    url.searchParams.set('hikingId', hiking.id);
+    const hikingHref = `/feed?hikingId=${encodeURIComponent(hiking.id)}`;
+    const url = new URL(hikingHref, window.location.origin);
+
+    scrolledHikingIdRef.current = hiking.id;
+    router.replace(hikingHref, { scroll: false });
 
     copyTextToClipboard(url.toString())
       .then(() => {
