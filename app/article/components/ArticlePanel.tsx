@@ -28,6 +28,7 @@ type ArticlePanelProps = {
   errorByKey: Record<string, string>;
   highlightedCommentId?: CommentId | null;
   isCommentLikePending: (commentId: CommentId) => boolean;
+  mobileMediaCarousel?: boolean;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
   onDeleteArticle: () => void;
   onDeleteComment: (comment: Comment) => void;
@@ -52,6 +53,7 @@ export function ArticlePanel({
   errorByKey,
   highlightedCommentId = null,
   isCommentLikePending,
+  mobileMediaCarousel = false,
   onCreateComment,
   onDeleteArticle,
   onDeleteComment,
@@ -132,6 +134,7 @@ export function ArticlePanel({
         <MediaViewer
           articleId={article.id}
           authorName={article.authorName}
+          inlineCarousel={mobileMediaCarousel}
           media={article.media}
           thumbnailGridClassName="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))]"
         />

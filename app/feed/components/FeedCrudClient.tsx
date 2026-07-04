@@ -485,6 +485,7 @@ export function FeedCrudClient({
                       editingCommentId={editingCommentId}
                       errorByKey={errorByKey}
                       key={article.id}
+                      mobileMediaCarousel
                       onCreateComment={createComment}
                       onDeleteArticle={() => requestDeleteArticle(article)}
                       onDeleteComment={requestDeleteComment}

@@ -11,6 +11,7 @@ type MediaViewerProps = {
   articleId: string;
   authorName: string;
   initialIndex?: number;
+  inlineCarousel?: boolean;
   media: readonly ArticleMedia[];
   thumbnailGridClassName?: string;
   trigger?: ReactNode;
@@ -57,8 +58,15 @@ type SwipeOffset = {
   y: number;
 };
 
+type InlineMediaFrameProps = {
+  authorName: string;
+  media: ArticleMedia | null;
+};
+
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
+const inlineMediaControlClassName =
+  'grid place-items-center border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_82%,transparent)] !bg-none p-0 font-mono leading-none text-[var(--foreground0)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_42%,transparent)] backdrop-blur-sm hover:bg-[var(--surface1)] active:bg-[var(--surface2)] disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
 const mediaNavigationClickZoneRatio = 0.3;
 const mediaMinScale = 1;
 const mediaMaxScale = 4;
@@ -77,6 +85,13 @@ const initialSwipeOffset: SwipeOffset = {
   y: 0,
 };
 
+function suppressNextClickTemporarily(suppressClickRef: { current: boolean }) {
+  suppressClickRef.current = true;
+  window.setTimeout(() => {
+    suppressClickRef.current = false;
+  }, 250);
+}
+
 function getWrappedIndex(index: number, length: number) {
   return (index + length) % length;
 }
@@ -93,6 +108,42 @@ function normalizeMetadataValue(value: string | null | undefined) {
 function formatMetadataDateTime(value: string | null | undefined) {
   return (
     normalizeMetadataValue(value)?.replace(/^(\d{4}):(\d{2}):(\d{2})(?=[ T]|$)/, '$1-$2-$3') ?? null
+  );
+}
+
+function VideoPlayOverlay() {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_78%,transparent)] text-[var(--foreground0)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_45%,transparent),0_0.75rem_2rem_color-mix(in_srgb,var(--background0)_38%,transparent)] backdrop-blur-sm transition-transform duration-150 group-hover:scale-105 group-hover:bg-[color-mix(in_srgb,var(--surface1)_86%,transparent)]"
+    >
+      <span className="ml-1 size-0 border-y-[0.68rem] border-l-[1.05rem] border-y-transparent border-l-[var(--foreground0)]" />
+    </span>
+  );
+}
+
+function InlineMediaFrame({ authorName, media }: InlineMediaFrameProps) {
+  if (!media) {
+    return <span aria-hidden="true" className="block aspect-4/3 w-full bg-[var(--background0)]" />;
+  }
+
+  return (
+    <span className="relative block min-w-0">
+      <img
+        alt={`${authorName}의 산행 사진이나 동영상 ${media.order}`}
+        className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+        draggable={false}
+        src={media.thumbnailUrl ?? media.url}
+      />
+      {media.mediaType === 'video' ? (
+        <>
+          <VideoPlayOverlay />
+          <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+            video
+          </span>
+        </>
+      ) : null}
+    </span>
   );
 }
 
@@ -200,6 +251,7 @@ export function MediaViewer({
   articleId,
   authorName,
   initialIndex = 0,
+  inlineCarousel = false,
   media,
   thumbnailGridClassName = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3',
   trigger,
@@ -216,12 +268,29 @@ export function MediaViewer({
   const shouldSuppressStageClickRef = useRef(false);
   const swipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
+  const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
+  const shouldSuppressInlineClickRef = useRef(false);
   const [open, setOpen] = useState(false);
+  const [activeInlineIndex, setActiveInlineIndex] = useState(0);
+  const [inlineSwipeOffset, setInlineSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
+  const [isInlineSwipeActive, setIsInlineSwipeActive] = useState(false);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
   const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
+  const maxInlineIndex = Math.max(media.length - 1, 0);
+  const normalizedActiveInlineIndex = clamp(activeInlineIndex, 0, maxInlineIndex);
+  const activeInlineMedia = media[normalizedActiveInlineIndex] ?? media[0];
+  const previousInlineMedia =
+    normalizedActiveInlineIndex > 0 ? (media[normalizedActiveInlineIndex - 1] ?? null) : null;
+  const nextInlineMedia =
+    normalizedActiveInlineIndex < maxInlineIndex
+      ? (media[normalizedActiveInlineIndex + 1] ?? null)
+      : null;
+  const activeInlineTakenTime = getMediaTakenTimeLabel(activeInlineMedia);
+  const canShowPreviousInlineMedia = normalizedActiveInlineIndex > 0;
+  const canShowNextInlineMedia = normalizedActiveInlineIndex < maxInlineIndex;
   const selectedMedia = media[selectedIndex] ?? media[0];
   const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
   const selectedVideoAspectRatio =
@@ -241,6 +310,158 @@ export function MediaViewer({
   const description = hasMultipleMedia
     ? '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
     : 'Escape 키로 닫을 수 있습니다.';
+
+  const showPreviousInlineMedia = useCallback(() => {
+    setInlineSwipeOffset(initialSwipeOffset);
+    setIsInlineSwipeActive(false);
+    setActiveInlineIndex((currentIndex) => Math.max(clamp(currentIndex, 0, maxInlineIndex) - 1, 0));
+  }, [maxInlineIndex]);
+
+  const showNextInlineMedia = useCallback(() => {
+    setInlineSwipeOffset(initialSwipeOffset);
+    setIsInlineSwipeActive(false);
+    setActiveInlineIndex((currentIndex) =>
+      Math.min(clamp(currentIndex, 0, maxInlineIndex) + 1, maxInlineIndex),
+    );
+  }, [maxInlineIndex]);
+
+  const setInlineSwipeOffsetState = useCallback((nextOffset: SwipeOffset) => {
+    setInlineSwipeOffset((currentOffset) =>
+      currentOffset.x === nextOffset.x && currentOffset.y === nextOffset.y
+        ? currentOffset
+        : nextOffset,
+    );
+  }, []);
+
+  const resetInlineSwipeGesture = useCallback(() => {
+    inlineSwipeGestureRef.current = null;
+    setIsInlineSwipeActive(false);
+    setInlineSwipeOffsetState(initialSwipeOffset);
+  }, [setInlineSwipeOffsetState]);
+
+  const handleInlinePointerDown = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      if (!inlineCarousel || !hasMultipleMedia) {
+        return;
+      }
+
+      if (event.pointerType === 'mouse' && event.button !== 0) {
+        return;
+      }
+
+      inlineSwipeGestureRef.current = {
+        axis: null,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+      };
+      shouldSuppressInlineClickRef.current = false;
+      setIsInlineSwipeActive(false);
+      setInlineSwipeOffsetState(initialSwipeOffset);
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [hasMultipleMedia, inlineCarousel, setInlineSwipeOffsetState],
+  );
+
+  const handleInlinePointerMove = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      const inlineSwipeGesture = inlineSwipeGestureRef.current;
+
+      if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const deltaX = event.clientX - inlineSwipeGesture.startX;
+      const deltaY = event.clientY - inlineSwipeGesture.startY;
+      const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+
+      if (!axis) {
+        return;
+      }
+
+      inlineSwipeGesture.axis = axis;
+
+      if (axis === 'horizontal') {
+        const width = event.currentTarget.clientWidth || window.innerWidth;
+        const maxOffset = width;
+        const resistedDeltaX =
+          (deltaX > 0 && !canShowPreviousInlineMedia) || (deltaX < 0 && !canShowNextInlineMedia)
+            ? deltaX * 0.28
+            : deltaX;
+
+        event.preventDefault();
+        setIsInlineSwipeActive(true);
+        setInlineSwipeOffsetState({
+          x: clamp(resistedDeltaX, -maxOffset, maxOffset),
+          y: 0,
+        });
+      }
+    },
+    [canShowNextInlineMedia, canShowPreviousInlineMedia, setInlineSwipeOffsetState],
+  );
+
+  const handleInlinePointerUp = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      const inlineSwipeGesture = inlineSwipeGestureRef.current;
+
+      if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
+        return;
+      }
+
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      inlineSwipeGestureRef.current = null;
+
+      const deltaX = event.clientX - inlineSwipeGesture.startX;
+      const deltaY = event.clientY - inlineSwipeGesture.startY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+      const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+      const shouldSuppressInlineClick =
+        axis === 'horizontal' && absDeltaX >= mediaPanClickSuppressThresholdPx;
+      const isHorizontalSwipe =
+        axis === 'horizontal' &&
+        absDeltaX >= mediaSwipeThresholdPx &&
+        absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+      const canMoveToPrevious = deltaX > 0 && canShowPreviousInlineMedia;
+      const canMoveToNext = deltaX < 0 && canShowNextInlineMedia;
+
+      if (shouldSuppressInlineClick) {
+        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+      }
+
+      if (!isHorizontalSwipe || (!canMoveToPrevious && !canMoveToNext)) {
+        resetInlineSwipeGesture();
+        return;
+      }
+
+      if (deltaX > 0) {
+        showPreviousInlineMedia();
+      } else {
+        showNextInlineMedia();
+      }
+    },
+    [
+      canShowNextInlineMedia,
+      canShowPreviousInlineMedia,
+      resetInlineSwipeGesture,
+      showNextInlineMedia,
+      showPreviousInlineMedia,
+    ],
+  );
+
+  const handleInlinePointerCancel = useCallback(
+    (event: PointerEvent<HTMLElement>) => {
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+
+      resetInlineSwipeGesture();
+    },
+    [resetInlineSwipeGesture],
+  );
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
     const normalizedTransform =
@@ -275,6 +496,21 @@ export function MediaViewer({
     setSwipeOffsetState(initialSwipeOffset);
     setMediaTransformState(initialMediaTransform);
   }, [setMediaTransformState, setSwipeOffsetState]);
+
+  const handleInlineTriggerClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>, index: number) => {
+      if (shouldSuppressInlineClickRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        shouldSuppressInlineClickRef.current = false;
+        return;
+      }
+
+      resetMediaGesture();
+      setSelectedIndex(index);
+    },
+    [resetMediaGesture],
+  );
 
   const showPreviousMedia = useCallback(() => {
     resetMediaGesture();
@@ -663,48 +899,144 @@ export function MediaViewer({
           </button>
         </Dialog.Trigger>
       ) : (
-        <div className={thumbnailGridClassName}>
-          {media.map((item, index) => {
-            const takenTime = getMediaTakenTimeLabel(item);
-
-            return (
-              <figure
-                className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
-                key={`${articleId}-${item.order}`}
-              >
+        <>
+          {inlineCarousel ? (
+            <figure
+              aria-label={`${authorName}의 게시글 미디어`}
+              className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)] sm:hidden"
+              onPointerCancel={handleInlinePointerCancel}
+              onPointerDown={handleInlinePointerDown}
+              onPointerMove={handleInlinePointerMove}
+              onPointerUp={handleInlinePointerUp}
+            >
+              <div className="relative">
                 <Dialog.Trigger asChild>
                   <button
-                    className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                    onClick={() => {
-                      resetMediaGesture();
-                      setSelectedIndex(index);
-                    }}
+                    className="group block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                    onClick={(event) =>
+                      handleInlineTriggerClick(event, normalizedActiveInlineIndex)
+                    }
                     type="button"
                   >
-                    <span className="relative block">
-                      <img
-                        alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
-                        className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
-                        src={item.thumbnailUrl ?? item.url}
-                      />
-                      {item.mediaType === 'video' ? (
-                        <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
-                          video
-                        </span>
-                      ) : null}
+                    <span
+                      className={`grid w-[300%] grid-cols-3 will-change-transform ${
+                        isInlineSwipeActive ? '' : 'transition-transform duration-150 ease-out'
+                      }`}
+                      style={{
+                        transform: `translate3d(calc(-33.333333% + ${inlineSwipeOffset.x}px), 0, 0)`,
+                      }}
+                    >
+                      <InlineMediaFrame authorName={authorName} media={previousInlineMedia} />
+                      <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
+                      <InlineMediaFrame authorName={authorName} media={nextInlineMedia} />
                     </span>
                   </button>
                 </Dialog.Trigger>
-                <figcaption className="flex min-w-0 items-center justify-between gap-2 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+
+                {hasMultipleMedia ? (
+                  <>
+                    <p className="absolute top-2 right-2 m-0 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_82%,transparent)] px-2 py-1 font-mono text-xs leading-none text-[var(--foreground0)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_42%,transparent)] backdrop-blur-sm">
+                      {normalizedActiveInlineIndex + 1}/{media.length}
+                    </p>
+                    <button
+                      aria-label="이전 사진이나 동영상"
+                      className={`${inlineMediaControlClassName} absolute top-1/2 left-2 !size-9 -translate-y-1/2 text-xl`}
+                      disabled={!canShowPreviousInlineMedia}
+                      onClick={showPreviousInlineMedia}
+                      type="button"
+                    >
+                      ←
+                    </button>
+                    <button
+                      aria-label="다음 사진이나 동영상"
+                      className={`${inlineMediaControlClassName} absolute top-1/2 right-2 !size-9 -translate-y-1/2 text-xl`}
+                      disabled={!canShowNextInlineMedia}
+                      onClick={showNextInlineMedia}
+                      type="button"
+                    >
+                      →
+                    </button>
+                  </>
+                ) : null}
+              </div>
+
+              <figcaption className="grid min-w-0 gap-1 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+                <div className="flex min-w-0 items-center justify-between gap-2">
                   <span>
-                    {item.mediaType} {item.order}/{media.length}
+                    {activeInlineMedia.mediaType} {activeInlineMedia.order}/{media.length}
                   </span>
-                  {takenTime ? <span>{takenTime}</span> : null}
-                </figcaption>
-              </figure>
-            );
-          })}
-        </div>
+                  {activeInlineTakenTime ? <span>{activeInlineTakenTime}</span> : null}
+                </div>
+                {hasMultipleMedia ? (
+                  <div
+                    aria-label="게시글 미디어 위치"
+                    className="flex items-center justify-center gap-1.5 py-1"
+                  >
+                    {media.map((item, index) => (
+                      <span
+                        aria-current={index === normalizedActiveInlineIndex ? 'true' : undefined}
+                        aria-label={`${index + 1}번째 미디어`}
+                        className={`block size-1.5 border border-[var(--overlay0)] ${
+                          index === normalizedActiveInlineIndex
+                            ? 'bg-[var(--foreground0)]'
+                            : 'bg-transparent'
+                        }`}
+                        key={`${articleId}-${item.order}-dot`}
+                        role="img"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </figcaption>
+            </figure>
+          ) : null}
+
+          <div className={`${inlineCarousel ? 'hidden sm:grid' : ''} ${thumbnailGridClassName}`}>
+            {media.map((item, index) => {
+              const takenTime = getMediaTakenTimeLabel(item);
+
+              return (
+                <figure
+                  className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)]"
+                  key={`${articleId}-${item.order}`}
+                >
+                  <Dialog.Trigger asChild>
+                    <button
+                      className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                      onClick={() => {
+                        resetMediaGesture();
+                        setSelectedIndex(index);
+                      }}
+                      type="button"
+                    >
+                      <span className="relative block">
+                        <img
+                          alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
+                          className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                          src={item.thumbnailUrl ?? item.url}
+                        />
+                        {item.mediaType === 'video' ? (
+                          <>
+                            <VideoPlayOverlay />
+                            <span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+                              video
+                            </span>
+                          </>
+                        ) : null}
+                      </span>
+                    </button>
+                  </Dialog.Trigger>
+                  <figcaption className="flex min-w-0 items-center justify-between gap-2 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+                    <span>
+                      {item.mediaType} {item.order}/{media.length}
+                    </span>
+                    {takenTime ? <span>{takenTime}</span> : null}
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <Dialog.Portal>
