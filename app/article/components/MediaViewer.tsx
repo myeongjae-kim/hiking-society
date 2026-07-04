@@ -224,6 +224,14 @@ export function MediaViewer({
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
   const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
+  const selectedVideoAspectRatio =
+    selectedMediaIsVideo &&
+    selectedMedia.width &&
+    selectedMedia.height &&
+    selectedMedia.width > 0 &&
+    selectedMedia.height > 0
+      ? selectedMedia.width / selectedMedia.height
+      : null;
   const selectedMetadataItems = getMetadataPanelItems(selectedMedia);
   const isMediaZoomed = mediaTransform.scale > mediaMinScale;
   const title = viewerLabel ?? `${authorName}의 산행 사진이나 동영상`;
@@ -764,15 +772,35 @@ export function MediaViewer({
               onPointerUp={finishImageGesture}
             >
               {selectedMedia.mediaType === 'video' ? (
-                <video
-                  className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none"
-                  controls
-                  playsInline
-                  poster={selectedMedia.thumbnailUrl ?? undefined}
-                  preload="metadata"
-                  ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
-                  src={selectedMedia.url}
-                />
+                selectedVideoAspectRatio ? (
+                  <div
+                    className="grid w-full place-items-center"
+                    style={{
+                      aspectRatio: selectedVideoAspectRatio,
+                      maxWidth: `min(92vw, calc((100svh - 10rem) * ${selectedVideoAspectRatio}))`,
+                    }}
+                  >
+                    <video
+                      className="block h-full max-h-[calc(100svh-10rem)] w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
+                      controls
+                      playsInline
+                      poster={selectedMedia.thumbnailUrl ?? undefined}
+                      preload="metadata"
+                      ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
+                      src={selectedMedia.url}
+                    />
+                  </div>
+                ) : (
+                  <video
+                    className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none"
+                    controls
+                    playsInline
+                    poster={selectedMedia.thumbnailUrl ?? undefined}
+                    preload="metadata"
+                    ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
+                    src={selectedMedia.url}
+                  />
+                )
               ) : (
                 <img
                   alt={`${authorName}의 산행 사진이나 동영상 ${selectedMedia.order}`}
