@@ -1333,7 +1333,7 @@ export function MediaViewer({
 
               {selectedMetadataItems.length > 0 ? (
                 <footer
-                  className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-2 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] sm:px-4 md:px-5 lg:grid lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-visible lg:px-4 lg:py-2.5"
+                  className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden sm:border sm:border-[var(--overlay0)] sm:bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] sm:px-4 sm:py-1.5 sm:shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] md:px-5 lg:grid lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-visible lg:px-4 lg:py-2.5"
                   data-media-modal-surface
                   onClick={handleMetadataClick}
                 >
@@ -1368,7 +1368,7 @@ export function MediaViewer({
                 </footer>
               ) : (
                 <p
-                  className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
+                  className="m-0 justify-self-center font-mono text-sm text-[var(--subtext0)] sm:border sm:border-[var(--overlay0)] sm:bg-[var(--surface0)] sm:px-2 sm:py-1"
                   data-media-modal-surface
                   onClick={handleMetadataClick}
                 >
