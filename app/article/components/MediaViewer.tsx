@@ -323,7 +323,6 @@ export function MediaViewer({
     media.length > 0 ? getWrappedIndex(activeInlineIndex, media.length) : 0;
   const activeInlineMedia = media[normalizedActiveInlineIndex] ?? media[0];
   const activeInlineTakenTime = getMediaTakenTimeLabel(activeInlineMedia);
-  const isInlineMediaZoomed = inlineMediaTransform.scale > mediaMinScale;
   const selectedMedia = media[selectedIndex] ?? media[0];
   const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
   const selectedVideoAspectRatio =
@@ -643,7 +642,7 @@ export function MediaViewer({
   );
 
   const renderedInlineSwipeTrack = hasMultipleMedia
-    ? !isInlineMediaZoomed
+    ? inlineMediaTransform.scale <= mediaMinScale
       ? (inlineSwipeTrack ?? createInlineSwipeTrack(0, false))
       : null
     : null;
@@ -1258,15 +1257,11 @@ export function MediaViewer({
           {inlineCarousel ? (
             <figure
               aria-label={`${authorName}의 게시글 미디어`}
-              className={`m-0 min-w-0 border border-[var(--overlay0)] bg-[var(--surface0)] sm:hidden ${
-                isInlineMediaZoomed ? 'relative z-10 overflow-visible' : 'overflow-hidden'
-              }`}
+              className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)] sm:hidden"
             >
               <button
                 aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-                className={`group relative block h-auto w-full touch-pan-y appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] ${
-                  isInlineMediaZoomed ? 'z-10 overflow-visible' : 'overflow-hidden'
-                }`}
+                className="group relative block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                 onClick={handleInlineTriggerClick}
                 onPointerCancel={handleInlinePointerCancel}
                 onPointerDown={handleInlinePointerDown}
