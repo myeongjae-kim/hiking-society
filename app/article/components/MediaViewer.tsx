@@ -632,10 +632,12 @@ export function MediaViewer({
 
       const tapPositionRatio =
         mediaRect.width > 0 ? (event.clientX - mediaRect.left) / mediaRect.width : 0.5;
+      const isCurrentlyZoomed = mediaTransformRef.current.scale > mediaMinScale;
 
       if (
-        tapPositionRatio <= mediaNavigationClickZoneRatio ||
-        tapPositionRatio >= 1 - mediaNavigationClickZoneRatio
+        !isCurrentlyZoomed &&
+        (tapPositionRatio <= mediaNavigationClickZoneRatio ||
+          tapPositionRatio >= 1 - mediaNavigationClickZoneRatio)
       ) {
         resetMediaDoubleTap();
         return false;
@@ -661,7 +663,7 @@ export function MediaViewer({
       shouldSuppressStageClickRef.current = true;
       resetMediaDoubleTap();
 
-      if (mediaTransformRef.current.scale > mediaMinScale) {
+      if (isCurrentlyZoomed) {
         setMediaTransformState(initialMediaTransform);
         return true;
       }
