@@ -13,7 +13,9 @@ import {
   hiddenFileInputClassName,
   inlineButtonClassName,
 } from '@/app/common/components/styles';
+import { getHikingDisplay } from '@/app/hiking/components/hikingFormUtils';
 import type { Article } from '@/core/article/domain';
+import type { Hiking } from '@/core/hiking/domain';
 
 import type { ArticleFormValues, DraftMedia } from './articleFormTypes';
 import {
@@ -29,6 +31,7 @@ import { getMediaTakenTimeLabel, MediaViewer } from './MediaViewer';
 type ArticleFormProps = {
   article?: Article;
   error?: string;
+  hiking?: Hiking;
   onCancel: () => void;
   onSubmit: (values: ArticleFormValues) => void;
   submitting?: boolean;
@@ -44,6 +47,7 @@ function reorderDraftMedias(media: readonly DraftMedia[]) {
 export function ArticleForm({
   article,
   error,
+  hiking,
   onCancel,
   onSubmit,
   submitting = false,
@@ -298,6 +302,7 @@ export function ArticleForm({
   };
 
   const duplicateMediaKeys = getDuplicateMediaKeys(values.media);
+  const hikingDisplay = hiking ? getHikingDisplay(hiking) : null;
 
   return (
     <>
@@ -306,7 +311,10 @@ export function ArticleForm({
         box-="round"
         onSubmit={handleSubmit}
       >
-        <Command>{article ? `article.edit ${article.id}` : 'article.new'}</Command>
+        <Command>
+          {article ? `article.edit ${article.id}` : 'article.new'}{' '}
+          {hiking ? `(hiking #${hiking.order} ${hiking.mountainName})` : ''}
+        </Command>
         <div
           className={`grid gap-3 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
             disabled ? 'opacity-70' : ''

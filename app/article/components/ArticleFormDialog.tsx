@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 
 import { dialogOverlayClassName } from '@/app/common/components/styles';
 import type { Article } from '@/core/article/domain';
+import type { Hiking } from '@/core/hiking/domain';
 
 import { ArticleForm } from './ArticleForm';
 import type { ArticleFormValues } from './articleFormTypes';
@@ -12,6 +13,7 @@ type ArticleFormDialogProps = {
   article?: Article;
   error?: string;
   formKey: string;
+  hiking?: Hiking;
   onCancel: () => void;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: ArticleFormValues) => void;
@@ -24,6 +26,7 @@ export function ArticleFormDialog({
   article,
   error,
   formKey,
+  hiking,
   onCancel,
   onOpenChange,
   onSubmit,
@@ -41,6 +44,7 @@ export function ArticleFormDialog({
             <ArticleForm
               article={article}
               error={error}
+              hiking={hiking}
               key={formKey}
               onCancel={onCancel}
               onSubmit={onSubmit}

@@ -113,6 +113,12 @@ export function FeedCrudClient({
     activeArticleForm?.type === 'edit'
       ? initialArticles.find((article) => article.id === activeArticleForm.articleId)
       : undefined;
+  const activeArticleHiking =
+    activeArticleForm?.type === 'create'
+      ? initialHikings.find((hiking) => hiking.id === activeArticleForm.hikingId)
+      : activeArticle
+        ? initialHikings.find((hiking) => hiking.id === activeArticle.hikingId)
+        : undefined;
   const activeArticleFormKey =
     activeArticleForm?.type === 'create'
       ? `article-new-${activeArticleForm.hikingId}`
@@ -560,6 +566,7 @@ export function FeedCrudClient({
         article={activeArticle}
         error={activeArticleFormKey ? errorByKey[activeArticleFormKey] : undefined}
         formKey={activeArticleFormKey ?? 'article-form'}
+        hiking={activeArticleHiking}
         onCancel={closeActiveArticleForm}
         onOpenChange={(open) => {
           if (!open) {
