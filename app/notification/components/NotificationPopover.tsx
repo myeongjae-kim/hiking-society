@@ -229,6 +229,9 @@ export function NotificationPopover({
                         <span className="min-w-0 text-left text-sm leading-[1.4] [overflow-wrap:anywhere] !no-underline">
                           {getNotificationMessage(notification)}
                         </span>
+                        <span className="block w-full min-w-0 truncate text-left text-xs text-[var(--subtext0)] !no-underline">
+                          {notification.contentExcerpt}
+                        </span>
                         <DateTimeLabel
                           className="font-mono text-xs text-[var(--subtext0)] !no-underline"
                           value={notification.createdAt}

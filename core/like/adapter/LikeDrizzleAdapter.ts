@@ -1,3 +1,4 @@
+import { createNotificationContentExcerpt } from '@/core/notification/model/NotificationContentExcerpt';
 import { db } from '@/lib/db/drizzle';
 import {
   articleLikeTable,
@@ -25,7 +26,11 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 
     await db.transaction(async (tx) => {
       const [article] = await tx
-        .select({ authorUserId: articleTable.authorUserId, id: articleTable.id })
+        .select({
+          authorUserId: articleTable.authorUserId,
+          body: articleTable.body,
+          id: articleTable.id,
+        })
         .from(articleTable)
         .where(and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)))
         .limit(1);
@@ -54,6 +59,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
           actorUserId: input.userId,
           articleId,
           commentId: null,
+          contentExcerpt: createNotificationContentExcerpt(article.body),
           recipientUserId: article.authorUserId,
           type: 'article_like',
         });
@@ -69,6 +75,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
         .select({
           articleId: commentTable.articleId,
           authorUserId: commentTable.authorUserId,
+          body: commentTable.body,
           id: commentTable.id,
         })
         .from(commentTable)
@@ -106,6 +113,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
           actorUserId: input.userId,
           articleId: comment.articleId,
           commentId,
+          contentExcerpt: createNotificationContentExcerpt(comment.body),
           recipientUserId: comment.authorUserId,
           type: 'comment_like',
         });

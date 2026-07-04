@@ -14,6 +14,7 @@ export type NotificationSummary = {
   readonly actorUserId: number;
   readonly articleId: ArticleId;
   readonly commentId: CommentId | null;
+  readonly contentExcerpt: string;
   readonly createdAt: IsoDateTimeString;
   readonly readAt: IsoDateTimeString | null;
   readonly type: NotificationType;

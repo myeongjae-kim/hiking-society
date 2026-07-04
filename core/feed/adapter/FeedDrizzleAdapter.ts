@@ -22,6 +22,7 @@ import type {
 } from '@/core/feed/application/port/out/FeedCommandPort';
 import type { FeedQueryPort } from '@/core/feed/application/port/out/FeedQueryPort';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
+import { createNotificationContentExcerpt } from '@/core/notification/model/NotificationContentExcerpt';
 import { db } from '@/lib/db/drizzle';
 import {
   articleLikeTable,
@@ -704,12 +705,14 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       }
 
       const notificationsByRecipientId = new Map<number, typeof notificationTable.$inferInsert>();
+      const contentExcerpt = createNotificationContentExcerpt(input.body);
 
       if (article.authorUserId !== input.authorUserId) {
         notificationsByRecipientId.set(article.authorUserId, {
           actorUserId: input.authorUserId,
           articleId,
           commentId: comment.id,
+          contentExcerpt,
           recipientUserId: article.authorUserId,
           type: parentCommentId === null ? 'article_comment' : 'article_reply',
         });
@@ -720,6 +723,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           actorUserId: input.authorUserId,
           articleId,
           commentId: comment.id,
+          contentExcerpt,
           recipientUserId: parent.authorUserId,
           type: 'comment_reply',
         });

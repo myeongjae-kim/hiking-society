@@ -208,6 +208,7 @@ export const notificationTable = pgTable(
       .notNull()
       .references(() => articleTable.id),
     commentId: integer('comment_id').references(() => commentTable.id),
+    contentExcerpt: text('content_excerpt').notNull(),
     readAt: timestamp('read_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
