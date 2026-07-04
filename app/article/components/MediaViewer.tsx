@@ -637,7 +637,7 @@ export function MediaViewer({
         <Dialog.Overlay className={photoDialogOverlayClassName} />
         <Dialog.Content
           aria-describedby={descriptionId}
-          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr_auto] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
+          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
           onClick={closeOnBackdropClick}
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
@@ -687,7 +687,7 @@ export function MediaViewer({
             )}
 
             <div
-              className={`grid h-full min-h-0 w-full place-items-center select-none ${
+              className={`flex h-full min-h-0 w-full flex-col items-center justify-center gap-4 select-none ${
                 selectedMediaIsVideo ? '[touch-action:manipulation]' : '[touch-action:none]'
               }`}
               data-media-modal-surface
@@ -723,6 +723,55 @@ export function MediaViewer({
                   }}
                 />
               )}
+
+              {selectedMetadataItems.length > 0 ? (
+                <footer
+                  className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-2 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] sm:px-4 md:px-5 lg:grid lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-visible lg:px-4 lg:py-2.5"
+                  data-media-modal-surface
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 lg:grid lg:min-w-0 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-x-5 lg:gap-y-2">
+                    <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase lg:text-[0.72rem] lg:leading-none lg:tracking-[0.18em]">
+                      frame {selectedIndex + 1}/{media.length}
+                    </p>
+                    <dl className="contents lg:m-0 lg:grid lg:min-w-0 lg:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] lg:gap-x-4 lg:gap-y-2">
+                      {selectedMetadataItems.map((item, index) => (
+                        <div className="contents lg:grid lg:min-w-0 lg:gap-1" key={item.label}>
+                          <dt className="sr-only font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase lg:not-sr-only">
+                            {item.label}
+                          </dt>
+                          <dd className="m-0 max-w-full min-w-0 text-center font-mono text-xs leading-tight break-words text-[var(--foreground0)] lg:text-left lg:text-[0.9rem]">
+                            {item.value}
+                            {index < selectedMetadataItems.length - 1 ? (
+                              <span
+                                aria-hidden="true"
+                                className="ml-2 text-[var(--overlay1)] lg:hidden"
+                              >
+                                ·
+                              </span>
+                            ) : null}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <p className="m-0 hidden justify-self-start border-l-2 border-[var(--blue)] pl-2 font-mono text-[0.72rem] leading-none text-[var(--subtext0)] lg:block lg:justify-self-end">
+                      photo data
+                    </p>
+                  </div>
+                </footer>
+              ) : (
+                <p
+                  className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
+                  data-media-modal-surface
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
+                  {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
+                </p>
+              )}
             </div>
 
             {hasMultipleMedia ? (
@@ -741,49 +790,6 @@ export function MediaViewer({
               <span aria-hidden="true" className="hidden sm:block sm:size-14" />
             )}
           </div>
-
-          {selectedMetadataItems.length > 0 ? (
-            <footer
-              className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-5 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] lg:grid lg:max-h-[28svh] lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-y-auto lg:px-4 lg:py-2.5"
-              data-media-modal-surface
-            >
-              <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 lg:grid lg:min-w-0 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-x-5 lg:gap-y-2">
-                <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase lg:text-[0.72rem] lg:leading-none lg:tracking-[0.18em]">
-                  frame {selectedIndex + 1}/{media.length}
-                </p>
-                <dl className="contents lg:m-0 lg:grid lg:min-w-0 lg:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] lg:gap-x-4 lg:gap-y-2">
-                  {selectedMetadataItems.map((item, index) => (
-                    <div className="contents lg:grid lg:min-w-0 lg:gap-1" key={item.label}>
-                      <dt className="sr-only font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase lg:not-sr-only">
-                        {item.label}
-                      </dt>
-                      <dd className="m-0 max-w-full min-w-0 text-center font-mono text-xs leading-tight break-words text-[var(--foreground0)] lg:text-left lg:text-[0.9rem]">
-                        {item.value}
-                        {index < selectedMetadataItems.length - 1 ? (
-                          <span
-                            aria-hidden="true"
-                            className="ml-2 text-[var(--overlay1)] lg:hidden"
-                          >
-                            ·
-                          </span>
-                        ) : null}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="m-0 hidden justify-self-start border-l-2 border-[var(--blue)] pl-2 font-mono text-[0.72rem] leading-none text-[var(--subtext0)] lg:block lg:justify-self-end">
-                  photo data
-                </p>
-              </div>
-            </footer>
-          ) : (
-            <p
-              className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
-              data-media-modal-surface
-            >
-              {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
-            </p>
-          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
