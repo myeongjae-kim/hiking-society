@@ -180,6 +180,29 @@ function getExistingMediaInput(media: ExistingArticleMediaInput): StoredArticleM
   };
 }
 
+async function reorderActiveHikings(executor: Pick<typeof db, 'execute'>) {
+  await executor.execute(sql`
+    UPDATE ${hikingTable}
+    SET "order" = NULL
+    WHERE ${hikingTable.deletedAt} IS NULL
+  `);
+  await executor.execute(sql`
+    WITH ranked_hiking AS (
+      SELECT
+        ${hikingTable.id} AS id,
+        row_number() OVER (
+          ORDER BY ${hikingTable.hikingDate} ASC, ${hikingTable.id} ASC
+        ) AS next_order
+      FROM ${hikingTable}
+      WHERE ${hikingTable.deletedAt} IS NULL
+    )
+    UPDATE ${hikingTable}
+    SET "order" = ranked_hiking.next_order
+    FROM ranked_hiking
+    WHERE ${hikingTable.id} = ranked_hiking.id
+  `);
+}
+
 function incrementCount(counts: Map<number, number>, id: number) {
   counts.set(id, (counts.get(id) ?? 0) + 1);
 }
@@ -201,6 +224,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
             longitude: hikingTable.longitude,
             altitude: hikingTable.altitude,
             mountainName: hikingTable.mountainName,
+            order: hikingTable.order,
             name: userTable.name,
             participantsCsv: hikingTable.participantsCsv,
             restaurantAddress: hikingTable.restaurantAddress,
@@ -354,6 +378,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       longitude: row.longitude as Longitude,
       altitude: row.altitude as Altitude | null,
       mountainName: row.mountainName,
+      order: row.order ?? 0,
       participantsCsv: row.participantsCsv,
       restaurantAddress: row.restaurantAddress,
       startedAt: row.startedAt as IsoDateTimeString,
@@ -407,38 +432,45 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
   }
 
   async createHiking(input: Parameters<FeedCommandPort['createHiking']>[0]) {
-    await db.insert(hikingTable).values({
-      authorUserId: input.authorUserId,
-      completedAt: input.completedAt,
-      hikingDate: input.hikingDate,
-      latitude: input.latitude,
-      longitude: input.longitude,
-      altitude: input.altitude,
-      mountainName: input.mountainName,
-      participantsCsv: input.participantsCsv,
-      restaurantAddress: input.restaurantAddress,
-      startedAt: input.startedAt,
-      timezone: input.timezone,
+    await db.transaction(async (tx) => {
+      await tx.insert(hikingTable).values({
+        authorUserId: input.authorUserId,
+        completedAt: input.completedAt,
+        hikingDate: input.hikingDate,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        altitude: input.altitude,
+        mountainName: input.mountainName,
+        participantsCsv: input.participantsCsv,
+        restaurantAddress: input.restaurantAddress,
+        startedAt: input.startedAt,
+        timezone: input.timezone,
+      });
+      await reorderActiveHikings(tx);
     });
   }
 
   async updateHiking(input: Parameters<FeedCommandPort['updateHiking']>[0]) {
     const hikingId = toNumericId(input.hikingId);
-    const [updated] = await db
-      .update(hikingTable)
-      .set({ ...input.values, updatedAt: new Date() })
-      .where(
-        and(
-          eq(hikingTable.id, hikingId),
-          eq(hikingTable.authorUserId, input.userId),
-          isNull(hikingTable.deletedAt),
-        ),
-      )
-      .returning({ id: hikingTable.id });
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(hikingTable)
+        .set({ ...input.values, updatedAt: new Date() })
+        .where(
+          and(
+            eq(hikingTable.id, hikingId),
+            eq(hikingTable.authorUserId, input.userId),
+            isNull(hikingTable.deletedAt),
+          ),
+        )
+        .returning({ id: hikingTable.id });
 
-    if (!updated) {
-      throw new Error('산행을 수정할 권한이 없거나 산행을 찾을 수 없습니다.');
-    }
+      if (!updated) {
+        throw new Error('산행을 수정할 권한이 없거나 산행을 찾을 수 없습니다.');
+      }
+
+      await reorderActiveHikings(tx);
+    });
   }
 
   async deleteHiking(input: Parameters<FeedCommandPort['deleteHiking']>[0]) {
@@ -473,8 +505,10 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
 
       await tx
         .update(hikingTable)
-        .set({ deletedAt: new Date(), updatedAt: new Date() })
+        .set({ deletedAt: new Date(), order: null, updatedAt: new Date() })
         .where(eq(hikingTable.id, hikingId));
+
+      await reorderActiveHikings(tx);
     });
   }
 

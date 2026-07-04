@@ -13,6 +13,7 @@ import {
   uniqueIndex,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'member', 'associate']);
 export const articleMediaTypeEnum = pgEnum('article_media_type', ['image', 'video']);
@@ -60,25 +61,34 @@ export const socialAccountTable = pgTable(
   ],
 );
 
-export const hikingTable = pgTable('hiking', {
-  id: serial('id').primaryKey(),
-  mountainName: varchar('mountain_name', { length: 120 }).notNull(),
-  hikingDate: varchar('hiking_date', { length: 10 }).notNull(),
-  timezone: varchar('timezone', { length: 80 }).notNull(),
-  latitude: doublePrecision('latitude').notNull(),
-  longitude: doublePrecision('longitude').notNull(),
-  altitude: doublePrecision('altitude'),
-  startedAt: varchar('started_at', { length: 40 }).notNull(),
-  completedAt: varchar('completed_at', { length: 40 }).notNull(),
-  participantsCsv: text('participants_csv').notNull(),
-  restaurantAddress: text('restaurant_address'),
-  authorUserId: integer('author_user_id')
-    .notNull()
-    .references(() => userTable.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  deletedAt: timestamp('deleted_at'),
-});
+export const hikingTable = pgTable(
+  'hiking',
+  {
+    id: serial('id').primaryKey(),
+    mountainName: varchar('mountain_name', { length: 120 }).notNull(),
+    hikingDate: varchar('hiking_date', { length: 10 }).notNull(),
+    timezone: varchar('timezone', { length: 80 }).notNull(),
+    latitude: doublePrecision('latitude').notNull(),
+    longitude: doublePrecision('longitude').notNull(),
+    altitude: doublePrecision('altitude'),
+    order: integer('order'),
+    startedAt: varchar('started_at', { length: 40 }).notNull(),
+    completedAt: varchar('completed_at', { length: 40 }).notNull(),
+    participantsCsv: text('participants_csv').notNull(),
+    restaurantAddress: text('restaurant_address'),
+    authorUserId: integer('author_user_id')
+      .notNull()
+      .references(() => userTable.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'),
+  },
+  (table) => [
+    uniqueIndex('hiking_order_active_unique')
+      .on(table.order)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 export const articleTable = pgTable('article', {
   id: serial('id').primaryKey(),

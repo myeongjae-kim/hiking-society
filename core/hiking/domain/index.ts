@@ -20,6 +20,7 @@ export type Hiking = {
   readonly latitude: Latitude;
   readonly longitude: Longitude;
   readonly altitude: Altitude | null;
+  readonly order: number;
   readonly startedAt: IsoDateTimeString;
   readonly completedAt: IsoDateTimeString;
   readonly participantsCsv: string;
