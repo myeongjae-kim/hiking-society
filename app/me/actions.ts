@@ -1,6 +1,7 @@
 'use server';
 
 import { applicationContext } from '@/core/config/applicationContext';
+import { env } from '@/core/config/env';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireCurrentUser, setSessionCookies } from '../auth/actions/session';
@@ -11,6 +12,24 @@ export type ProfileActionState = {
 };
 
 const maxProfileImageBytes = 12 * 1024 * 1024;
+
+export type ProfileImageUploadTargetInput = {
+  byteSize: number;
+  contentType: string;
+  fileName: string;
+};
+
+export type ProfileImageUploadTargetResult =
+  | {
+      error?: string;
+      ok: false;
+    }
+  | {
+      objectKey: string;
+      ok: true;
+      uploadUrl: string;
+      url: string;
+    };
 
 const displayNameSchema = z.object({
   displayName: z.string().trim().min(1, '이름을 입력해주세요.').max(100),
@@ -23,6 +42,17 @@ const emailSchema = z.object({
 const imageSchema = z.object({
   removeProfileImage: z.boolean(),
 });
+const profileImageUploadTargetSchema = z.object({
+  byteSize: z.number().int().positive().max(maxProfileImageBytes),
+  contentType: z.literal('image/webp'),
+  fileName: z.string().trim().min(1).max(255),
+});
+const uploadedProfileImageSchema = z.object({
+  byteSize: z.number().int().positive().max(maxProfileImageBytes),
+  contentType: z.literal('image/webp'),
+  objectKey: z.string().trim().min(1).max(1024),
+  url: z.string().url(),
+});
 
 function getString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -33,31 +63,35 @@ function getCurrentDisplayName(user: Awaited<ReturnType<typeof requireCurrentUse
   return user.displayName ?? user.name ?? user.email ?? '회원';
 }
 
-async function parseProfileImageUpload(formData: FormData) {
-  const file = formData.get('profileImage');
+function assertProfileObjectKey(objectKey: string, userId: number) {
+  if (!objectKey.startsWith(`profile-images/users/${userId}/`)) {
+    throw new Error('잘못된 프로필 이미지입니다.');
+  }
+}
 
-  if (!(file instanceof File) || file.size === 0) {
+function assertPublicUrl(url: string, objectKey: string) {
+  const expectedUrl = `${env.S3_PUBLIC_BASE_URL.replace(/\/$/, '')}/${objectKey
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/')}`;
+
+  if (url !== expectedUrl) {
+    throw new Error('잘못된 프로필 이미지 URL입니다.');
+  }
+}
+
+function parseUploadedProfileImage(formData: FormData, userId: number) {
+  const raw = getString(formData, 'profileImage');
+
+  if (!raw) {
     return undefined;
   }
 
-  if (!file.type.startsWith('image/')) {
-    throw new Error('이미지 파일만 업로드할 수 있습니다.');
-  }
+  const profileImage = uploadedProfileImageSchema.parse(JSON.parse(raw));
+  assertProfileObjectKey(profileImage.objectKey, userId);
+  assertPublicUrl(profileImage.url, profileImage.objectKey);
 
-  if (file.type !== 'image/webp') {
-    throw new Error('프로필 이미지는 WEBP 형식이어야 합니다.');
-  }
-
-  if (file.size > maxProfileImageBytes) {
-    throw new Error('프로필 이미지는 12MB 이하만 업로드할 수 있습니다.');
-  }
-
-  return {
-    byteSize: file.size,
-    bytes: new Uint8Array(await file.arrayBuffer()),
-    contentType: file.type,
-    fileName: file.name,
-  };
+  return profileImage;
 }
 
 function toActionResult(error: unknown): ProfileActionState {
@@ -152,9 +186,9 @@ export async function updateProfileImage(
     const values = imageSchema.parse({
       removeProfileImage: getString(formData, 'removeProfileImage') === 'on',
     });
-    const profileImageUpload = await parseProfileImageUpload(formData);
+    const profileImage = parseUploadedProfileImage(formData, user.id);
 
-    if (!values.removeProfileImage && !profileImageUpload) {
+    if (!values.removeProfileImage && !profileImage) {
       throw new Error('새 프로필 이미지를 선택해주세요.');
     }
 
@@ -164,12 +198,48 @@ export async function updateProfileImage(
         displayName: getCurrentDisplayName(user),
         email: user.email,
         now: new Date(),
-        profileImageUpload,
+        profileImage,
         removeProfileImage: values.removeProfileImage,
         userId: user.id,
       });
 
     revalidateProfileViews();
+
+    return { ok: true };
+  } catch (error) {
+    return toActionResult(error);
+  }
+}
+
+export async function prepareProfileImageUpload(
+  input: ProfileImageUploadTargetInput,
+): Promise<ProfileImageUploadTargetResult> {
+  try {
+    const user = await requireCurrentUser();
+    const values = profileImageUploadTargetSchema.parse(input);
+    const target = await applicationContext()
+      .get('ProfileImageStoragePort')
+      .createUploadTarget({ ...values, userId: user.id });
+
+    return { ok: true, ...target };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : '업로드 URL을 만들지 못했습니다.',
+      ok: false,
+    };
+  }
+}
+
+export async function cleanupProfileImageUploads(
+  objectKeys: readonly string[],
+): Promise<ProfileActionState> {
+  try {
+    const user = await requireCurrentUser();
+
+    await applicationContext().get('ProfileImageStoragePort').deleteObjects({
+      objectKeys,
+      userId: user.id,
+    });
 
     return { ok: true };
   } catch (error) {

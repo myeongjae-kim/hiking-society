@@ -9,18 +9,13 @@ export type ArticleMediaUpload = {
   readonly byteSize: number;
   readonly contentType: string;
   readonly durationMs?: number | null;
-  readonly fileName: string;
   readonly height?: number | null;
   readonly mediaType: ArticleMediaType;
+  readonly objectKey: string;
   readonly originalMetadata?: Record<string, unknown> | null;
   readonly order: number;
-  readonly bytes: Uint8Array;
-  readonly thumbnailUpload?: {
-    readonly bytes: Uint8Array;
-    readonly byteSize: number;
-    readonly contentType: string;
-    readonly fileName: string;
-  };
+  readonly thumbnailUrl?: string | null;
+  readonly url: string;
   readonly width?: number | null;
 };
 

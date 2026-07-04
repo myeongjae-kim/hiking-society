@@ -1,5 +1,5 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import type { ArticleMediaUpload } from '@/core/article/application/port/in/ArticleCommandUseCase';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { MediaStoragePort } from '@/core/article/application/port/out/MediaStoragePort';
 import { env } from '@/core/config/env';
 
@@ -25,50 +25,70 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
     region: env.S3_REGION,
   });
 
-  async upload(input: ArticleMediaUpload) {
+  private assertOwnedObjectKey(objectKey: string, userId: number) {
+    if (!objectKey.startsWith(`article-media/users/${userId}/`)) {
+      throw new Error('삭제할 수 없는 업로드 파일입니다.');
+    }
+  }
+
+  private async createSignedPutUrl(input: { contentType: string; objectKey: string }) {
+    return getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: env.S3_BUCKET,
+        ContentType: input.contentType,
+        Key: input.objectKey,
+      }),
+      { expiresIn: 10 * 60 },
+    );
+  }
+
+  async createUploadTarget(input: Parameters<MediaStoragePort['createUploadTarget']>[0]) {
     const datePath = new Date().toISOString().slice(0, 10);
-    const objectKey = `article-media/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.fileName)}`;
-    const thumbnailObjectKey = input.thumbnailUpload
-      ? `article-media/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.thumbnailUpload.fileName)}`
+    const objectKey = `article-media/users/${input.userId}/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.fileName)}`;
+    const thumbnailObjectKey = input.thumbnail
+      ? `article-media/users/${input.userId}/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.thumbnail.fileName)}`
       : null;
 
-    const uploadMedia = this.client.send(
-      new PutObjectCommand({
-        Body: input.bytes,
-        Bucket: env.S3_BUCKET,
-        ContentLength: input.byteSize,
-        ContentType: input.contentType,
-        Key: objectKey,
-      }),
-    );
-    const uploadThumbnail = input.thumbnailUpload
-      ? this.client.send(
-          new PutObjectCommand({
-            Body: input.thumbnailUpload.bytes,
-            Bucket: env.S3_BUCKET,
-            ContentLength: input.thumbnailUpload.byteSize,
-            ContentType: input.thumbnailUpload.contentType,
-            Key: thumbnailObjectKey ?? undefined,
-          }),
-        )
-      : Promise.resolve();
-
-    await Promise.all([uploadMedia, uploadThumbnail]);
+    const [uploadUrl, thumbnailUploadUrl] = await Promise.all([
+      this.createSignedPutUrl({ contentType: input.contentType, objectKey }),
+      thumbnailObjectKey && input.thumbnail
+        ? this.createSignedPutUrl({
+            contentType: input.thumbnail.contentType,
+            objectKey: thumbnailObjectKey,
+          })
+        : Promise.resolve(null),
+    ]);
 
     return {
-      byteSize: input.byteSize,
-      contentType: input.contentType,
-      durationMs: input.durationMs,
-      height: input.height,
-      mediaType: input.mediaType,
       objectKey,
-      originalMetadata: input.originalMetadata ?? null,
-      order: input.order,
-      thumbnailUrl: thumbnailObjectKey
-        ? joinPublicUrl(env.S3_PUBLIC_BASE_URL, thumbnailObjectKey)
-        : null,
+      uploadUrl,
+      thumbnail:
+        thumbnailObjectKey && thumbnailUploadUrl
+          ? {
+              objectKey: thumbnailObjectKey,
+              uploadUrl: thumbnailUploadUrl,
+              url: joinPublicUrl(env.S3_PUBLIC_BASE_URL, thumbnailObjectKey),
+            }
+          : undefined,
       url: joinPublicUrl(env.S3_PUBLIC_BASE_URL, objectKey),
-      width: input.width,
     };
+  }
+
+  async deleteObjects(input: Parameters<MediaStoragePort['deleteObjects']>[0]) {
+    const uniqueObjectKeys = [...new Set(input.objectKeys.filter(Boolean))];
+
+    await Promise.all(
+      uniqueObjectKeys.map(async (objectKey) => {
+        this.assertOwnedObjectKey(objectKey, input.userId);
+
+        await this.client.send(
+          new DeleteObjectCommand({
+            Bucket: env.S3_BUCKET,
+            Key: objectKey,
+          }),
+        );
+      }),
+    );
   }
 }

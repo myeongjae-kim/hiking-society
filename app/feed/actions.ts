@@ -4,6 +4,7 @@ import type {
   ArticleMediaUpload,
   ExistingArticleMediaInput,
 } from '@/core/article/application/port/in/ArticleCommandUseCase';
+import type { ArticleMediaUploadTarget } from '@/core/article/application/port/out/MediaStoragePort';
 import type { ArticleId } from '@/core/article/domain';
 import type { CommentId } from '@/core/comment/domain';
 import type {
@@ -15,6 +16,7 @@ import type {
   Timezone,
 } from '@/core/common/domain';
 import { applicationContext } from '@/core/config/applicationContext';
+import { env } from '@/core/config/env';
 import type { HikingId } from '@/core/hiking/domain';
 import { sanitizeOriginalPhotoMetadata } from '@/app/common/utils/photoMetadata';
 import { revalidatePath } from 'next/cache';
@@ -25,6 +27,28 @@ type ActionResult = {
   error?: string;
   ok: boolean;
 };
+
+export type ArticleMediaUploadTargetInput = {
+  byteSize: number;
+  contentType: string;
+  fileName: string;
+  mediaType: 'image' | 'video';
+  thumbnail?: {
+    byteSize: number;
+    contentType: string;
+    fileName: string;
+  };
+};
+
+export type ArticleMediaUploadTargetResult =
+  | {
+      error?: string;
+      ok: false;
+    }
+  | {
+      targets: ArticleMediaUploadTarget[];
+      ok: true;
+    };
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const timeSchema = z.string().regex(/^\d{2}:\d{2}$/);
@@ -50,6 +74,42 @@ const articleSchema = z.object({
 });
 
 const originalMetadataSchema = z.record(z.string(), z.unknown()).nullable();
+const uploadTargetInputSchema = z.object({
+  byteSize: z
+    .number()
+    .int()
+    .positive()
+    .max(200 * 1024 * 1024),
+  contentType: z.string().trim().min(1).max(120),
+  fileName: z.string().trim().min(1).max(255),
+  mediaType: z.enum(['image', 'video']),
+  thumbnail: z
+    .object({
+      byteSize: z
+        .number()
+        .int()
+        .positive()
+        .max(25 * 1024 * 1024),
+      contentType: z.string().trim().min(1).max(120),
+      fileName: z.string().trim().min(1).max(255),
+    })
+    .optional(),
+});
+const uploadedMediaSchema = z.array(
+  z.object({
+    byteSize: z.number().int().positive(),
+    contentType: z.string().trim().min(1).max(120),
+    durationMs: z.number().nullable().optional(),
+    height: z.number().nullable().optional(),
+    mediaType: z.enum(['image', 'video']),
+    objectKey: z.string().trim().min(1).max(1024),
+    order: z.number().int().positive(),
+    originalMetadata: originalMetadataSchema.optional(),
+    thumbnailUrl: z.string().url().nullable().optional(),
+    url: z.string().url(),
+    width: z.number().nullable().optional(),
+  }),
+);
 
 const commentSchema = z.object({
   body: z.string().trim().min(1),
@@ -89,12 +149,29 @@ function getOptionalId<T extends string>(formData: FormData, key: string) {
   return value as T;
 }
 
-function parseOriginalMetadata(value: unknown) {
-  if (typeof value !== 'string' || value === '') {
-    return null;
+function assertArticleObjectKey(objectKey: string, userId: number) {
+  if (!objectKey.startsWith(`article-media/users/${userId}/`)) {
+    throw new Error('잘못된 업로드 파일입니다.');
   }
+}
 
-  return sanitizeOriginalPhotoMetadata(originalMetadataSchema.parse(JSON.parse(value)));
+function assertPublicUrl(url: string, objectKey: string) {
+  const expectedUrl = `${env.S3_PUBLIC_BASE_URL.replace(/\/$/, '')}/${objectKey
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/')}`;
+
+  if (url !== expectedUrl) {
+    throw new Error('잘못된 업로드 URL입니다.');
+  }
+}
+
+function assertArticleUploadPublicUrl(url: string, userId: number) {
+  const expectedPrefix = `${env.S3_PUBLIC_BASE_URL.replace(/\/$/, '')}/article-media/users/${userId}/`;
+
+  if (!url.startsWith(expectedPrefix)) {
+    throw new Error('잘못된 업로드 URL입니다.');
+  }
 }
 
 async function requireMember() {
@@ -152,70 +229,43 @@ function parseHikingValues(formData: FormData) {
   };
 }
 
-async function parseMediaUploads(formData: FormData): Promise<ArticleMediaUpload[]> {
-  const files = formData.getAll('media').filter((value): value is File => value instanceof File);
-  const orders = formData.getAll('mediaOrders').map((value) => Number(value));
-  const mediaTypes = formData.getAll('mediaTypes').map((value) => String(value));
-  const durationMsValues = formData.getAll('mediaDurationMs').map((value) => Number(value));
-  const widthValues = formData.getAll('mediaWidths').map((value) => Number(value));
-  const heightValues = formData.getAll('mediaHeights').map((value) => Number(value));
-  const metadataValues = formData.getAll('mediaMetadata');
+function parseMediaUploads(formData: FormData, userId: number): ArticleMediaUpload[] {
+  const raw = getString(formData, 'uploadedMedia');
 
-  return Promise.all(
-    files.map(async (file, index) => {
-      const rawMediaType = mediaTypes[index];
-      const order = Number.isInteger(orders[index]) ? orders[index] : index + 1;
-      const rawThumbnail = formData.get(`mediaThumbnail-${order}`);
-      const thumbnail = rawThumbnail instanceof File && rawThumbnail.size > 0 ? rawThumbnail : null;
+  if (!raw) {
+    return [];
+  }
 
-      if (rawMediaType !== 'image' && rawMediaType !== 'video') {
-        throw new Error('지원하지 않는 사진이나 동영상 형식입니다.');
-      }
+  return uploadedMediaSchema.parse(JSON.parse(raw)).map((media) => {
+    assertArticleObjectKey(media.objectKey, userId);
+    assertPublicUrl(media.url, media.objectKey);
 
-      const mediaType: ArticleMediaUpload['mediaType'] =
-        rawMediaType === 'video' ? 'video' : 'image';
+    if (media.thumbnailUrl) {
+      assertArticleUploadPublicUrl(media.thumbnailUrl, userId);
+    }
 
-      if (mediaType === 'image' && file.type !== 'image/webp') {
-        throw new Error('게시글 이미지는 WEBP 형식이어야 합니다.');
-      }
+    if (media.mediaType === 'image' && media.contentType !== 'image/webp') {
+      throw new Error('게시글 이미지는 WEBP 형식이어야 합니다.');
+    }
 
-      if (mediaType === 'video' && file.type !== 'video/mp4') {
-        throw new Error('게시글 동영상은 MP4 형식이어야 합니다.');
-      }
+    if (media.mediaType === 'video' && media.contentType !== 'video/mp4') {
+      throw new Error('게시글 동영상은 MP4 형식이어야 합니다.');
+    }
 
-      if (mediaType === 'video' && thumbnail?.type !== 'image/webp') {
-        throw new Error('게시글 동영상 썸네일은 WEBP 형식이어야 합니다.');
-      }
-
-      return {
-        byteSize: file.size,
-        bytes: new Uint8Array(await file.arrayBuffer()),
-        contentType: file.type,
-        durationMs:
-          Number.isFinite(durationMsValues[index]) && durationMsValues[index] > 0
-            ? durationMsValues[index]
-            : null,
-        fileName: file.name,
-        height:
-          Number.isFinite(heightValues[index]) && heightValues[index] > 0
-            ? heightValues[index]
-            : null,
-        mediaType,
-        originalMetadata: parseOriginalMetadata(metadataValues[index]),
-        order,
-        thumbnailUpload: thumbnail
-          ? {
-              byteSize: thumbnail.size,
-              bytes: new Uint8Array(await thumbnail.arrayBuffer()),
-              contentType: thumbnail.type,
-              fileName: thumbnail.name,
-            }
-          : undefined,
-        width:
-          Number.isFinite(widthValues[index]) && widthValues[index] > 0 ? widthValues[index] : null,
-      };
-    }),
-  );
+    return {
+      byteSize: media.byteSize,
+      contentType: media.contentType,
+      durationMs: media.durationMs ?? null,
+      height: media.height ?? null,
+      mediaType: media.mediaType,
+      objectKey: media.objectKey,
+      order: media.order,
+      originalMetadata: sanitizeOriginalPhotoMetadata(media.originalMetadata ?? null),
+      thumbnailUrl: media.thumbnailUrl ?? null,
+      url: media.url,
+      width: media.width ?? null,
+    };
+  });
 }
 
 function parseExistingMedia(formData: FormData): ExistingArticleMediaInput[] {
@@ -309,7 +359,7 @@ export async function createArticle(formData: FormData): Promise<ActionResult> {
     const user = await requireMember();
     const hikingId = getId<HikingId>(formData, 'hikingId');
     const values = articleSchema.parse({ body: getString(formData, 'body') });
-    const media = await parseMediaUploads(formData);
+    const media = parseMediaUploads(formData, user.id);
 
     if (media.length === 0) {
       throw new Error('게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
@@ -333,7 +383,7 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
     const user = await requireMember();
     const articleId = getId<ArticleId>(formData, 'articleId');
     const values = articleSchema.parse({ body: getString(formData, 'body') });
-    const media = [...parseExistingMedia(formData), ...(await parseMediaUploads(formData))].sort(
+    const media = [...parseExistingMedia(formData), ...parseMediaUploads(formData, user.id)].sort(
       (left, right) => left.order - right.order,
     );
 
@@ -349,6 +399,61 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
     });
 
     return success(articleId);
+  } catch (error) {
+    return toActionResult(error);
+  }
+}
+
+export async function prepareArticleMediaUploads(
+  input: readonly ArticleMediaUploadTargetInput[],
+): Promise<ArticleMediaUploadTargetResult> {
+  try {
+    const user = await requireMember();
+    const values = z.array(uploadTargetInputSchema).min(1).parse(input);
+
+    for (const value of values) {
+      if (value.mediaType === 'image' && value.contentType !== 'image/webp') {
+        throw new Error('게시글 이미지는 WEBP 형식이어야 합니다.');
+      }
+
+      if (value.mediaType === 'video' && value.contentType !== 'video/mp4') {
+        throw new Error('게시글 동영상은 MP4 형식이어야 합니다.');
+      }
+
+      if (value.thumbnail && value.thumbnail.contentType !== 'image/webp') {
+        throw new Error('게시글 동영상 썸네일은 WEBP 형식이어야 합니다.');
+      }
+    }
+
+    const targets = await Promise.all(
+      values.map((value) =>
+        applicationContext()
+          .get('MediaStoragePort')
+          .createUploadTarget({ ...value, userId: user.id }),
+      ),
+    );
+
+    return { ok: true, targets };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : '업로드 URL을 만들지 못했습니다.',
+      ok: false,
+    };
+  }
+}
+
+export async function cleanupArticleMediaUploads(
+  objectKeys: readonly string[],
+): Promise<ActionResult> {
+  try {
+    const user = await requireMember();
+
+    await applicationContext().get('MediaStoragePort').deleteObjects({
+      objectKeys,
+      userId: user.id,
+    });
+
+    return { ok: true };
   } catch (error) {
     return toActionResult(error);
   }

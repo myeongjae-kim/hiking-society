@@ -1,7 +1,6 @@
 import { Autowired } from '@/core/config/Autowired';
 import type { UpdateProfileUseCase } from './port/in/UpdateProfileUseCase';
 import type { ProfileCommandPort } from './port/out/ProfileCommandPort';
-import type { ProfileImageStoragePort } from './port/out/ProfileImageStoragePort';
 import type { ProfileQueryPort } from './port/out/ProfileQueryPort';
 
 export class UpdateProfileService implements UpdateProfileUseCase {
@@ -10,8 +9,6 @@ export class UpdateProfileService implements UpdateProfileUseCase {
     private profileQueryPort: ProfileQueryPort,
     @Autowired('ProfileCommandPort')
     private profileCommandPort: ProfileCommandPort,
-    @Autowired('ProfileImageStoragePort')
-    private profileImageStoragePort: ProfileImageStoragePort,
   ) {}
 
   async update(input: Parameters<UpdateProfileUseCase['update']>[0]) {
@@ -24,11 +21,8 @@ export class UpdateProfileService implements UpdateProfileUseCase {
       throw new Error('이미 사용 중인 이메일입니다.');
     }
 
-    const profileImageUrl = input.profileImageUpload
-      ? await this.profileImageStoragePort.upload({
-          ...input.profileImageUpload,
-          userId: input.userId,
-        })
+    const profileImageUrl = input.profileImage
+      ? input.profileImage.url
       : input.removeProfileImage
         ? null
         : undefined;

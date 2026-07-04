@@ -1,15 +1,15 @@
-export type ProfileImageUpload = {
+export type UploadedProfileImage = {
   readonly byteSize: number;
-  readonly bytes: Uint8Array;
   readonly contentType: string;
-  readonly fileName: string;
+  readonly objectKey: string;
+  readonly url: string;
 };
 
 export type UpdateProfileInput = {
   readonly displayName: string;
   readonly email: string;
   readonly now: Date;
-  readonly profileImageUpload?: ProfileImageUpload;
+  readonly profileImage?: UploadedProfileImage;
   readonly removeProfileImage: boolean;
   readonly userId: number;
 };

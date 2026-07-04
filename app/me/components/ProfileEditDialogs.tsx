@@ -1,12 +1,14 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { ChangeEvent, ReactNode } from 'react';
+import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
 
 import { dialogOverlayClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
 import {
+  cleanupProfileImageUploads,
+  prepareProfileImageUpload,
   updateDisplayName,
   updateEmail,
   updateProfileImage,
@@ -36,6 +38,20 @@ const webpQuality = 85;
 
 function getProfileInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || '?';
+}
+
+async function uploadDirectToS3(file: File, uploadUrl: string) {
+  const response = await fetch(uploadUrl, {
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+    },
+    method: 'PUT',
+  });
+
+  if (!response.ok) {
+    throw new Error('S3 업로드에 실패했습니다.');
+  }
 }
 
 function ProfileDialogShell({
@@ -173,39 +189,14 @@ export function ProfileImageEditDialog({
   trigger,
 }: ProfileImageEditDialogProps) {
   const [open, setOpen] = useState(false);
-  const actionWithClose = useCallback(async (prevState: ProfileActionState, formData: FormData) => {
-    const result = await updateProfileImage(prevState, formData);
-
-    if (result.ok) {
-      setOpen(false);
-    }
-
-    return result;
-  }, []);
-  const [state, formAction, pending] = useActionState(actionWithClose, initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const profileImageInputRef = useRef<HTMLInputElement>(null);
+  const [state, setState] = useState<ProfileActionState>(initialState);
+  const [pending, setPending] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(profileImageUrl);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [removeProfileImage, setRemoveProfileImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const initial = getProfileInitial(displayName);
-
-  useEffect(() => {
-    const input = profileImageInputRef.current;
-
-    if (!input) {
-      return;
-    }
-
-    const dataTransfer = new DataTransfer();
-
-    if (profileImageFile) {
-      dataTransfer.items.add(profileImageFile);
-    }
-
-    input.files = dataTransfer.files;
-  }, [profileImageFile]);
 
   useEffect(() => {
     return () => {
@@ -226,6 +217,7 @@ export function ProfileImageEditDialog({
   };
 
   const resetImageState = () => {
+    setState(initialState);
     setProfileImageFile(null);
     setRemoveProfileImage(false);
     setImageError(null);
@@ -233,6 +225,77 @@ export function ProfileImageEditDialog({
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (pending || imageError) {
+      return;
+    }
+
+    const uploadedObjectKeys: string[] = [];
+    const formData = new FormData();
+
+    if (removeProfileImage) {
+      formData.set('removeProfileImage', 'on');
+    }
+
+    setPending(true);
+    setState(initialState);
+
+    try {
+      if (!removeProfileImage) {
+        if (!profileImageFile) {
+          throw new Error('새 프로필 이미지를 선택해주세요.');
+        }
+
+        const targetResult = await prepareProfileImageUpload({
+          byteSize: profileImageFile.size,
+          contentType: profileImageFile.type,
+          fileName: profileImageFile.name,
+        });
+
+        if (!targetResult.ok) {
+          throw new Error(targetResult.error ?? '업로드 URL을 만들지 못했습니다.');
+        }
+
+        await uploadDirectToS3(profileImageFile, targetResult.uploadUrl);
+        uploadedObjectKeys.push(targetResult.objectKey);
+        formData.set(
+          'profileImage',
+          JSON.stringify({
+            byteSize: profileImageFile.size,
+            contentType: profileImageFile.type,
+            objectKey: targetResult.objectKey,
+            url: targetResult.url,
+          }),
+        );
+      }
+
+      const result = await updateProfileImage(initialState, formData);
+
+      if (!result.ok && uploadedObjectKeys.length > 0) {
+        await cleanupProfileImageUploads(uploadedObjectKeys);
+      }
+
+      setState(result);
+
+      if (result.ok) {
+        setOpen(false);
+      }
+    } catch (error) {
+      if (uploadedObjectKeys.length > 0) {
+        await cleanupProfileImageUploads(uploadedObjectKeys);
+      }
+
+      setState({
+        error: error instanceof Error ? error.message : '프로필 이미지를 저장하지 못했습니다.',
+        ok: false,
+      });
+    } finally {
+      setPending(false);
     }
   };
 
@@ -308,7 +371,7 @@ export function ProfileImageEditDialog({
       title="프로필 이미지 수정"
       trigger={trigger}
     >
-      <form action={formAction} className="grid gap-4">
+      <form className="grid gap-4" onSubmit={handleImageSubmit}>
         <div className="grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)]">
           {previewUrl ? (
             <img
@@ -364,7 +427,6 @@ export function ProfileImageEditDialog({
             {profileImageFile.name} / {Math.ceil(profileImageFile.size / 1024)}KB / WEBP 640px
           </p>
         ) : null}
-        <input className="sr-only" name="profileImage" ref={profileImageInputRef} type="file" />
         {imageError ? <p className="m-0 text-sm text-[var(--red)]">{imageError}</p> : null}
         {state.error ? <p className="m-0 text-sm text-[var(--red)]">{state.error}</p> : null}
         <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--overlay0)] pt-3">

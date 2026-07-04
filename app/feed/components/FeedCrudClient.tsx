@@ -27,14 +27,17 @@ import {
   createArticle as createArticleAction,
   createComment as createCommentAction,
   createHiking as createHikingAction,
+  cleanupArticleMediaUploads,
   deleteArticle as deleteArticleAction,
   deleteComment as deleteCommentAction,
   deleteHiking as deleteHikingAction,
+  prepareArticleMediaUploads,
   toggleArticleLike as toggleArticleLikeAction,
   toggleCommentLike as toggleCommentLikeAction,
   updateArticle as updateArticleAction,
   updateComment as updateCommentAction,
   updateHiking as updateHikingAction,
+  type ArticleMediaUploadTargetInput,
 } from '../actions';
 
 import {
@@ -59,6 +62,57 @@ type ActiveArticleForm =
 type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' } | null;
 
 type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
+
+type UploadedArticleMedia = {
+  byteSize: number;
+  contentType: string;
+  durationMs: number | null;
+  height: number | null;
+  mediaType: 'image' | 'video';
+  objectKey: string;
+  order: number;
+  originalMetadata: Record<string, unknown> | null;
+  thumbnailUrl: string | null;
+  url: string;
+  width: number | null;
+};
+
+async function uploadDirectToS3(file: File, uploadUrl: string) {
+  const response = await fetch(uploadUrl, {
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+    },
+    method: 'PUT',
+  });
+
+  if (!response.ok) {
+    throw new Error('S3 업로드에 실패했습니다.');
+  }
+}
+
+async function runWithConcurrency<T>(
+  items: readonly T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<void>,
+) {
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, items.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        const item = items[currentIndex];
+
+        if (item !== undefined) {
+          await worker(item, currentIndex);
+        }
+      }
+    }),
+  );
+}
 
 export function FeedCrudClient({
   articles: initialArticles,
@@ -225,11 +279,88 @@ export function FeedCrudClient({
     return formData;
   };
 
-  const createArticleFormData = (
+  const uploadArticleMedia = async (values: ArticleFormValues) => {
+    const newMedia = values.media.filter((media) => media.file);
+    const uploadedObjectKeys: string[] = [];
+
+    if (newMedia.length === 0) {
+      return { uploadedMedia: [] as UploadedArticleMedia[], uploadedObjectKeys };
+    }
+
+    setLoadingLabel('업로드 URL 준비 중');
+
+    const targetInput: ArticleMediaUploadTargetInput[] = newMedia.map((media) => ({
+      byteSize: media.file?.size ?? 0,
+      contentType: media.file?.type ?? '',
+      fileName: media.file?.name ?? media.fileName,
+      mediaType: media.mediaType,
+      thumbnail: media.thumbnailFile
+        ? {
+            byteSize: media.thumbnailFile.size,
+            contentType: media.thumbnailFile.type,
+            fileName: media.thumbnailFile.name,
+          }
+        : undefined,
+    }));
+    const targetResult = await prepareArticleMediaUploads(targetInput);
+
+    if (!targetResult.ok) {
+      throw new Error(targetResult.error ?? '업로드 URL을 만들지 못했습니다.');
+    }
+
+    const uploadedMedia = new Array<UploadedArticleMedia>(newMedia.length);
+    let uploadedCount = 0;
+
+    try {
+      await runWithConcurrency(newMedia, 4, async (media, index) => {
+        const target = targetResult.targets[index];
+
+        if (!target || !media.file) {
+          throw new Error('업로드 대상을 만들지 못했습니다.');
+        }
+
+        await uploadDirectToS3(media.file, target.uploadUrl);
+        uploadedObjectKeys.push(target.objectKey);
+
+        if (media.thumbnailFile && target.thumbnail) {
+          await uploadDirectToS3(media.thumbnailFile, target.thumbnail.uploadUrl);
+          uploadedObjectKeys.push(target.thumbnail.objectKey);
+        }
+
+        uploadedMedia[index] = {
+          byteSize: media.file.size,
+          contentType: media.file.type,
+          durationMs: media.durationMs ?? null,
+          height: media.height ?? null,
+          mediaType: media.mediaType,
+          objectKey: target.objectKey,
+          order: media.order,
+          originalMetadata: media.originalMetadata ?? null,
+          thumbnailUrl: target.thumbnail?.url ?? null,
+          url: target.url,
+          width: media.width ?? null,
+        };
+        uploadedCount += 1;
+        setLoadingLabel(`S3 업로드 중 ${uploadedCount}/${newMedia.length}`);
+      });
+    } catch (error) {
+      if (uploadedObjectKeys.length > 0) {
+        setLoadingLabel('업로드 파일 정리 중');
+        await cleanupArticleMediaUploads(uploadedObjectKeys);
+      }
+
+      throw error;
+    }
+
+    return { uploadedMedia, uploadedObjectKeys };
+  };
+
+  const createArticleFormData = async (
     values: ArticleFormValues,
     identifiers: { articleId?: ArticleId; hikingId?: HikingId },
   ) => {
     const formData = new FormData();
+    const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values);
     const existingMedia = values.media
       .filter((media) => !media.file)
       .map((media) => ({
@@ -256,26 +387,9 @@ export function FeedCrudClient({
 
     formData.set('body', values.body);
     formData.set('existingMedia', JSON.stringify(existingMedia));
+    formData.set('uploadedMedia', JSON.stringify(uploadedMedia));
 
-    for (const media of values.media) {
-      if (!media.file) {
-        continue;
-      }
-
-      formData.append('media', media.file);
-      formData.append('mediaOrders', String(media.order));
-      formData.append('mediaTypes', media.mediaType);
-      formData.append('mediaDurationMs', String(media.durationMs ?? ''));
-      formData.append('mediaWidths', String(media.width ?? ''));
-      formData.append('mediaHeights', String(media.height ?? ''));
-      formData.append('mediaMetadata', JSON.stringify(media.originalMetadata ?? null));
-
-      if (media.thumbnailFile) {
-        formData.append(`mediaThumbnail-${media.order}`, media.thumbnailFile);
-      }
-    }
-
-    return formData;
+    return { formData, uploadedObjectKeys };
   };
 
   const createHiking = (values: HikingFormValues) => {
@@ -328,11 +442,35 @@ export function FeedCrudClient({
       return;
     }
 
-    runAction(() => createArticleAction(createArticleFormData(values, { hikingId })), {
-      errorKey: `article-new-${hikingId}`,
-      loadingLabel: '게시글 저장 중',
-      onSuccess: () => setActiveArticleForm(null),
-    });
+    runAction(
+      async () => {
+        try {
+          const { formData, uploadedObjectKeys } = await createArticleFormData(values, {
+            hikingId,
+          });
+
+          setLoadingLabel('게시글 저장 중');
+          const result = await createArticleAction(formData);
+
+          if (!result.ok && uploadedObjectKeys.length > 0) {
+            setLoadingLabel('업로드 파일 정리 중');
+            await cleanupArticleMediaUploads(uploadedObjectKeys);
+          }
+
+          return result;
+        } catch (error) {
+          return {
+            error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
+            ok: false,
+          };
+        }
+      },
+      {
+        errorKey: `article-new-${hikingId}`,
+        loadingLabel: '게시글 저장 중',
+        onSuccess: () => setActiveArticleForm(null),
+      },
+    );
   };
 
   const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
@@ -341,11 +479,35 @@ export function FeedCrudClient({
       return;
     }
 
-    runAction(() => updateArticleAction(createArticleFormData(values, { articleId })), {
-      errorKey: `article-edit-${articleId}`,
-      loadingLabel: '게시글 저장 중',
-      onSuccess: () => setActiveArticleForm(null),
-    });
+    runAction(
+      async () => {
+        try {
+          const { formData, uploadedObjectKeys } = await createArticleFormData(values, {
+            articleId,
+          });
+
+          setLoadingLabel('게시글 저장 중');
+          const result = await updateArticleAction(formData);
+
+          if (!result.ok && uploadedObjectKeys.length > 0) {
+            setLoadingLabel('업로드 파일 정리 중');
+            await cleanupArticleMediaUploads(uploadedObjectKeys);
+          }
+
+          return result;
+        } catch (error) {
+          return {
+            error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
+            ok: false,
+          };
+        }
+      },
+      {
+        errorKey: `article-edit-${articleId}`,
+        loadingLabel: '게시글 저장 중',
+        onSuccess: () => setActiveArticleForm(null),
+      },
+    );
   };
 
   const requestDeleteArticle = (article: Article) => {
