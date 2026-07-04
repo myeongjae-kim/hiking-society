@@ -12,6 +12,7 @@ import type { ArticleFormValues } from './articleFormTypes';
 
 type ArticleFormDialogProps = {
   article?: Article;
+  disableCloseAutoFocus?: boolean;
   error?: string;
   formKey: string;
   hiking?: Hiking;
@@ -25,6 +26,7 @@ type ArticleFormDialogProps = {
 
 export function ArticleFormDialog({
   article,
+  disableCloseAutoFocus = false,
   error,
   formKey,
   hiking,
@@ -75,7 +77,14 @@ export function ArticleFormDialog({
       <Dialog.Root open={open} onOpenChange={handleOpenChange}>
         <Dialog.Portal>
           <Dialog.Overlay className={dialogOverlayClassName} />
-          <Dialog.Content className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none">
+          <Dialog.Content
+            className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none"
+            onCloseAutoFocus={(event) => {
+              if (disableCloseAutoFocus) {
+                event.preventDefault();
+              }
+            }}
+          >
             <Dialog.Title className="sr-only">{title}</Dialog.Title>
             <div className="max-h-[calc(100svh-2rem)] w-full max-w-[64rem] overflow-y-auto">
               <ArticleForm

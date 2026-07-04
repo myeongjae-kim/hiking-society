@@ -760,6 +760,8 @@ export function FeedCrudClient({
       return;
     }
 
+    const scrollYBeforeSubmit = window.scrollY;
+
     runAction(
       async () => {
         try {
@@ -819,6 +821,9 @@ export function FeedCrudClient({
             };
           });
           setActiveArticleForm(null);
+          window.requestAnimationFrame(() => {
+            window.scrollTo({ top: scrollYBeforeSubmit });
+          });
         },
         refresh: false,
       },
@@ -1085,6 +1090,7 @@ export function FeedCrudClient({
       />
       <ArticleFormDialog
         article={activeArticle}
+        disableCloseAutoFocus={activeArticleForm?.type === 'edit'}
         error={activeArticleFormKey ? errorByKey[activeArticleFormKey] : undefined}
         formKey={activeArticleFormKey ?? 'article-form'}
         hiking={activeArticleHiking}
