@@ -766,6 +766,9 @@ export function FeedCrudClient({
       return;
     }
 
+    const articleElement = document.getElementById(`article-${articleId}`);
+    const articleTopBeforeSubmit = articleElement?.getBoundingClientRect().top ?? null;
+
     runAction(
       async () => {
         try {
@@ -825,6 +828,22 @@ export function FeedCrudClient({
             };
           });
           setActiveArticleForm(null);
+
+          if (articleTopBeforeSubmit !== null) {
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(() => {
+                const nextArticleElement = document.getElementById(`article-${articleId}`);
+
+                if (!nextArticleElement) {
+                  return;
+                }
+
+                window.scrollBy({
+                  top: nextArticleElement.getBoundingClientRect().top - articleTopBeforeSubmit,
+                });
+              });
+            });
+          }
         },
         refresh: false,
       },
