@@ -267,12 +267,15 @@ export function MediaViewer({
   const pinchGestureRef = useRef<PinchGesture | null>(null);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
+  const inlineSwipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const shouldSuppressInlineClickRef = useRef(false);
   const shouldSuppressStageClickRef = useRef(false);
   const swipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const [open, setOpen] = useState(false);
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
+  const [inlineSwipeOffset, setInlineSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
+  const [isInlineGestureActive, setIsInlineGestureActive] = useState(false);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
   const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
@@ -304,21 +307,37 @@ export function MediaViewer({
       ? '좌우 스와이프 또는 키보드 화살표로 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
       : '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.';
 
+  const setInlineSwipeOffsetState = useCallback((nextOffset: SwipeOffset) => {
+    if (
+      inlineSwipeOffsetRef.current.x === nextOffset.x &&
+      inlineSwipeOffsetRef.current.y === nextOffset.y
+    ) {
+      return;
+    }
+
+    inlineSwipeOffsetRef.current = nextOffset;
+    setInlineSwipeOffset(nextOffset);
+  }, []);
+
   const showPreviousInlineMedia = useCallback(() => {
+    setInlineSwipeOffsetState(initialSwipeOffset);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex - 1, media.length) : 0,
     );
-  }, [media.length]);
+  }, [media.length, setInlineSwipeOffsetState]);
 
   const showNextInlineMedia = useCallback(() => {
+    setInlineSwipeOffsetState(initialSwipeOffset);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex + 1, media.length) : 0,
     );
-  }, [media.length]);
+  }, [media.length, setInlineSwipeOffsetState]);
 
   const resetInlineSwipeGesture = useCallback(() => {
     inlineSwipeGestureRef.current = null;
-  }, []);
+    setIsInlineGestureActive(false);
+    setInlineSwipeOffsetState(initialSwipeOffset);
+  }, [setInlineSwipeOffsetState]);
 
   const handleInlinePointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
@@ -337,32 +356,55 @@ export function MediaViewer({
         startY: event.clientY,
       };
       shouldSuppressInlineClickRef.current = false;
+      setIsInlineGestureActive(true);
+      setInlineSwipeOffsetState(initialSwipeOffset);
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [hasMultipleMedia, inlineCarousel],
+    [hasMultipleMedia, inlineCarousel, setInlineSwipeOffsetState],
   );
 
-  const handleInlinePointerMove = useCallback((event: PointerEvent<HTMLButtonElement>) => {
-    const inlineSwipeGesture = inlineSwipeGestureRef.current;
+  const handleInlinePointerMove = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      const inlineSwipeGesture = inlineSwipeGestureRef.current;
 
-    if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
-      return;
-    }
+      if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
+        return;
+      }
 
-    const deltaX = event.clientX - inlineSwipeGesture.startX;
-    const deltaY = event.clientY - inlineSwipeGesture.startY;
-    const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+      const deltaX = event.clientX - inlineSwipeGesture.startX;
+      const deltaY = event.clientY - inlineSwipeGesture.startY;
+      const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
 
-    if (!axis) {
-      return;
-    }
+      if (
+        Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
+        Math.abs(deltaY) >= mediaPanClickSuppressThresholdPx
+      ) {
+        shouldSuppressInlineClickRef.current = true;
+      }
 
-    inlineSwipeGesture.axis = axis;
+      if (!axis) {
+        setInlineSwipeOffsetState(initialSwipeOffset);
+        return;
+      }
 
-    if (axis === 'horizontal') {
-      event.preventDefault();
-    }
-  }, []);
+      inlineSwipeGesture.axis = axis;
+
+      if (axis === 'horizontal') {
+        const maxSwipeOffsetX =
+          (event.currentTarget.clientWidth || window.innerWidth) * mediaSwipePreviewMaxWidthRatio;
+
+        event.preventDefault();
+        setInlineSwipeOffsetState({
+          x: clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX),
+          y: 0,
+        });
+        return;
+      }
+
+      setInlineSwipeOffsetState(initialSwipeOffset);
+    },
+    [setInlineSwipeOffsetState],
+  );
 
   const handleInlinePointerUp = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
@@ -377,6 +419,7 @@ export function MediaViewer({
       }
 
       inlineSwipeGestureRef.current = null;
+      setIsInlineGestureActive(false);
 
       const deltaX = event.clientX - inlineSwipeGesture.startX;
       const deltaY = event.clientY - inlineSwipeGesture.startY;
@@ -393,6 +436,7 @@ export function MediaViewer({
       }
 
       if (!isHorizontalSwipe || !hasMultipleMedia) {
+        setInlineSwipeOffsetState(initialSwipeOffset);
         return;
       }
 
@@ -405,7 +449,7 @@ export function MediaViewer({
 
       showNextInlineMedia();
     },
-    [hasMultipleMedia, showNextInlineMedia, showPreviousInlineMedia],
+    [hasMultipleMedia, setInlineSwipeOffsetState, showNextInlineMedia, showPreviousInlineMedia],
   );
 
   const handleInlinePointerCancel = useCallback(
@@ -1023,12 +1067,17 @@ export function MediaViewer({
             >
               <button
                 aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-                className="group block h-auto w-full touch-pan-y appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className={`group block h-auto w-full touch-pan-y appearance-none bg-transparent p-0 text-left leading-none will-change-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] ${
+                  isInlineGestureActive ? '' : 'transition-transform duration-150 ease-out'
+                }`}
                 onClick={handleInlineTriggerClick}
                 onPointerCancel={handleInlinePointerCancel}
                 onPointerDown={handleInlinePointerDown}
                 onPointerMove={handleInlinePointerMove}
                 onPointerUp={handleInlinePointerUp}
+                style={{
+                  transform: `translate3d(${inlineSwipeOffset.x}px, ${inlineSwipeOffset.y}px, 0)`,
+                }}
                 type="button"
               >
                 <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
