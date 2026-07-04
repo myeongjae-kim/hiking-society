@@ -44,9 +44,17 @@ type PinchGesture = {
 };
 
 type SwipeGesture = {
+  axis: SwipeAxis | null;
   pointerId: number;
   startX: number;
   startY: number;
+};
+
+type SwipeAxis = 'horizontal' | 'vertical';
+
+type SwipeOffset = {
+  x: number;
+  y: number;
 };
 
 const mediaControlClassName =
@@ -58,10 +66,15 @@ const mediaPanClickSuppressThresholdPx = 6;
 const mediaSwipeThresholdPx = 48;
 const mediaHorizontalSwipeRatio = 1.25;
 const mediaSwipePreviewMaxWidthRatio = 0.35;
+const mediaSwipePreviewMaxHeightRatio = 0.35;
 const initialMediaTransform: MediaTransform = {
   scale: mediaMinScale,
   translateX: 0,
   translateY: 0,
+};
+const initialSwipeOffset: SwipeOffset = {
+  x: 0,
+  y: 0,
 };
 
 function getWrappedIndex(index: number, length: number) {
@@ -169,6 +182,20 @@ function getPointerDistance(firstPointer: GesturePointer, secondPointer: Gesture
   return Math.hypot(firstPointer.x - secondPointer.x, firstPointer.y - secondPointer.y);
 }
 
+function getDominantSwipeAxis(deltaX: number, deltaY: number): SwipeAxis | null {
+  const absDeltaX = Math.abs(deltaX);
+  const absDeltaY = Math.abs(deltaY);
+
+  if (
+    absDeltaX < mediaPanClickSuppressThresholdPx &&
+    absDeltaY < mediaPanClickSuppressThresholdPx
+  ) {
+    return null;
+  }
+
+  return absDeltaX >= absDeltaY ? 'horizontal' : 'vertical';
+}
+
 export function MediaViewer({
   articleId,
   authorName,
@@ -187,12 +214,12 @@ export function MediaViewer({
   const pinchGestureRef = useRef<PinchGesture | null>(null);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const shouldSuppressStageClickRef = useRef(false);
-  const swipeOffsetXRef = useRef(0);
+  const swipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const [open, setOpen] = useState(false);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
-  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
   const selectedMedia = media[selectedIndex] ?? media[0];
@@ -221,13 +248,13 @@ export function MediaViewer({
     setMediaTransform(normalizedTransform);
   }, []);
 
-  const setSwipeOffsetXState = useCallback((nextOffsetX: number) => {
-    if (swipeOffsetXRef.current === nextOffsetX) {
+  const setSwipeOffsetState = useCallback((nextOffset: SwipeOffset) => {
+    if (swipeOffsetRef.current.x === nextOffset.x && swipeOffsetRef.current.y === nextOffset.y) {
       return;
     }
 
-    swipeOffsetXRef.current = nextOffsetX;
-    setSwipeOffsetX(nextOffsetX);
+    swipeOffsetRef.current = nextOffset;
+    setSwipeOffset(nextOffset);
   }, []);
 
   const resetMediaGesture = useCallback(() => {
@@ -237,9 +264,9 @@ export function MediaViewer({
     shouldSuppressStageClickRef.current = false;
     swipeGestureRef.current = null;
     setIsMediaGestureActive(false);
-    setSwipeOffsetXState(0);
+    setSwipeOffsetState(initialSwipeOffset);
     setMediaTransformState(initialMediaTransform);
-  }, [setMediaTransformState, setSwipeOffsetXState]);
+  }, [setMediaTransformState, setSwipeOffsetState]);
 
   const showPreviousMedia = useCallback(() => {
     resetMediaGesture();
@@ -353,13 +380,14 @@ export function MediaViewer({
           startScale: mediaTransformRef.current.scale,
         };
         shouldSuppressStageClickRef.current = true;
-        setSwipeOffsetXState(0);
+        setSwipeOffsetState(initialSwipeOffset);
         swipeGestureRef.current = null;
         return;
       }
 
       if (mediaTransformRef.current.scale <= mediaMinScale) {
         swipeGestureRef.current = {
+          axis: null,
           pointerId: event.pointerId,
           startX: event.clientX,
           startY: event.clientY,
@@ -368,7 +396,7 @@ export function MediaViewer({
       }
 
       swipeGestureRef.current = null;
-      setSwipeOffsetXState(0);
+      setSwipeOffsetState(initialSwipeOffset);
       panGestureRef.current = {
         pointerId: event.pointerId,
         startTranslateX: mediaTransformRef.current.translateX,
@@ -377,7 +405,7 @@ export function MediaViewer({
         startY: event.clientY,
       };
     },
-    [selectedMediaIsVideo, setSwipeOffsetXState],
+    [selectedMediaIsVideo, setSwipeOffsetState],
   );
 
   const updateImageGesture = useCallback(
@@ -395,7 +423,7 @@ export function MediaViewer({
 
       if (activePointers.length >= 2) {
         swipeGestureRef.current = null;
-        setSwipeOffsetXState(0);
+        setSwipeOffsetState(initialSwipeOffset);
         const pinchGesture = pinchGestureRef.current;
 
         if (!pinchGesture || pinchGesture.startDistance === 0) {
@@ -426,6 +454,7 @@ export function MediaViewer({
       ) {
         const deltaX = event.clientX - swipeGesture.startX;
         const deltaY = event.clientY - swipeGesture.startY;
+        const axis = swipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
 
         if (
           Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
@@ -434,8 +463,27 @@ export function MediaViewer({
           shouldSuppressStageClickRef.current = true;
         }
 
-        const maxSwipeOffsetX = window.innerWidth * mediaSwipePreviewMaxWidthRatio;
-        setSwipeOffsetXState(clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX));
+        if (!axis) {
+          setSwipeOffsetState(initialSwipeOffset);
+          return;
+        }
+
+        swipeGesture.axis = axis;
+
+        if (axis === 'horizontal') {
+          const maxSwipeOffsetX = window.innerWidth * mediaSwipePreviewMaxWidthRatio;
+          setSwipeOffsetState({
+            x: clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX),
+            y: 0,
+          });
+          return;
+        }
+
+        const maxSwipeOffsetY = window.innerHeight * mediaSwipePreviewMaxHeightRatio;
+        setSwipeOffsetState({
+          x: 0,
+          y: clamp(deltaY, -maxSwipeOffsetY, maxSwipeOffsetY),
+        });
 
         return;
       }
@@ -462,7 +510,7 @@ export function MediaViewer({
         translateY: panGesture.startTranslateY + deltaY,
       });
     },
-    [selectedMediaIsVideo, setMediaTransformState, setSwipeOffsetXState],
+    [selectedMediaIsVideo, setMediaTransformState, setSwipeOffsetState],
   );
 
   const finishImageGesture = useCallback(
@@ -492,10 +540,15 @@ export function MediaViewer({
         const deltaY = pointer.y - swipeGesture.startY;
         const absDeltaX = Math.abs(deltaX);
         const absDeltaY = Math.abs(deltaY);
+        const axis = swipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
         const isHorizontalSwipe =
-          absDeltaX >= mediaSwipeThresholdPx && absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+          axis === 'horizontal' &&
+          absDeltaX >= mediaSwipeThresholdPx &&
+          absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
         const isVerticalSwipe =
-          absDeltaY >= mediaSwipeThresholdPx && absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
+          axis === 'vertical' &&
+          absDeltaY >= mediaSwipeThresholdPx &&
+          absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
 
         swipeGestureRef.current = null;
 
@@ -517,7 +570,7 @@ export function MediaViewer({
           return;
         }
 
-        setSwipeOffsetXState(0);
+        setSwipeOffsetState(initialSwipeOffset);
       }
 
       if (activePointers.length >= 2) {
@@ -532,7 +585,7 @@ export function MediaViewer({
 
       pinchGestureRef.current = null;
       swipeGestureRef.current = null;
-      setSwipeOffsetXState(0);
+      setSwipeOffsetState(initialSwipeOffset);
 
       if (activePointers.length === 1 && mediaTransformRef.current.scale > mediaMinScale) {
         const [pointerId, pointer] = activePointers[0];
@@ -549,7 +602,7 @@ export function MediaViewer({
       panGestureRef.current = null;
       setIsMediaGestureActive(false);
     },
-    [hasMultipleMedia, setSwipeOffsetXState, showNextMedia, showPreviousMedia],
+    [hasMultipleMedia, setSwipeOffsetState, showNextMedia, showPreviousMedia],
   );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -732,7 +785,7 @@ export function MediaViewer({
                   ref={selectedMediaSurfaceRef as RefObject<HTMLImageElement>}
                   src={selectedMedia.url}
                   style={{
-                    transform: `translate3d(${mediaTransform.translateX + swipeOffsetX}px, ${mediaTransform.translateY}px, 0) scale(${mediaTransform.scale})`,
+                    transform: `translate3d(${mediaTransform.translateX + swipeOffset.x}px, ${mediaTransform.translateY + swipeOffset.y}px, 0) scale(${mediaTransform.scale})`,
                   }}
                 />
               )}
