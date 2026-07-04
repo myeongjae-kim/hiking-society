@@ -71,7 +71,8 @@ type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' 
 type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
 
 type HikingArticleLoadState =
-  { error?: undefined; status: 'idle' | 'loading' | 'loaded' } | { error: string; status: 'error' };
+  | { error?: undefined; status: 'idle' | 'loading' | 'loaded' | 'refreshing' }
+  | { error: string; status: 'error' };
 
 type UploadedArticleMedia = {
   byteSize: number;
@@ -252,22 +253,15 @@ export function FeedCrudClient({
   const loadHikingArticles = useCallback(
     (hikingId: HikingId, options: { retry?: boolean } = {}) => {
       const articleTotal = getHikingArticleCount(hikingId);
+      const hasPreviousArticles = hasRecordKey(articlesByHikingId, hikingId);
 
       if (articleTotal === 0) {
         setHikingArticleLoadStateById((currentStates) => ({
           ...currentStates,
           [hikingId]: { status: 'loaded' },
         }));
-        setArticlesByHikingId((currentArticles) =>
-          hasRecordKey(currentArticles, hikingId)
-            ? currentArticles
-            : { ...currentArticles, [hikingId]: [] },
-        );
-        setCommentsByHikingId((currentComments) =>
-          hasRecordKey(currentComments, hikingId)
-            ? currentComments
-            : { ...currentComments, [hikingId]: [] },
-        );
+        setArticlesByHikingId((currentArticles) => ({ ...currentArticles, [hikingId]: [] }));
+        setCommentsByHikingId((currentComments) => ({ ...currentComments, [hikingId]: [] }));
         return;
       }
 
@@ -275,14 +269,14 @@ export function FeedCrudClient({
         return;
       }
 
-      if (!options.retry && hasRecordKey(articlesByHikingId, hikingId)) {
+      if (!options.retry && hasPreviousArticles) {
         return;
       }
 
       loadingHikingIdsRef.current.add(hikingId);
       setHikingArticleLoadStateById((currentStates) => ({
         ...currentStates,
-        [hikingId]: { status: 'loading' },
+        [hikingId]: { status: hasPreviousArticles ? 'refreshing' : 'loading' },
       }));
 
       void loadHikingArticlesAction(hikingId)
@@ -338,6 +332,7 @@ export function FeedCrudClient({
 
   useEffect(() => {
     let cancelled = false;
+    const activeHikingIds = new Set(initialHikings.map((hiking) => hiking.id));
 
     loadingHikingIdsRef.current.clear();
     queueMicrotask(() => {
@@ -345,15 +340,53 @@ export function FeedCrudClient({
         return;
       }
 
-      setArticlesByHikingId({});
-      setCommentsByHikingId({});
-      setHikingArticleLoadStateById({});
+      setArticlesByHikingId((currentArticles) =>
+        Object.fromEntries(
+          Object.entries(currentArticles).filter(([hikingId]) =>
+            activeHikingIds.has(hikingId as HikingId),
+          ),
+        ),
+      );
+      setCommentsByHikingId((currentComments) =>
+        Object.fromEntries(
+          Object.entries(currentComments).filter(([hikingId]) =>
+            activeHikingIds.has(hikingId as HikingId),
+          ),
+        ),
+      );
+      setHikingArticleLoadStateById((currentStates) =>
+        Object.fromEntries(
+          Object.entries(currentStates).filter(([hikingId]) =>
+            activeHikingIds.has(hikingId as HikingId),
+          ),
+        ),
+      );
     });
 
     return () => {
       cancelled = true;
     };
-  }, [hikingArticleCounts, initialHikings]);
+  }, [initialHikings]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    for (const [hikingId, articles] of Object.entries(articlesByHikingId)) {
+      const typedHikingId = hikingId as HikingId;
+
+      if (getHikingArticleCount(typedHikingId) !== articles.length) {
+        queueMicrotask(() => {
+          if (!cancelled) {
+            loadHikingArticles(typedHikingId, { retry: true });
+          }
+        });
+      }
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [articlesByHikingId, getHikingArticleCount, loadHikingArticles]);
 
   useEffect(() => {
     if (!selectedHikingId) {
@@ -1083,6 +1116,7 @@ export function FeedCrudClient({
 
           {groups.map((group, groupIndex) => {
             const groupArticleCount = getHikingArticleCount(group.hiking.id);
+            const hasLoadedHikingArticles = hasRecordKey(articlesByHikingId, group.hiking.id);
             const groupLoadState =
               hikingArticleLoadStateById[group.hiking.id] ??
               (groupArticleCount === 0
@@ -1113,7 +1147,76 @@ export function FeedCrudClient({
                   onEdit={() => setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
                 />
                 <div className={gridStackClassName}>
-                  {groupLoadState.status === 'error' ? (
+                  {hasLoadedHikingArticles ? (
+                    <>
+                      {groupLoadState.status === 'refreshing' ? (
+                        <div
+                          className={`flex flex-wrap items-center gap-2 bg-[var(--surface0)] !p-3 text-[0.9rem] text-[var(--subtext0)] ${boxBorderClassName}`}
+                          box-="round"
+                        >
+                          <Command>articles.refresh {group.hiking.id}</Command>
+                          <span is-="spinner" variant-="dots" />
+                          <span>게시글을 갱신하는 중</span>
+                        </div>
+                      ) : null}
+                      {groupLoadState.status === 'error' ? (
+                        <div
+                          className={`flex flex-wrap items-center gap-3 bg-[var(--surface0)] !p-3 text-[0.9rem] ${boxBorderClassName}`}
+                          box-="round"
+                        >
+                          <Command>articles.stale {group.hiking.id}</Command>
+                          <span className="text-[var(--red)]">{groupLoadState.error}</span>
+                          <ActionButton
+                            onClick={() => loadHikingArticles(group.hiking.id, { retry: true })}
+                          >
+                            다시 불러오기
+                          </ActionButton>
+                        </div>
+                      ) : null}
+                      {group.articles.length > 0 ? (
+                        group.articles.map((article) => (
+                          <ArticlePanel
+                            article={article}
+                            articleDetailHref={`/article/${article.id}`}
+                            canEdit={article.authorUserId === currentUser.id}
+                            comments={getArticleComments(commentsByArticleId, article.id)}
+                            commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
+                            currentUserId={currentUser.id}
+                            editingCommentId={editingCommentId}
+                            errorByKey={errorByKey}
+                            key={article.id}
+                            mobileMediaCarousel
+                            onCreateComment={createComment}
+                            onDeleteArticle={() => requestDeleteArticle(article)}
+                            onDeleteComment={requestDeleteComment}
+                            onEditArticle={() =>
+                              setActiveArticleForm({ articleId: article.id, type: 'edit' })
+                            }
+                            onEditComment={setEditingCommentId}
+                            onReplyComment={setReplyingCommentId}
+                            onSubmitCommentEdit={updateComment}
+                            onToggleArticleLike={toggleArticleLike}
+                            onToggleCommentLike={toggleCommentLike}
+                            articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
+                            isCommentLikePending={(commentId) =>
+                              pendingLikeByKey[`comment-${commentId}`] === true
+                            }
+                            replyingCommentId={replyingCommentId}
+                          />
+                        ))
+                      ) : (
+                        <div
+                          className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+                          box-="round"
+                        >
+                          <Command>articles.empty {group.hiking.id}</Command>
+                          <p className="m-0 text-[var(--subtext0)]">
+                            아직 이 산행에 게시글이 없습니다.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : groupLoadState.status === 'error' ? (
                     <div
                       className={`grid min-h-40 content-center gap-3 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
                       box-="round"
@@ -1139,37 +1242,6 @@ export function FeedCrudClient({
                         <span>게시글 {groupArticleCount}개를 불러오는 중</span>
                       </p>
                     </div>
-                  ) : group.articles.length > 0 ? (
-                    group.articles.map((article) => (
-                      <ArticlePanel
-                        article={article}
-                        articleDetailHref={`/article/${article.id}`}
-                        canEdit={article.authorUserId === currentUser.id}
-                        comments={getArticleComments(commentsByArticleId, article.id)}
-                        commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
-                        currentUserId={currentUser.id}
-                        editingCommentId={editingCommentId}
-                        errorByKey={errorByKey}
-                        key={article.id}
-                        mobileMediaCarousel
-                        onCreateComment={createComment}
-                        onDeleteArticle={() => requestDeleteArticle(article)}
-                        onDeleteComment={requestDeleteComment}
-                        onEditArticle={() =>
-                          setActiveArticleForm({ articleId: article.id, type: 'edit' })
-                        }
-                        onEditComment={setEditingCommentId}
-                        onReplyComment={setReplyingCommentId}
-                        onSubmitCommentEdit={updateComment}
-                        onToggleArticleLike={toggleArticleLike}
-                        onToggleCommentLike={toggleCommentLike}
-                        articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
-                        isCommentLikePending={(commentId) =>
-                          pendingLikeByKey[`comment-${commentId}`] === true
-                        }
-                        replyingCommentId={replyingCommentId}
-                      />
-                    ))
                   ) : (
                     <div className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`} box-="round">
                       <Command>articles.empty {group.hiking.id}</Command>
