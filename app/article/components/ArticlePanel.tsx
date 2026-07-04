@@ -103,8 +103,7 @@ export function ArticlePanel({
 
   return (
     <article
-      className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 ${boxBorderClassName}`}
-      id={`article-${article.id}`}
+      className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
       box-="round"
     >
       <header className="grid gap-2">
