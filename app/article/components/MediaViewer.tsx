@@ -3,7 +3,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import type { MouseEvent, PointerEvent, ReactNode, RefObject, TransitionEvent } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 
 import { photoDialogOverlayClassName } from '@/app/common/components/styles';
@@ -60,12 +59,19 @@ type SwipeOffset = {
   y: number;
 };
 
+type InlineSwipeOverlay = {
+  fromIndex: number;
+  nextIndex: number;
+  offsetX: number;
+  previousIndex: number;
+  settling: boolean;
+  targetIndex: number;
+};
+
 type InlineMediaFrameProps = {
   authorName: string;
   media: ArticleMedia | null;
 };
-
-type InlineTransitionDirection = -1 | 1;
 
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
@@ -271,12 +277,10 @@ export function MediaViewer({
   const swipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
-  const inlineTransitionDirectionRef = useRef<InlineTransitionDirection | null>(null);
   const shouldSuppressInlineClickRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
-  const [inlineSwipeOffset, setInlineSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
-  const [isInlineSwipeActive, setIsInlineSwipeActive] = useState(false);
+  const [inlineSwipeOverlay, setInlineSwipeOverlay] = useState<InlineSwipeOverlay | null>(null);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
   const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
@@ -285,12 +289,6 @@ export function MediaViewer({
   const normalizedActiveInlineIndex =
     media.length > 0 ? getWrappedIndex(activeInlineIndex, media.length) : 0;
   const activeInlineMedia = media[normalizedActiveInlineIndex] ?? media[0];
-  const previousInlineMedia = hasMultipleMedia
-    ? (media[getWrappedIndex(normalizedActiveInlineIndex - 1, media.length)] ?? null)
-    : null;
-  const nextInlineMedia = hasMultipleMedia
-    ? (media[getWrappedIndex(normalizedActiveInlineIndex + 1, media.length)] ?? null)
-    : null;
   const activeInlineTakenTime = getMediaTakenTimeLabel(activeInlineMedia);
   const canShowPreviousInlineMedia = hasMultipleMedia;
   const canShowNextInlineMedia = hasMultipleMedia;
@@ -317,37 +315,23 @@ export function MediaViewer({
       : '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.';
 
   const showPreviousInlineMedia = useCallback(() => {
-    inlineTransitionDirectionRef.current = null;
-    setInlineSwipeOffset(initialSwipeOffset);
-    setIsInlineSwipeActive(false);
+    setInlineSwipeOverlay(null);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex - 1, media.length) : 0,
     );
   }, [media.length]);
 
   const showNextInlineMedia = useCallback(() => {
-    inlineTransitionDirectionRef.current = null;
-    setInlineSwipeOffset(initialSwipeOffset);
-    setIsInlineSwipeActive(false);
+    setInlineSwipeOverlay(null);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex + 1, media.length) : 0,
     );
   }, [media.length]);
 
-  const setInlineSwipeOffsetState = useCallback((nextOffset: SwipeOffset) => {
-    setInlineSwipeOffset((currentOffset) =>
-      currentOffset.x === nextOffset.x && currentOffset.y === nextOffset.y
-        ? currentOffset
-        : nextOffset,
-    );
-  }, []);
-
   const resetInlineSwipeGesture = useCallback(() => {
     inlineSwipeGestureRef.current = null;
-    inlineTransitionDirectionRef.current = null;
-    setIsInlineSwipeActive(false);
-    setInlineSwipeOffsetState(initialSwipeOffset);
-  }, [setInlineSwipeOffsetState]);
+    setInlineSwipeOverlay(null);
+  }, []);
 
   const handleInlinePointerDown = useCallback(
     (event: PointerEvent<HTMLElement>) => {
@@ -365,13 +349,11 @@ export function MediaViewer({
         startX: event.clientX,
         startY: event.clientY,
       };
-      inlineTransitionDirectionRef.current = null;
       shouldSuppressInlineClickRef.current = false;
-      setIsInlineSwipeActive(false);
-      setInlineSwipeOffsetState(initialSwipeOffset);
+      setInlineSwipeOverlay(null);
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [hasMultipleMedia, inlineCarousel, setInlineSwipeOffsetState],
+    [hasMultipleMedia, inlineCarousel],
   );
 
   const handleInlinePointerMove = useCallback(
@@ -395,16 +377,23 @@ export function MediaViewer({
       if (axis === 'horizontal') {
         const width = event.currentTarget.clientWidth || window.innerWidth;
         const maxOffset = width;
+        const offsetX = clamp(deltaX, -maxOffset, maxOffset);
+        const fromIndex = normalizedActiveInlineIndex;
+        const previousIndex = getWrappedIndex(fromIndex - 1, media.length);
+        const nextIndex = getWrappedIndex(fromIndex + 1, media.length);
 
         event.preventDefault();
-        setIsInlineSwipeActive(true);
-        setInlineSwipeOffsetState({
-          x: clamp(deltaX, -maxOffset, maxOffset),
-          y: 0,
+        setInlineSwipeOverlay({
+          fromIndex,
+          nextIndex,
+          offsetX,
+          previousIndex,
+          settling: false,
+          targetIndex: offsetX > 0 ? previousIndex : nextIndex,
         });
       }
     },
-    [setInlineSwipeOffsetState],
+    [media.length, normalizedActiveInlineIndex],
   );
 
   const handleInlinePointerUp = useCallback(
@@ -477,22 +466,27 @@ export function MediaViewer({
       }
 
       const width = event.currentTarget.clientWidth || window.innerWidth;
-      const direction: InlineTransitionDirection = deltaX > 0 ? -1 : 1;
+      const fromIndex = normalizedActiveInlineIndex;
+      const previousIndex = getWrappedIndex(fromIndex - 1, media.length);
+      const nextIndex = getWrappedIndex(fromIndex + 1, media.length);
+      const targetIndex = deltaX > 0 ? previousIndex : nextIndex;
 
-      inlineTransitionDirectionRef.current = direction;
-      setIsInlineSwipeActive(false);
-      setInlineSwipeOffsetState({
-        x: direction === -1 ? width : -width,
-        y: 0,
+      setInlineSwipeOverlay({
+        fromIndex,
+        nextIndex,
+        offsetX: deltaX > 0 ? width : -width,
+        previousIndex,
+        settling: true,
+        targetIndex,
       });
     },
     [
       canShowNextInlineMedia,
       canShowPreviousInlineMedia,
       hasMultipleMedia,
+      media.length,
       normalizedActiveInlineIndex,
       resetInlineSwipeGesture,
-      setInlineSwipeOffsetState,
       showNextInlineMedia,
       showPreviousInlineMedia,
     ],
@@ -515,31 +509,14 @@ export function MediaViewer({
         return;
       }
 
-      const direction = inlineTransitionDirectionRef.current;
-
-      if (direction === null) {
+      if (!inlineSwipeOverlay?.settling) {
         return;
       }
 
-      inlineTransitionDirectionRef.current = null;
-      const targetInlineIndex =
-        media.length > 0 ? getWrappedIndex(activeInlineIndex + direction, media.length) : 0;
-      setActiveInlineIndex(targetInlineIndex);
-
-      window.requestAnimationFrame(() => {
-        flushSync(() => {
-          setIsInlineSwipeActive(true);
-          setInlineSwipeOffsetState(initialSwipeOffset);
-        });
-
-        event.currentTarget.getBoundingClientRect();
-
-        window.requestAnimationFrame(() => {
-          setIsInlineSwipeActive(false);
-        });
-      });
+      setActiveInlineIndex(inlineSwipeOverlay.targetIndex);
+      setInlineSwipeOverlay(null);
     },
-    [activeInlineIndex, media.length, setInlineSwipeOffsetState],
+    [inlineSwipeOverlay],
   );
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
@@ -1155,7 +1132,7 @@ export function MediaViewer({
             >
               <div className="relative">
                 <button
-                  className="group block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                  className="group relative block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                   onClick={(event) => handleInlineTriggerClick(event, normalizedActiveInlineIndex)}
                   onPointerCancel={handleInlinePointerCancel}
                   onPointerDown={handleInlinePointerDown}
@@ -1163,19 +1140,33 @@ export function MediaViewer({
                   onPointerUp={handleInlinePointerUp}
                   type="button"
                 >
-                  <span
-                    className={`grid w-[300%] grid-cols-3 will-change-transform ${
-                      isInlineSwipeActive ? '' : 'transition-transform duration-150 ease-out'
-                    }`}
-                    onTransitionEnd={handleInlineTransitionEnd}
-                    style={{
-                      transform: `translate3d(calc(-33.333333% + ${inlineSwipeOffset.x}px), 0, 0)`,
-                    }}
-                  >
-                    <InlineMediaFrame authorName={authorName} media={previousInlineMedia} />
-                    <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
-                    <InlineMediaFrame authorName={authorName} media={nextInlineMedia} />
-                  </span>
+                  <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
+                  {inlineSwipeOverlay ? (
+                    <span
+                      className={`absolute inset-0 grid w-[300%] grid-cols-3 will-change-transform ${
+                        inlineSwipeOverlay.settling
+                          ? 'transition-transform duration-150 ease-out'
+                          : ''
+                      }`}
+                      onTransitionEnd={handleInlineTransitionEnd}
+                      style={{
+                        transform: `translate3d(calc(-33.333333% + ${inlineSwipeOverlay.offsetX}px), 0, 0)`,
+                      }}
+                    >
+                      <InlineMediaFrame
+                        authorName={authorName}
+                        media={media[inlineSwipeOverlay.previousIndex] ?? null}
+                      />
+                      <InlineMediaFrame
+                        authorName={authorName}
+                        media={media[inlineSwipeOverlay.fromIndex] ?? null}
+                      />
+                      <InlineMediaFrame
+                        authorName={authorName}
+                        media={media[inlineSwipeOverlay.nextIndex] ?? null}
+                      />
+                    </span>
+                  ) : null}
                 </button>
               </div>
 
