@@ -161,6 +161,7 @@ export function FeedCrudClient({
   >({});
   const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [highlightedHikingId, setHighlightedHikingId] = useState<HikingId | null>(selectedHikingId);
   const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
   const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
 
@@ -463,8 +464,8 @@ export function FeedCrudClient({
     const hikingHref = `/feed?hikingId=${encodeURIComponent(hiking.id)}`;
     const url = new URL(hikingHref, window.location.origin);
 
-    scrolledHikingIdRef.current = hiking.id;
-    router.replace(hikingHref, { scroll: false });
+    setHighlightedHikingId(hiking.id);
+    window.history.replaceState(window.history.state, '', hikingHref);
 
     copyTextToClipboard(url.toString())
       .then(() => {
@@ -912,7 +913,7 @@ export function FeedCrudClient({
             return (
               <section
                 className={`${gridStackClassName} focus:outline-none ${
-                  selectedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
+                  highlightedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
                 }`}
                 data-hiking-id={group.hiking.id}
                 id={`hiking-section-${group.hiking.id}`}
