@@ -216,33 +216,92 @@ function incrementCount(counts: Map<number, number>, id: number) {
 }
 
 export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
-  async list(input: Parameters<FeedQueryPort['list']>[0]) {
-    const [hikingRows, articleRows, mediaRows, commentRows, articleLikeRows, commentLikeRows] =
+  async listHikings() {
+    const [hikingRows, articleCountRows, commentCountRows] = await Promise.all([
+      db
+        .select({
+          authorUserId: hikingTable.authorUserId,
+          completedAt: hikingTable.completedAt,
+          createdAt: hikingTable.createdAt,
+          displayName: userTable.displayName,
+          email: userTable.email,
+          hikingDate: hikingTable.hikingDate,
+          id: hikingTable.id,
+          latitude: hikingTable.latitude,
+          longitude: hikingTable.longitude,
+          altitude: hikingTable.altitude,
+          mountainName: hikingTable.mountainName,
+          order: hikingTable.order,
+          name: userTable.name,
+          participantsCsv: hikingTable.participantsCsv,
+          restaurantAddress: hikingTable.restaurantAddress,
+          startedAt: hikingTable.startedAt,
+          timezone: hikingTable.timezone,
+          updatedAt: hikingTable.updatedAt,
+        })
+        .from(hikingTable)
+        .innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
+        .where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
+      db
+        .select({
+          articleCount: sql<number>`count(*)::int`,
+          hikingId: articleTable.hikingId,
+        })
+        .from(articleTable)
+        .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+        .where(and(isNull(articleTable.deletedAt), isNull(userTable.deletedAt)))
+        .groupBy(articleTable.hikingId),
+      db
+        .select({
+          commentCount: sql<number>`count(*)::int`,
+        })
+        .from(commentTable)
+        .innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+        .innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+        .where(
+          and(
+            isNull(commentTable.deletedAt),
+            isNull(articleTable.deletedAt),
+            isNull(userTable.deletedAt),
+          ),
+        ),
+    ]);
+
+    const hikings: Hiking[] = hikingRows.map((row) => ({
+      authorName: toAuthorName(row),
+      authorUserId: row.authorUserId,
+      completedAt: row.completedAt as IsoDateTimeString,
+      createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+      hikingDate: row.hikingDate as IsoDateString,
+      id: String(row.id) as HikingId,
+      latitude: row.latitude as Latitude,
+      longitude: row.longitude as Longitude,
+      altitude: row.altitude as Altitude | null,
+      mountainName: row.mountainName,
+      order: row.order ?? 0,
+      participantsCsv: row.participantsCsv,
+      restaurantAddress: row.restaurantAddress,
+      startedAt: row.startedAt as IsoDateTimeString,
+      timezone: row.timezone as Timezone,
+      updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+    }));
+    const hikingArticleCounts = articleCountRows.map((row) => ({
+      articleCount: row.articleCount,
+      hikingId: String(row.hikingId) as HikingId,
+    }));
+
+    return {
+      articleCount: hikingArticleCounts.reduce((total, row) => total + row.articleCount, 0),
+      commentCount: commentCountRows[0]?.commentCount ?? 0,
+      hikingArticleCounts,
+      hikings,
+    };
+  }
+
+  async listHikingArticles(input: Parameters<FeedQueryPort['listHikingArticles']>[0]) {
+    const hikingId = toNumericId(input.hikingId);
+    const [articleRows, mediaRows, commentRows, articleLikeRows, commentLikeRows] =
       await Promise.all([
-        db
-          .select({
-            authorUserId: hikingTable.authorUserId,
-            completedAt: hikingTable.completedAt,
-            createdAt: hikingTable.createdAt,
-            displayName: userTable.displayName,
-            email: userTable.email,
-            hikingDate: hikingTable.hikingDate,
-            id: hikingTable.id,
-            latitude: hikingTable.latitude,
-            longitude: hikingTable.longitude,
-            altitude: hikingTable.altitude,
-            mountainName: hikingTable.mountainName,
-            order: hikingTable.order,
-            name: userTable.name,
-            participantsCsv: hikingTable.participantsCsv,
-            restaurantAddress: hikingTable.restaurantAddress,
-            startedAt: hikingTable.startedAt,
-            timezone: hikingTable.timezone,
-            updatedAt: hikingTable.updatedAt,
-          })
-          .from(hikingTable)
-          .innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
-          .where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
         db
           .select({
             authorUserId: articleTable.authorUserId,
@@ -259,7 +318,13 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           })
           .from(articleTable)
           .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
-          .where(isNull(userTable.deletedAt)),
+          .where(
+            and(
+              eq(articleTable.hikingId, hikingId),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
         db
           .select({
             articleId: articleMediaTable.articleId,
@@ -287,6 +352,8 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
             articleMediaMetadataTable,
             eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
           )
+          .innerJoin(articleTable, eq(articleTable.id, articleMediaTable.articleId))
+          .where(and(eq(articleTable.hikingId, hikingId), isNull(articleTable.deletedAt)))
           .orderBy(articleMediaTable.order),
         db
           .select({
@@ -304,8 +371,15 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
             updatedAt: commentTable.updatedAt,
           })
           .from(commentTable)
+          .innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
           .innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
-          .where(isNull(userTable.deletedAt)),
+          .where(
+            and(
+              eq(articleTable.hikingId, hikingId),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
         db
           .select({
             articleId: articleLikeTable.articleId,
@@ -314,7 +388,13 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           .from(articleLikeTable)
           .innerJoin(articleTable, eq(articleTable.id, articleLikeTable.articleId))
           .innerJoin(userTable, eq(userTable.id, articleLikeTable.userId))
-          .where(and(isNull(articleTable.deletedAt), isNull(userTable.deletedAt))),
+          .where(
+            and(
+              eq(articleTable.hikingId, hikingId),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
         db
           .select({
             commentId: commentLikeTable.commentId,
@@ -322,8 +402,16 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
           })
           .from(commentLikeTable)
           .innerJoin(commentTable, eq(commentTable.id, commentLikeTable.commentId))
+          .innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
           .innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
-          .where(and(isNull(commentTable.deletedAt), isNull(userTable.deletedAt))),
+          .where(
+            and(
+              eq(articleTable.hikingId, hikingId),
+              isNull(commentTable.deletedAt),
+              isNull(articleTable.deletedAt),
+              isNull(userTable.deletedAt),
+            ),
+          ),
       ]);
 
     const mediaByArticleId = new Map<number, ArticleMedia[]>();
@@ -375,25 +463,6 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       }
     }
 
-    const hikings: Hiking[] = hikingRows.map((row) => ({
-      authorName: toAuthorName(row),
-      authorUserId: row.authorUserId,
-      completedAt: row.completedAt as IsoDateTimeString,
-      createdAt: row.createdAt.toISOString() as IsoDateTimeString,
-      hikingDate: row.hikingDate as IsoDateString,
-      id: String(row.id) as HikingId,
-      latitude: row.latitude as Latitude,
-      longitude: row.longitude as Longitude,
-      altitude: row.altitude as Altitude | null,
-      mountainName: row.mountainName,
-      order: row.order ?? 0,
-      participantsCsv: row.participantsCsv,
-      restaurantAddress: row.restaurantAddress,
-      startedAt: row.startedAt as IsoDateTimeString,
-      timezone: row.timezone as Timezone,
-      updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
-    }));
-
     const articles: Article[] = articleRows.flatMap((row) => {
       const media = toArticleMedia(mediaByArticleId.get(row.id) ?? []);
 
@@ -436,7 +505,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
     })) as Comment[];
 
-    return { articles, comments, hikings };
+    return { articles, comments };
   }
 
   async createHiking(input: Parameters<FeedCommandPort['createHiking']>[0]) {

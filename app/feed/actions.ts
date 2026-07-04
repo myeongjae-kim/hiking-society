@@ -5,8 +5,8 @@ import type {
   ExistingArticleMediaInput,
 } from '@/core/article/application/port/in/ArticleCommandUseCase';
 import type { ArticleMediaUploadTarget } from '@/core/article/application/port/out/MediaStoragePort';
-import type { ArticleId } from '@/core/article/domain';
-import type { CommentId } from '@/core/comment/domain';
+import type { Article, ArticleId } from '@/core/article/domain';
+import type { Comment, CommentId } from '@/core/comment/domain';
 import type {
   Altitude,
   IsoDateString,
@@ -27,6 +27,17 @@ type ActionResult = {
   error?: string;
   ok: boolean;
 };
+
+export type LoadHikingArticlesResult =
+  | {
+      error?: string;
+      ok: false;
+    }
+  | {
+      articles: readonly Article[];
+      comments: readonly Comment[];
+      ok: true;
+    };
 
 export type ArticleMediaUploadTargetInput = {
   byteSize: number;
@@ -142,6 +153,14 @@ function getOptionalId<T extends string>(formData: FormData, key: string) {
     return null;
   }
 
+  if (!/^\d+$/.test(value)) {
+    throw new Error('잘못된 id입니다.');
+  }
+
+  return value as T;
+}
+
+function getRawId<T extends string>(value: string) {
   if (!/^\d+$/.test(value)) {
     throw new Error('잘못된 id입니다.');
   }
@@ -306,6 +325,24 @@ function parseExistingMedia(formData: FormData): ExistingArticleMediaInput[] {
     .parse(JSON.parse(raw));
 
   return parsed;
+}
+
+export async function loadHikingArticles(hikingId: HikingId): Promise<LoadHikingArticlesResult> {
+  try {
+    const user = await requireMember();
+    const validatedHikingId = getRawId<HikingId>(hikingId);
+    const snapshot = await applicationContext().get('ListFeedUseCase').listHikingArticles({
+      currentUserId: user.id,
+      hikingId: validatedHikingId,
+    });
+
+    return { ...snapshot, ok: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : '게시글을 불러오지 못했습니다.',
+      ok: false,
+    };
+  }
 }
 
 export async function createHiking(formData: FormData): Promise<ActionResult> {

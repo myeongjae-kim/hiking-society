@@ -22,8 +22,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   }
 
   const context = applicationContext();
-  const [{ articles, comments, hikings }, notificationSnapshot] = await Promise.all([
-    context.get('ListFeedUseCase').list({ currentUserId: user.id }),
+  const [feedSummary, notificationSnapshot] = await Promise.all([
+    context.get('ListFeedUseCase').listHikings({ currentUserId: user.id }),
     context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
   ]);
   const cookieStore = await cookies();
@@ -31,11 +31,12 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   return (
     <FeedCrudClient
-      articles={articles}
-      comments={comments}
+      articleCount={feedSummary.articleCount}
+      commentCount={feedSummary.commentCount}
       currentTheme={theme}
       currentUser={user}
-      hikings={hikings}
+      hikingArticleCounts={feedSummary.hikingArticleCounts}
+      hikings={feedSummary.hikings}
       notificationSnapshot={notificationSnapshot}
       selectedHikingId={hikingIdParam ? (hikingIdParam as HikingId) : null}
     />

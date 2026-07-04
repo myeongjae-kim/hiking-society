@@ -140,7 +140,9 @@ function InlineMediaFrame({ authorName, media }: InlineMediaFrameProps) {
       <img
         alt={`${authorName}의 산행 사진이나 동영상 ${media.order}`}
         className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+        decoding="async"
         draggable={false}
+        loading="lazy"
         src={media.thumbnailUrl ?? media.url}
       />
       {media.mediaType === 'video' ? (
@@ -1222,6 +1224,8 @@ export function MediaViewer({
                         <img
                           alt={`${authorName}의 산행 사진이나 동영상 ${item.order}`}
                           className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+                          decoding="async"
+                          loading="lazy"
                           src={item.thumbnailUrl ?? item.url}
                         />
                         {item.mediaType === 'video' ? (

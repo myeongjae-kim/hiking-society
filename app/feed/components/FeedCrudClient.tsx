@@ -1,13 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { ArticleFormDialog } from '@/app/article/components/ArticleFormDialog';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
 import { ArticlePanel } from '@/app/article/components/ArticlePanel';
-import { getVisibleCommentCount } from '@/app/comment/components/commentUtils';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
@@ -32,6 +31,7 @@ import {
   deleteArticle as deleteArticleAction,
   deleteComment as deleteCommentAction,
   deleteHiking as deleteHikingAction,
+  loadHikingArticles as loadHikingArticlesAction,
   prepareArticleMediaUploads,
   toggleArticleLike as toggleArticleLikeAction,
   toggleCommentLike as toggleCommentLikeAction,
@@ -49,10 +49,14 @@ import {
 } from '../utils/feed-crud-utils';
 
 type FeedCrudClientProps = {
-  articles: readonly Article[];
-  comments: readonly Comment[];
+  articleCount: number;
+  commentCount: number;
   currentTheme: string;
   currentUser: AuthenticatedUser;
+  hikingArticleCounts: readonly {
+    articleCount: number;
+    hikingId: HikingId;
+  }[];
   hikings: readonly Hiking[];
   notificationSnapshot: NotificationListSnapshot;
   selectedHikingId: HikingId | null;
@@ -64,6 +68,9 @@ type ActiveArticleForm =
 type ActiveHikingForm = { type: 'create' } | { hikingId: HikingId; type: 'edit' } | null;
 
 type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
+
+type HikingArticleLoadState =
+  { error?: undefined; status: 'idle' | 'loading' | 'loaded' } | { error: string; status: 'error' };
 
 type UploadedArticleMedia = {
   byteSize: number;
@@ -78,6 +85,10 @@ type UploadedArticleMedia = {
   url: string;
   width: number | null;
 };
+
+function hasRecordKey<T>(record: Record<string, T>, key: string) {
+  return Object.prototype.hasOwnProperty.call(record, key);
+}
 
 async function uploadDirectToS3(file: File, uploadUrl: string) {
   const response = await fetch(uploadUrl, {
@@ -117,18 +128,30 @@ async function runWithConcurrency<T>(
 }
 
 export function FeedCrudClient({
-  articles: initialArticles,
-  comments: initialComments,
+  articleCount,
+  commentCount,
   currentTheme,
   currentUser,
+  hikingArticleCounts,
   hikings: initialHikings,
   notificationSnapshot,
   selectedHikingId,
 }: FeedCrudClientProps) {
   const router = useRouter();
+  const hikingSectionElementsRef = useRef<Map<string, HTMLElement>>(new Map());
+  const loadingHikingIdsRef = useRef<Set<string>>(new Set());
   const scrolledHikingIdRef = useRef<HikingId | null>(null);
   const [isPending, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
+  const [articlesByHikingId, setArticlesByHikingId] = useState<Record<string, readonly Article[]>>(
+    {},
+  );
+  const [commentsByHikingId, setCommentsByHikingId] = useState<Record<string, readonly Comment[]>>(
+    {},
+  );
+  const [hikingArticleLoadStateById, setHikingArticleLoadStateById] = useState<
+    Record<string, HikingArticleLoadState>
+  >({});
   const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
   const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
@@ -141,18 +164,31 @@ export function FeedCrudClient({
   const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
   const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
 
+  const hikingArticleCountById = useMemo(
+    () =>
+      new Map<HikingId, number>(
+        hikingArticleCounts.map((item) => [item.hikingId, item.articleCount]),
+      ),
+    [hikingArticleCounts],
+  );
+  const loadedArticles = useMemo(
+    () => Object.values(articlesByHikingId).flat(),
+    [articlesByHikingId],
+  );
+  const loadedComments = useMemo(
+    () => Object.values(commentsByHikingId).flat(),
+    [commentsByHikingId],
+  );
   const groups = useMemo(
-    () => getFeedGroups(initialHikings, initialArticles),
-    [initialArticles, initialHikings],
+    () => getFeedGroups(initialHikings, loadedArticles),
+    [initialHikings, loadedArticles],
   );
   const commentsByArticleId = useMemo(
-    () => getCommentsByArticleId(initialComments),
-    [initialComments],
+    () => getCommentsByArticleId(loadedComments),
+    [loadedComments],
   );
-  const visibleArticleCount = initialArticles.filter(
-    (article) => article.deletedAt === null,
-  ).length;
-  const visibleCommentCount = getVisibleCommentCount(initialComments);
+  const visibleArticleCount = articleCount;
+  const visibleCommentCount = commentCount;
   const activeHiking =
     activeHikingForm?.type === 'edit'
       ? initialHikings.find((hiking) => hiking.id === activeHikingForm.hikingId)
@@ -169,7 +205,7 @@ export function FeedCrudClient({
     (activeHikingForm?.type === 'edit' && activeHiking !== undefined);
   const activeArticle =
     activeArticleForm?.type === 'edit'
-      ? initialArticles.find((article) => article.id === activeArticleForm.articleId)
+      ? loadedArticles.find((article) => article.id === activeArticleForm.articleId)
       : undefined;
   const activeArticleHiking =
     activeArticleForm?.type === 'create'
@@ -187,6 +223,172 @@ export function FeedCrudClient({
   const articleFormDialogOpen =
     activeArticleForm?.type === 'create' ||
     (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
+
+  const getHikingArticleCount = useCallback(
+    (hikingId: HikingId) => hikingArticleCountById.get(hikingId) ?? 0,
+    [hikingArticleCountById],
+  );
+
+  const loadHikingArticles = useCallback(
+    (hikingId: HikingId, options: { retry?: boolean } = {}) => {
+      const articleTotal = getHikingArticleCount(hikingId);
+
+      if (articleTotal === 0) {
+        setHikingArticleLoadStateById((currentStates) => ({
+          ...currentStates,
+          [hikingId]: { status: 'loaded' },
+        }));
+        setArticlesByHikingId((currentArticles) =>
+          hasRecordKey(currentArticles, hikingId)
+            ? currentArticles
+            : { ...currentArticles, [hikingId]: [] },
+        );
+        setCommentsByHikingId((currentComments) =>
+          hasRecordKey(currentComments, hikingId)
+            ? currentComments
+            : { ...currentComments, [hikingId]: [] },
+        );
+        return;
+      }
+
+      if (loadingHikingIdsRef.current.has(hikingId)) {
+        return;
+      }
+
+      if (!options.retry && hasRecordKey(articlesByHikingId, hikingId)) {
+        return;
+      }
+
+      loadingHikingIdsRef.current.add(hikingId);
+      setHikingArticleLoadStateById((currentStates) => ({
+        ...currentStates,
+        [hikingId]: { status: 'loading' },
+      }));
+
+      void loadHikingArticlesAction(hikingId)
+        .then((result) => {
+          if (!result.ok) {
+            setHikingArticleLoadStateById((currentStates) => ({
+              ...currentStates,
+              [hikingId]: {
+                error: result.error ?? '게시글을 불러오지 못했습니다.',
+                status: 'error',
+              },
+            }));
+            return;
+          }
+
+          setArticlesByHikingId((currentArticles) => ({
+            ...currentArticles,
+            [hikingId]: result.articles,
+          }));
+          setCommentsByHikingId((currentComments) => ({
+            ...currentComments,
+            [hikingId]: result.comments,
+          }));
+          setHikingArticleLoadStateById((currentStates) => ({
+            ...currentStates,
+            [hikingId]: { status: 'loaded' },
+          }));
+        })
+        .catch((error: unknown) => {
+          setHikingArticleLoadStateById((currentStates) => ({
+            ...currentStates,
+            [hikingId]: {
+              error: error instanceof Error ? error.message : '게시글을 불러오지 못했습니다.',
+              status: 'error',
+            },
+          }));
+        })
+        .finally(() => {
+          loadingHikingIdsRef.current.delete(hikingId);
+        });
+    },
+    [articlesByHikingId, getHikingArticleCount],
+  );
+
+  const registerHikingSection = useCallback((hikingId: HikingId, element: HTMLElement | null) => {
+    if (!element) {
+      hikingSectionElementsRef.current.delete(hikingId);
+      return;
+    }
+
+    hikingSectionElementsRef.current.set(hikingId, element);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadingHikingIdsRef.current.clear();
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+
+      setArticlesByHikingId({});
+      setCommentsByHikingId({});
+      setHikingArticleLoadStateById({});
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hikingArticleCounts, initialHikings]);
+
+  useEffect(() => {
+    if (!selectedHikingId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        loadHikingArticles(selectedHikingId);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadHikingArticles, selectedHikingId]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) {
+            continue;
+          }
+
+          const hikingId = entry.target.getAttribute('data-hiking-id') as HikingId | null;
+
+          if (!hikingId) {
+            continue;
+          }
+
+          loadHikingArticles(hikingId);
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: '640px 0px' },
+    );
+
+    for (const [hikingId, element] of hikingSectionElementsRef.current) {
+      const typedHikingId = hikingId as HikingId;
+
+      if (
+        getHikingArticleCount(typedHikingId) === 0 ||
+        hasRecordKey(articlesByHikingId, hikingId)
+      ) {
+        continue;
+      }
+
+      observer.observe(element);
+    }
+
+    return () => observer.disconnect();
+  }, [articlesByHikingId, getHikingArticleCount, groups, loadHikingArticles]);
 
   useEffect(() => {
     if (!selectedHikingId || scrolledHikingIdRef.current === selectedHikingId) {
@@ -489,9 +691,7 @@ export function FeedCrudClient({
   };
 
   const requestDeleteHiking = (hiking: Hiking) => {
-    const hasArticles = initialArticles.some(
-      (article) => article.hikingId === hiking.id && article.deletedAt === null,
-    );
+    const hasArticles = getHikingArticleCount(hiking.id) > 0;
 
     if (hasArticles) {
       setError(`hiking-${hiking.id}`, '게시글이 있는 산행은 삭제할 수 없습니다.');
@@ -701,68 +901,107 @@ export function FeedCrudClient({
             </div>
           </section>
 
-          {groups.map((group, groupIndex) => (
-            <section
-              className={`${gridStackClassName} focus:outline-none ${
-                selectedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
-              }`}
-              id={`hiking-section-${group.hiking.id}`}
-              key={`${group.hiking.id}-${groupIndex}`}
-              aria-labelledby={`hiking-${group.hiking.id}`}
-              tabIndex={-1}
-            >
-              <HikingHeader
-                canManageHiking={group.hiking.authorUserId === currentUser.id}
-                error={errorByKey[`hiking-${group.hiking.id}`]}
-                hiking={group.hiking}
-                onAddArticle={() =>
-                  setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
-                }
-                onCopyLink={() => copyHikingLink(group.hiking)}
-                onDelete={() => requestDeleteHiking(group.hiking)}
-                onEdit={() => setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
-              />
-              <div className={gridStackClassName}>
-                {group.articles.length > 0 ? (
-                  group.articles.map((article) => (
-                    <ArticlePanel
-                      article={article}
-                      articleDetailHref={`/article/${article.id}`}
-                      canEdit={article.authorUserId === currentUser.id}
-                      comments={getArticleComments(commentsByArticleId, article.id)}
-                      commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
-                      currentUserId={currentUser.id}
-                      editingCommentId={editingCommentId}
-                      errorByKey={errorByKey}
-                      key={article.id}
-                      mobileMediaCarousel
-                      onCreateComment={createComment}
-                      onDeleteArticle={() => requestDeleteArticle(article)}
-                      onDeleteComment={requestDeleteComment}
-                      onEditArticle={() =>
-                        setActiveArticleForm({ articleId: article.id, type: 'edit' })
-                      }
-                      onEditComment={setEditingCommentId}
-                      onReplyComment={setReplyingCommentId}
-                      onSubmitCommentEdit={updateComment}
-                      onToggleArticleLike={toggleArticleLike}
-                      onToggleCommentLike={toggleCommentLike}
-                      articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
-                      isCommentLikePending={(commentId) =>
-                        pendingLikeByKey[`comment-${commentId}`] === true
-                      }
-                      replyingCommentId={replyingCommentId}
-                    />
-                  ))
-                ) : (
-                  <div className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`} box-="round">
-                    <Command>articles.empty {group.hiking.id}</Command>
-                    <p className="m-0 text-[var(--subtext0)]">아직 이 산행에 게시글이 없습니다.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          ))}
+          {groups.map((group, groupIndex) => {
+            const groupArticleCount = getHikingArticleCount(group.hiking.id);
+            const groupLoadState =
+              hikingArticleLoadStateById[group.hiking.id] ??
+              (groupArticleCount === 0
+                ? ({ status: 'loaded' } satisfies HikingArticleLoadState)
+                : ({ status: 'idle' } satisfies HikingArticleLoadState));
+
+            return (
+              <section
+                className={`${gridStackClassName} focus:outline-none ${
+                  selectedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
+                }`}
+                data-hiking-id={group.hiking.id}
+                id={`hiking-section-${group.hiking.id}`}
+                key={`${group.hiking.id}-${groupIndex}`}
+                aria-labelledby={`hiking-${group.hiking.id}`}
+                ref={(element) => registerHikingSection(group.hiking.id, element)}
+                tabIndex={-1}
+              >
+                <HikingHeader
+                  canManageHiking={group.hiking.authorUserId === currentUser.id}
+                  error={errorByKey[`hiking-${group.hiking.id}`]}
+                  hiking={group.hiking}
+                  onAddArticle={() =>
+                    setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
+                  }
+                  onCopyLink={() => copyHikingLink(group.hiking)}
+                  onDelete={() => requestDeleteHiking(group.hiking)}
+                  onEdit={() => setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
+                />
+                <div className={gridStackClassName}>
+                  {groupLoadState.status === 'error' ? (
+                    <div
+                      className={`grid min-h-40 content-center gap-3 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+                      box-="round"
+                    >
+                      <Command>articles.error {group.hiking.id}</Command>
+                      <p className="m-0 text-[var(--red)]">{groupLoadState.error}</p>
+                      <div>
+                        <ActionButton
+                          onClick={() => loadHikingArticles(group.hiking.id, { retry: true })}
+                        >
+                          다시 불러오기
+                        </ActionButton>
+                      </div>
+                    </div>
+                  ) : groupLoadState.status !== 'loaded' ? (
+                    <div
+                      className={`grid min-h-64 content-center gap-3 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+                      box-="round"
+                    >
+                      <Command>articles.lazy {group.hiking.id}</Command>
+                      <p className="m-0 flex items-center gap-2 text-[var(--subtext0)]">
+                        <span is-="spinner" variant-="dots" />
+                        <span>게시글 {groupArticleCount}개를 불러오는 중</span>
+                      </p>
+                    </div>
+                  ) : group.articles.length > 0 ? (
+                    group.articles.map((article) => (
+                      <ArticlePanel
+                        article={article}
+                        articleDetailHref={`/article/${article.id}`}
+                        canEdit={article.authorUserId === currentUser.id}
+                        comments={getArticleComments(commentsByArticleId, article.id)}
+                        commentFormResetKey={commentFormResetKeyByArticleId[article.id] ?? 0}
+                        currentUserId={currentUser.id}
+                        editingCommentId={editingCommentId}
+                        errorByKey={errorByKey}
+                        key={article.id}
+                        mobileMediaCarousel
+                        onCreateComment={createComment}
+                        onDeleteArticle={() => requestDeleteArticle(article)}
+                        onDeleteComment={requestDeleteComment}
+                        onEditArticle={() =>
+                          setActiveArticleForm({ articleId: article.id, type: 'edit' })
+                        }
+                        onEditComment={setEditingCommentId}
+                        onReplyComment={setReplyingCommentId}
+                        onSubmitCommentEdit={updateComment}
+                        onToggleArticleLike={toggleArticleLike}
+                        onToggleCommentLike={toggleCommentLike}
+                        articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
+                        isCommentLikePending={(commentId) =>
+                          pendingLikeByKey[`comment-${commentId}`] === true
+                        }
+                        replyingCommentId={replyingCommentId}
+                      />
+                    ))
+                  ) : (
+                    <div className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`} box-="round">
+                      <Command>articles.empty {group.hiking.id}</Command>
+                      <p className="m-0 text-[var(--subtext0)]">
+                        아직 이 산행에 게시글이 없습니다.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            );
+          })}
           {selectedHikingId ? <div aria-hidden="true" className="h-[100svh]" /> : null}
         </section>
 

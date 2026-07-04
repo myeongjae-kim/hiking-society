@@ -1,5 +1,10 @@
-import type { FeedSnapshot } from '@/core/feed/model/FeedSnapshot';
+import type { FeedSummarySnapshot, HikingArticlesSnapshot } from '@/core/feed/model/FeedSnapshot';
+import type { HikingId } from '@/core/hiking/domain';
 
 export interface FeedQueryPort {
-  list(input: { currentUserId: number }): Promise<FeedSnapshot>;
+  listHikings(input: { currentUserId: number }): Promise<FeedSummarySnapshot>;
+  listHikingArticles(input: {
+    currentUserId: number;
+    hikingId: HikingId;
+  }): Promise<HikingArticlesSnapshot>;
 }
