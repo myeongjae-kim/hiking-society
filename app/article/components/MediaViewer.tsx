@@ -1,8 +1,9 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { MouseEvent, PointerEvent, ReactNode, RefObject } from 'react';
+import type { MouseEvent, PointerEvent, ReactNode, RefObject, TransitionEvent } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 import { photoDialogOverlayClassName } from '@/app/common/components/styles';
 import type { ArticleMedia } from '@/core/article/domain';
@@ -63,10 +64,10 @@ type InlineMediaFrameProps = {
   media: ArticleMedia | null;
 };
 
+type InlineTransitionDirection = -1 | 1;
+
 const mediaControlClassName =
   'grid place-items-center border border-[var(--overlay0)] bg-[var(--surface0)] !bg-none p-0 font-normal leading-none text-[var(--foreground0)] no-underline hover:bg-[var(--surface1)] active:bg-[var(--surface2)] active:text-[var(--foreground0)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
-const inlineMediaControlClassName =
-  'grid place-items-center border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_82%,transparent)] !bg-none p-0 font-mono leading-none text-[var(--foreground0)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_42%,transparent)] backdrop-blur-sm hover:bg-[var(--surface1)] active:bg-[var(--surface2)] disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]';
 const mediaNavigationClickZoneRatio = 0.3;
 const mediaMinScale = 1;
 const mediaMaxScale = 4;
@@ -269,6 +270,7 @@ export function MediaViewer({
   const swipeOffsetRef = useRef<SwipeOffset>(initialSwipeOffset);
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
+  const inlineTransitionDirectionRef = useRef<InlineTransitionDirection | null>(null);
   const shouldSuppressInlineClickRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
@@ -312,12 +314,14 @@ export function MediaViewer({
     : 'Escape 키로 닫을 수 있습니다.';
 
   const showPreviousInlineMedia = useCallback(() => {
+    inlineTransitionDirectionRef.current = null;
     setInlineSwipeOffset(initialSwipeOffset);
     setIsInlineSwipeActive(false);
     setActiveInlineIndex((currentIndex) => Math.max(clamp(currentIndex, 0, maxInlineIndex) - 1, 0));
   }, [maxInlineIndex]);
 
   const showNextInlineMedia = useCallback(() => {
+    inlineTransitionDirectionRef.current = null;
     setInlineSwipeOffset(initialSwipeOffset);
     setIsInlineSwipeActive(false);
     setActiveInlineIndex((currentIndex) =>
@@ -335,6 +339,7 @@ export function MediaViewer({
 
   const resetInlineSwipeGesture = useCallback(() => {
     inlineSwipeGestureRef.current = null;
+    inlineTransitionDirectionRef.current = null;
     setIsInlineSwipeActive(false);
     setInlineSwipeOffsetState(initialSwipeOffset);
   }, [setInlineSwipeOffsetState]);
@@ -355,6 +360,7 @@ export function MediaViewer({
         startX: event.clientX,
         startY: event.clientY,
       };
+      inlineTransitionDirectionRef.current = null;
       shouldSuppressInlineClickRef.current = false;
       setIsInlineSwipeActive(false);
       setInlineSwipeOffsetState(initialSwipeOffset);
@@ -437,18 +443,21 @@ export function MediaViewer({
         return;
       }
 
-      if (deltaX > 0) {
-        showPreviousInlineMedia();
-      } else {
-        showNextInlineMedia();
-      }
+      const width = event.currentTarget.clientWidth || window.innerWidth;
+      const direction: InlineTransitionDirection = deltaX > 0 ? -1 : 1;
+
+      inlineTransitionDirectionRef.current = direction;
+      setIsInlineSwipeActive(false);
+      setInlineSwipeOffsetState({
+        x: direction === -1 ? width : -width,
+        y: 0,
+      });
     },
     [
       canShowNextInlineMedia,
       canShowPreviousInlineMedia,
       resetInlineSwipeGesture,
-      showNextInlineMedia,
-      showPreviousInlineMedia,
+      setInlineSwipeOffsetState,
     ],
   );
 
@@ -461,6 +470,34 @@ export function MediaViewer({
       resetInlineSwipeGesture();
     },
     [resetInlineSwipeGesture],
+  );
+
+  const handleInlineTransitionEnd = useCallback(
+    (event: TransitionEvent<HTMLSpanElement>) => {
+      if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
+        return;
+      }
+
+      const direction = inlineTransitionDirectionRef.current;
+
+      if (direction === null) {
+        return;
+      }
+
+      inlineTransitionDirectionRef.current = null;
+      flushSync(() => {
+        setIsInlineSwipeActive(true);
+        setInlineSwipeOffsetState(initialSwipeOffset);
+        setActiveInlineIndex((currentIndex) => clamp(currentIndex + direction, 0, maxInlineIndex));
+      });
+
+      event.currentTarget.getBoundingClientRect();
+
+      window.requestAnimationFrame(() => {
+        setIsInlineSwipeActive(false);
+      });
+    },
+    [maxInlineIndex, setInlineSwipeOffsetState],
   );
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
@@ -506,10 +543,47 @@ export function MediaViewer({
         return;
       }
 
+      if (hasMultipleMedia) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const clickPositionRatio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+
+        if (clickPositionRatio <= mediaNavigationClickZoneRatio) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (canShowPreviousInlineMedia) {
+            showPreviousInlineMedia();
+          }
+
+          return;
+        }
+
+        if (clickPositionRatio >= 1 - mediaNavigationClickZoneRatio) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (canShowNextInlineMedia) {
+            showNextInlineMedia();
+          }
+
+          return;
+        }
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
       resetMediaGesture();
       setSelectedIndex(index);
+      setOpen(true);
     },
-    [resetMediaGesture],
+    [
+      canShowNextInlineMedia,
+      canShowPreviousInlineMedia,
+      hasMultipleMedia,
+      resetMediaGesture,
+      showNextInlineMedia,
+      showPreviousInlineMedia,
+    ],
   );
 
   const showPreviousMedia = useCallback(() => {
@@ -910,54 +984,25 @@ export function MediaViewer({
               onPointerUp={handleInlinePointerUp}
             >
               <div className="relative">
-                <Dialog.Trigger asChild>
-                  <button
-                    className="group block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
-                    onClick={(event) =>
-                      handleInlineTriggerClick(event, normalizedActiveInlineIndex)
-                    }
-                    type="button"
+                <button
+                  className="group block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                  onClick={(event) => handleInlineTriggerClick(event, normalizedActiveInlineIndex)}
+                  type="button"
+                >
+                  <span
+                    className={`grid w-[300%] grid-cols-3 will-change-transform ${
+                      isInlineSwipeActive ? '' : 'transition-transform duration-150 ease-out'
+                    }`}
+                    onTransitionEnd={handleInlineTransitionEnd}
+                    style={{
+                      transform: `translate3d(calc(-33.333333% + ${inlineSwipeOffset.x}px), 0, 0)`,
+                    }}
                   >
-                    <span
-                      className={`grid w-[300%] grid-cols-3 will-change-transform ${
-                        isInlineSwipeActive ? '' : 'transition-transform duration-150 ease-out'
-                      }`}
-                      style={{
-                        transform: `translate3d(calc(-33.333333% + ${inlineSwipeOffset.x}px), 0, 0)`,
-                      }}
-                    >
-                      <InlineMediaFrame authorName={authorName} media={previousInlineMedia} />
-                      <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
-                      <InlineMediaFrame authorName={authorName} media={nextInlineMedia} />
-                    </span>
-                  </button>
-                </Dialog.Trigger>
-
-                {hasMultipleMedia ? (
-                  <>
-                    <p className="absolute top-2 right-2 m-0 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_82%,transparent)] px-2 py-1 font-mono text-xs leading-none text-[var(--foreground0)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_42%,transparent)] backdrop-blur-sm">
-                      {normalizedActiveInlineIndex + 1}/{media.length}
-                    </p>
-                    <button
-                      aria-label="이전 사진이나 동영상"
-                      className={`${inlineMediaControlClassName} absolute top-1/2 left-2 !size-9 -translate-y-1/2 text-xl`}
-                      disabled={!canShowPreviousInlineMedia}
-                      onClick={showPreviousInlineMedia}
-                      type="button"
-                    >
-                      ←
-                    </button>
-                    <button
-                      aria-label="다음 사진이나 동영상"
-                      className={`${inlineMediaControlClassName} absolute top-1/2 right-2 !size-9 -translate-y-1/2 text-xl`}
-                      disabled={!canShowNextInlineMedia}
-                      onClick={showNextInlineMedia}
-                      type="button"
-                    >
-                      →
-                    </button>
-                  </>
-                ) : null}
+                    <InlineMediaFrame authorName={authorName} media={previousInlineMedia} />
+                    <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
+                    <InlineMediaFrame authorName={authorName} media={nextInlineMedia} />
+                  </span>
+                </button>
               </div>
 
               <figcaption className="grid min-w-0 gap-1 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
