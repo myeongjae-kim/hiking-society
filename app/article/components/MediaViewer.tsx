@@ -1123,7 +1123,7 @@ export function MediaViewer({
         <Dialog.Overlay className={photoDialogOverlayClassName} />
         <Dialog.Content
           aria-describedby={descriptionId}
-          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr] gap-3 p-3 text-[var(--foreground0)] outline-none sm:p-5"
+          className="fixed inset-0 z-[60] grid grid-rows-[auto_1fr] gap-3 px-0 py-3 text-[var(--foreground0)] outline-none sm:p-5"
           onClick={closeOnBackdropClick}
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
@@ -1132,7 +1132,7 @@ export function MediaViewer({
           </Dialog.Description>
 
           <div
-            className="flex items-center justify-between gap-3 font-mono text-sm"
+            className="flex items-center justify-between gap-3 px-3 font-mono text-sm sm:px-0"
             data-media-modal-surface
           >
             <span className="border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1">
@@ -1189,7 +1189,7 @@ export function MediaViewer({
                     className="grid w-full place-items-center"
                     style={{
                       aspectRatio: selectedVideoAspectRatio,
-                      maxWidth: `min(92vw, calc((100svh - 10rem) * ${selectedVideoAspectRatio}))`,
+                      maxWidth: `min(100vw, calc((100svh - 10rem) * ${selectedVideoAspectRatio}))`,
                     }}
                   >
                     <video
