@@ -512,6 +512,10 @@ export function MediaViewer({
     [inlineSwipeTrack],
   );
 
+  const renderedInlineSwipeTrack = hasMultipleMedia
+    ? (inlineSwipeTrack ?? createInlineSwipeTrack(0, false))
+    : null;
+
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
     const normalizedTransform =
       nextTransform.scale <= mediaMinScale
@@ -1125,28 +1129,30 @@ export function MediaViewer({
                 type="button"
               >
                 <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
-                {inlineSwipeTrack ? (
+                {renderedInlineSwipeTrack ? (
                   <span
                     aria-hidden="true"
                     className={`pointer-events-none absolute inset-0 grid w-[300%] grid-cols-3 will-change-transform ${
-                      inlineSwipeTrack.settling ? 'transition-transform duration-150 ease-out' : ''
+                      renderedInlineSwipeTrack.settling
+                        ? 'transition-transform duration-150 ease-out'
+                        : ''
                     }`}
                     onTransitionEnd={handleInlineSwipeTrackTransitionEnd}
                     style={{
-                      transform: `translate3d(calc(-33.333333% + ${inlineSwipeTrack.offsetX}px), 0, 0)`,
+                      transform: `translate3d(calc(-33.333333% + ${renderedInlineSwipeTrack.offsetX}px), 0, 0)`,
                     }}
                   >
                     <InlineMediaFrame
                       authorName={authorName}
-                      media={media[inlineSwipeTrack.previousIndex] ?? null}
+                      media={media[renderedInlineSwipeTrack.previousIndex] ?? null}
                     />
                     <InlineMediaFrame
                       authorName={authorName}
-                      media={media[inlineSwipeTrack.fromIndex] ?? null}
+                      media={media[renderedInlineSwipeTrack.fromIndex] ?? null}
                     />
                     <InlineMediaFrame
                       authorName={authorName}
-                      media={media[inlineSwipeTrack.nextIndex] ?? null}
+                      media={media[renderedInlineSwipeTrack.nextIndex] ?? null}
                     />
                   </span>
                 ) : null}
