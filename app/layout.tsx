@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import Script from 'next/script';
 import ClientDependencyContainer from './common/components/ClientDependencyContainer';
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from './common/theme/webtuiThemes';
 import './globals.css';
@@ -52,6 +53,9 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-full flex-col">
         <ClientDependencyContainer>{children}</ClientDependencyContainer>
+        <Script id="reset-scroll-on-reload" strategy="beforeInteractive">
+          {`(function(){try{var navigationEntries=performance.getEntriesByType('navigation');var navigationEntry=navigationEntries[0];if(!navigationEntry||navigationEntry.type!=='reload'){return;}if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);requestAnimationFrame(function(){window.scrollTo(0,0);});}catch(error){}})();`}
+        </Script>
       </body>
     </html>
   );
