@@ -1002,7 +1002,6 @@ export function FeedCrudClient({
               </section>
             );
           })}
-          {selectedHikingId ? <div aria-hidden="true" className="h-[100svh]" /> : null}
         </section>
 
         <StatusPanel
