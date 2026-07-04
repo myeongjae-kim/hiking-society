@@ -8,7 +8,7 @@ import type { Article } from '@/core/article/domain';
 import type { DraftMedia } from './articleFormTypes';
 
 const maxCompressedPhotoWidth = 2048;
-const maxCompressedVideoWidth = 720;
+const maxCompressedVideoWidth = 1080;
 const maxVideoDurationMs = 90 * 1000;
 const maxVideoSourceBytes = 120 * 1024 * 1024;
 const webpQuality = 50;
