@@ -648,19 +648,29 @@ export function MediaViewer({
       event.stopPropagation();
 
       const selectedMediaSurface = selectedMediaSurfaceRef.current;
-      const isSelectedMediaClick = selectedMediaSurface?.contains(event.target as Node) ?? false;
+      const mediaRect = selectedMediaSurface?.getBoundingClientRect();
 
       if (shouldSuppressStageClickRef.current) {
         shouldSuppressStageClickRef.current = false;
         return;
       }
 
-      if (isSelectedMediaClick && isMediaZoomed) {
+      if (
+        !mediaRect ||
+        event.clientX < mediaRect.left ||
+        event.clientX > mediaRect.right ||
+        event.clientY < mediaRect.top ||
+        event.clientY > mediaRect.bottom
+      ) {
+        setOpen(false);
         return;
       }
 
-      if (hasMultipleMedia) {
-        const mediaRect = event.currentTarget.getBoundingClientRect();
+      if (isMediaZoomed) {
+        return;
+      }
+
+      if (hasMultipleMedia && mediaRect) {
         const clickPositionRatio =
           mediaRect.width > 0 ? (event.clientX - mediaRect.left) / mediaRect.width : 0.5;
 
@@ -674,16 +684,8 @@ export function MediaViewer({
           return;
         }
       }
-
-      if (selectedMediaIsVideo && isSelectedMediaClick) {
-        return;
-      }
-
-      if (isSelectedMediaClick) {
-        return;
-      }
     },
-    [hasMultipleMedia, isMediaZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
+    [hasMultipleMedia, isMediaZoomed, showNextMedia, showPreviousMedia],
   );
 
   const handleMetadataClick = useCallback((event: MouseEvent<HTMLElement>) => {
