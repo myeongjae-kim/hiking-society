@@ -272,6 +272,24 @@ function getDominantSwipeAxis(deltaX: number, deltaY: number): SwipeAxis | null 
   return absDeltaX >= absDeltaY ? 'horizontal' : 'vertical';
 }
 
+function getInlineSwipeAxis(deltaX: number, deltaY: number): SwipeAxis | null {
+  const absDeltaX = Math.abs(deltaX);
+  const absDeltaY = Math.abs(deltaY);
+
+  if (
+    absDeltaX < mediaPanClickSuppressThresholdPx &&
+    absDeltaY < mediaPanClickSuppressThresholdPx
+  ) {
+    return null;
+  }
+
+  if (absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio) {
+    return 'vertical';
+  }
+
+  return 'horizontal';
+}
+
 export function MediaViewer({
   articleId,
   authorName,
@@ -426,7 +444,7 @@ export function MediaViewer({
 
       const deltaX = event.clientX - inlineSwipeGesture.startX;
       const deltaY = event.clientY - inlineSwipeGesture.startY;
-      const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+      const axis = inlineSwipeGesture.axis ?? getInlineSwipeAxis(deltaX, deltaY);
 
       if (
         Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
@@ -476,7 +494,7 @@ export function MediaViewer({
       const deltaY = event.clientY - inlineSwipeGesture.startY;
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
-      const axis = inlineSwipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+      const axis = inlineSwipeGesture.axis ?? getInlineSwipeAxis(deltaX, deltaY);
       const isHorizontalSwipe =
         axis === 'horizontal' &&
         absDeltaX >= mediaSwipeThresholdPx &&
@@ -1299,7 +1317,7 @@ export function MediaViewer({
             >
               <button
                 aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-                className="group relative block h-auto w-full touch-pinch-zoom appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className="group relative block h-auto w-full touch-pan-y touch-pinch-zoom appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                 onClick={handleInlineTriggerClick}
                 onPointerCancel={handleInlinePointerCancel}
                 onPointerDown={handleInlinePointerDown}
