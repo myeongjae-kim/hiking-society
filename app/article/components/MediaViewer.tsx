@@ -645,6 +645,23 @@ export function MediaViewer({
     [resetMediaGesture],
   );
 
+  useEffect(() => {
+    if (!open || selectedMedia.mediaType !== 'video') {
+      return;
+    }
+
+    const selectedMediaSurface = selectedMediaSurfaceRef.current;
+
+    if (!(selectedMediaSurface instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    selectedMediaSurface.muted = true;
+    void selectedMediaSurface.play().catch(() => {
+      // Some browsers can still block autoplay. Controls remain available.
+    });
+  }, [open, selectedMedia.mediaType, selectedMedia.url]);
+
   const handleMediaStageClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       const selectedMediaSurface = selectedMediaSurfaceRef.current;
@@ -1284,10 +1301,12 @@ export function MediaViewer({
                     }}
                   >
                     <video
+                      autoPlay
                       className={`block h-full max-h-[calc(100svh-10rem)] w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
                         isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
                       }`}
                       controls
+                      muted
                       playsInline
                       poster={selectedMedia.thumbnailUrl ?? undefined}
                       preload="metadata"
@@ -1300,10 +1319,12 @@ export function MediaViewer({
                   </div>
                 ) : (
                   <video
+                    autoPlay
                     className={`max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none ${
                       isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
                     }`}
                     controls
+                    muted
                     playsInline
                     poster={selectedMedia.thumbnailUrl ?? undefined}
                     preload="metadata"
