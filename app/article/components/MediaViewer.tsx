@@ -744,7 +744,7 @@ export function MediaViewer({
 
           {selectedMetadataItems.length > 0 ? (
             <footer
-              className="w-full max-w-[min(100%,58rem)] justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-2 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] lg:grid lg:max-h-[28svh] lg:overflow-y-auto lg:px-4 lg:py-2.5"
+              className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-5 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] lg:grid lg:max-h-[28svh] lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-y-auto lg:px-4 lg:py-2.5"
               data-media-modal-surface
             >
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 lg:grid lg:min-w-0 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-x-5 lg:gap-y-2">
