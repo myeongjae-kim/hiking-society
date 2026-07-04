@@ -309,9 +309,11 @@ export function MediaViewer({
   const descriptionId = `media-viewer-description-${viewerId}`;
   const displayCommand =
     viewerCommand ?? (viewerLabel ? 'profile.media' : `article.media ${articleId}`);
-  const description = hasMultipleMedia
-    ? '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
-    : 'Escape 키로 닫을 수 있습니다.';
+  const description = !hasMultipleMedia
+    ? 'Escape 키로 닫을 수 있습니다.'
+    : selectedMediaIsVideo
+      ? '좌우 스와이프 또는 키보드 화살표로 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
+      : '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.';
 
   const showPreviousInlineMedia = useCallback(() => {
     inlineTransitionDirectionRef.current = null;
@@ -645,13 +647,12 @@ export function MediaViewer({
 
   const handleMediaStageClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-
       const selectedMediaSurface = selectedMediaSurfaceRef.current;
       const mediaRect = selectedMediaSurface?.getBoundingClientRect();
 
       if (shouldSuppressStageClickRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
         shouldSuppressStageClickRef.current = false;
         return;
       }
@@ -663,9 +664,19 @@ export function MediaViewer({
         event.clientY < mediaRect.top ||
         event.clientY > mediaRect.bottom
       ) {
+        event.preventDefault();
+        event.stopPropagation();
         setOpen(false);
         return;
       }
+
+      if (selectedMediaIsVideo) {
+        event.stopPropagation();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
 
       if (isMediaZoomed) {
         return;
@@ -686,7 +697,7 @@ export function MediaViewer({
         }
       }
     },
-    [hasMultipleMedia, isMediaZoomed, showNextMedia, showPreviousMedia],
+    [hasMultipleMedia, isMediaZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
   );
 
   const handleMetadataClick = useCallback((event: MouseEvent<HTMLElement>) => {
@@ -695,12 +706,8 @@ export function MediaViewer({
     setOpen(false);
   }, []);
 
-  const startImageGesture = useCallback(
+  const startMediaGesture = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      if (selectedMediaIsVideo) {
-        return;
-      }
-
       if (event.pointerType === 'mouse' && event.button !== 0) {
         return;
       }
@@ -717,6 +724,22 @@ export function MediaViewer({
       });
       event.currentTarget.setPointerCapture(event.pointerId);
       setIsMediaGestureActive(true);
+
+      if (selectedMediaIsVideo) {
+        if (activePointersRef.current.size > 1) {
+          swipeGestureRef.current = null;
+          return;
+        }
+
+        swipeGestureRef.current = {
+          axis: null,
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+        };
+        setSwipeOffsetState(initialSwipeOffset);
+        return;
+      }
 
       const activePointers = Array.from(activePointersRef.current.values());
 
@@ -755,9 +778,9 @@ export function MediaViewer({
     [selectedMediaIsVideo, setSwipeOffsetState],
   );
 
-  const updateImageGesture = useCallback(
+  const updateMediaGesture = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      if (selectedMediaIsVideo || !activePointersRef.current.has(event.pointerId)) {
+      if (!activePointersRef.current.has(event.pointerId)) {
         return;
       }
 
@@ -765,6 +788,48 @@ export function MediaViewer({
         x: event.clientX,
         y: event.clientY,
       });
+
+      if (selectedMediaIsVideo) {
+        const swipeGesture = swipeGestureRef.current;
+
+        if (!swipeGesture || swipeGesture.pointerId !== event.pointerId) {
+          return;
+        }
+
+        const deltaX = event.clientX - swipeGesture.startX;
+        const deltaY = event.clientY - swipeGesture.startY;
+        const axis = swipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+
+        if (
+          Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
+          Math.abs(deltaY) >= mediaPanClickSuppressThresholdPx
+        ) {
+          shouldSuppressStageClickRef.current = true;
+        }
+
+        if (!axis) {
+          setSwipeOffsetState(initialSwipeOffset);
+          return;
+        }
+
+        swipeGesture.axis = axis;
+
+        if (axis === 'horizontal') {
+          const maxSwipeOffsetX = window.innerWidth * mediaSwipePreviewMaxWidthRatio;
+          setSwipeOffsetState({
+            x: clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX),
+            y: 0,
+          });
+          return;
+        }
+
+        const maxSwipeOffsetY = window.innerHeight * mediaSwipePreviewMaxHeightRatio;
+        setSwipeOffsetState({
+          x: 0,
+          y: clamp(deltaY, -maxSwipeOffsetY, maxSwipeOffsetY),
+        });
+        return;
+      }
 
       const activePointers = Array.from(activePointersRef.current.values());
 
@@ -860,7 +925,7 @@ export function MediaViewer({
     [selectedMediaIsVideo, setMediaTransformState, setSwipeOffsetState],
   );
 
-  const finishImageGesture = useCallback(
+  const finishMediaGesture = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       if (!activePointersRef.current.has(event.pointerId)) {
         return;
@@ -871,6 +936,53 @@ export function MediaViewer({
       }
 
       activePointersRef.current.delete(event.pointerId);
+
+      if (selectedMediaIsVideo) {
+        const swipeGesture = swipeGestureRef.current;
+        activePointersRef.current.clear();
+        swipeGestureRef.current = null;
+        setIsMediaGestureActive(false);
+
+        if (!swipeGesture || swipeGesture.pointerId !== event.pointerId) {
+          return;
+        }
+
+        const deltaX = event.clientX - swipeGesture.startX;
+        const deltaY = event.clientY - swipeGesture.startY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+        const axis = swipeGesture.axis ?? getDominantSwipeAxis(deltaX, deltaY);
+        const isHorizontalSwipe =
+          axis === 'horizontal' &&
+          absDeltaX >= mediaSwipeThresholdPx &&
+          absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+        const isVerticalSwipe =
+          axis === 'vertical' &&
+          absDeltaY >= mediaSwipeThresholdPx &&
+          absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
+
+        if (isHorizontalSwipe && hasMultipleMedia) {
+          shouldSuppressStageClickRef.current = true;
+
+          if (deltaX > 0) {
+            showPreviousMedia();
+          } else {
+            showNextMedia();
+          }
+
+          return;
+        }
+
+        if (isVerticalSwipe) {
+          shouldSuppressStageClickRef.current = true;
+          setSwipeOffsetState(initialSwipeOffset);
+          setOpen(false);
+          return;
+        }
+
+        setSwipeOffsetState(initialSwipeOffset);
+        return;
+      }
 
       const activePointers = Array.from(activePointersRef.current.entries());
       const swipeGesture = swipeGestureRef.current;
@@ -938,7 +1050,7 @@ export function MediaViewer({
       panGestureRef.current = null;
       setIsMediaGestureActive(false);
     },
-    [hasMultipleMedia, setSwipeOffsetState, showNextMedia, showPreviousMedia],
+    [hasMultipleMedia, selectedMediaIsVideo, setSwipeOffsetState, showNextMedia, showPreviousMedia],
   );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -1135,36 +1247,32 @@ export function MediaViewer({
           <div
             className={`grid min-h-0 items-center gap-2 ${
               selectedMediaIsVideo
-                ? 'grid-cols-[auto_minmax(0,1fr)_auto]'
+                ? 'grid-cols-1'
                 : 'grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)_auto]'
             }`}
           >
-            {hasMultipleMedia ? (
+            {hasMultipleMedia && !selectedMediaIsVideo ? (
               <button
                 aria-label="이전 사진이나 동영상"
-                className={`${mediaControlClassName} ${
-                  selectedMediaIsVideo ? 'grid' : 'hidden sm:grid'
-                } !size-11 font-mono text-2xl sm:!size-14`}
+                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
                 data-media-modal-surface
                 onClick={showPreviousMedia}
                 type="button"
               >
                 ←
               </button>
-            ) : (
+            ) : selectedMediaIsVideo ? null : (
               <span aria-hidden="true" className="hidden sm:block sm:size-14" />
             )}
 
             <div
-              className={`flex h-full min-h-0 w-full flex-col items-center justify-center gap-4 select-none ${
-                selectedMediaIsVideo ? '[touch-action:manipulation]' : '[touch-action:none]'
-              }`}
+              className="flex h-full min-h-0 w-full touch-none flex-col items-center justify-center gap-4 select-none"
               data-media-modal-surface
               onClick={handleMediaStageClick}
-              onPointerCancel={finishImageGesture}
-              onPointerDown={startImageGesture}
-              onPointerMove={updateImageGesture}
-              onPointerUp={finishImageGesture}
+              onPointerCancel={finishMediaGesture}
+              onPointerDown={startMediaGesture}
+              onPointerMove={updateMediaGesture}
+              onPointerUp={finishMediaGesture}
             >
               {selectedMedia.mediaType === 'video' ? (
                 selectedVideoAspectRatio ? (
@@ -1176,24 +1284,34 @@ export function MediaViewer({
                     }}
                   >
                     <video
-                      className="block h-full max-h-[calc(100svh-10rem)] w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none"
+                      className={`block h-full max-h-[calc(100svh-10rem)] w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
+                        isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
+                      }`}
                       controls
                       playsInline
                       poster={selectedMedia.thumbnailUrl ?? undefined}
                       preload="metadata"
                       ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
                       src={selectedMedia.url}
+                      style={{
+                        transform: `translate3d(${swipeOffset.x}px, ${swipeOffset.y}px, 0)`,
+                      }}
                     />
                   </div>
                 ) : (
                   <video
-                    className="max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none"
+                    className={`max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none ${
+                      isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
+                    }`}
                     controls
                     playsInline
                     poster={selectedMedia.thumbnailUrl ?? undefined}
                     preload="metadata"
                     ref={selectedMediaSurfaceRef as RefObject<HTMLVideoElement>}
                     src={selectedMedia.url}
+                    style={{
+                      transform: `translate3d(${swipeOffset.x}px, ${swipeOffset.y}px, 0)`,
+                    }}
                   />
                 )
               ) : (
@@ -1259,19 +1377,17 @@ export function MediaViewer({
               )}
             </div>
 
-            {hasMultipleMedia ? (
+            {hasMultipleMedia && !selectedMediaIsVideo ? (
               <button
                 aria-label="다음 사진이나 동영상"
-                className={`${mediaControlClassName} ${
-                  selectedMediaIsVideo ? 'grid' : 'hidden sm:grid'
-                } !size-11 font-mono text-2xl sm:!size-14`}
+                className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
                 data-media-modal-surface
                 onClick={showNextMedia}
                 type="button"
               >
                 →
               </button>
-            ) : (
+            ) : selectedMediaIsVideo ? null : (
               <span aria-hidden="true" className="hidden sm:block sm:size-14" />
             )}
           </div>
