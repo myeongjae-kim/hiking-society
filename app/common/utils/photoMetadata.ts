@@ -139,6 +139,18 @@ function getMetadataDescription(metadata: Record<string, unknown>, tagName: stri
   return null;
 }
 
+export function getMetadataTakenDateTime(metadata: Record<string, unknown> | null | undefined) {
+  if (!metadata) {
+    return null;
+  }
+
+  return (
+    getMetadataDescription(metadata, 'DateTimeOriginal') ??
+    getMetadataDescription(metadata, 'DateTimeDigitized') ??
+    getMetadataDescription(metadata, 'DateTime')
+  );
+}
+
 function hasMetadataSummaryValue(metadata: ArticleMediaMetadataSummary) {
   return Object.values(metadata).some(
     (value) => typeof value === 'string' && value.trim().length > 0,
@@ -153,7 +165,7 @@ export function createArticleMediaMetadataSummary(
   }
 
   const summary: ArticleMediaMetadataSummary = {
-    dateTime: getMetadataDescription(metadata, 'DateTime'),
+    dateTime: getMetadataTakenDateTime(metadata),
     exposureTime: getMetadataDescription(metadata, 'ExposureTime'),
     fNumber: getMetadataDescription(metadata, 'FNumber'),
     focalLengthIn35mmFilm: getMetadataDescription(metadata, 'FocalLengthIn35mmFilm'),

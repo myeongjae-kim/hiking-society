@@ -22,6 +22,7 @@ import {
   getDuplicateMediaKeys,
   getMediaDuplicateKey,
   revokeDraftMediaUrl,
+  sortNewDraftMedias,
 } from './articleFormUtils';
 import { getMediaTakenTimeLabel, MediaViewer } from './MediaViewer';
 
@@ -141,10 +142,12 @@ export function ArticleForm({
         return;
       }
 
+      const sortedNewMedias = sortNewDraftMedias(compressedMedias);
+
       setValues((currentValues) => {
         const appendedMedias = [
           ...currentValues.media,
-          ...compressedMedias.map((media, index) => ({
+          ...sortedNewMedias.map((media, index) => ({
             ...media,
             order: currentValues.media.length + index + 1,
           })),

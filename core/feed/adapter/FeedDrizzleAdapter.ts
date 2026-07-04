@@ -132,6 +132,14 @@ function getMetadataDescription(metadata: Record<string, unknown>, tagName: stri
   return null;
 }
 
+function getMetadataTakenDateTime(metadata: Record<string, unknown>) {
+  return (
+    getMetadataDescription(metadata, 'DateTimeOriginal') ??
+    getMetadataDescription(metadata, 'DateTimeDigitized') ??
+    getMetadataDescription(metadata, 'DateTime')
+  );
+}
+
 function getGpsNumber(metadata: Record<string, unknown>, tagName: string) {
   const gps = metadata.gps;
 
@@ -150,7 +158,7 @@ function getMetadataInsert(mediaId: number, metadata: Record<string, unknown> | 
 
   return {
     articleMediaId: mediaId,
-    dateTime: getMetadataDescription(metadata, 'DateTime'),
+    dateTime: getMetadataTakenDateTime(metadata),
     exposureTime: getMetadataDescription(metadata, 'ExposureTime'),
     fNumber: getMetadataDescription(metadata, 'FNumber'),
     focalLengthIn35mmFilm: getMetadataDescription(metadata, 'FocalLengthIn35mmFilm'),

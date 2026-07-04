@@ -96,6 +96,80 @@ export async function createCompressedDraftMedia(
   });
 }
 
+function getDraftMediaTakenTimeMs(media: DraftMedia) {
+  if (media.mediaType !== 'image') {
+    return null;
+  }
+
+  const dateTime = media.metadata?.dateTime?.trim();
+
+  if (!dateTime) {
+    return null;
+  }
+
+  const match = dateTime.match(
+    /^(\d{4})[:/-](\d{2})[:/-](\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day, hour = '0', minute = '0', second = '0'] = match;
+  const dateParts = [year, month, day, hour, minute, second].map(Number);
+
+  if (dateParts.some((part) => !Number.isInteger(part))) {
+    return null;
+  }
+
+  const [parsedYear, parsedMonth, parsedDay, parsedHour, parsedMinute, parsedSecond] = dateParts;
+
+  if (
+    parsedMonth < 1 ||
+    parsedMonth > 12 ||
+    parsedDay < 1 ||
+    parsedDay > 31 ||
+    parsedHour > 23 ||
+    parsedMinute > 59 ||
+    parsedSecond > 59
+  ) {
+    return null;
+  }
+
+  return Date.UTC(parsedYear, parsedMonth - 1, parsedDay, parsedHour, parsedMinute, parsedSecond);
+}
+
+function getBatchSortRank(media: DraftMedia) {
+  if (media.mediaType === 'video') {
+    return 0;
+  }
+
+  return getDraftMediaTakenTimeMs(media) === null ? 2 : 1;
+}
+
+export function sortNewDraftMedias(mediaItems: readonly DraftMedia[]) {
+  return [...mediaItems].sort((left, right) => {
+    const rankDiff = getBatchSortRank(left) - getBatchSortRank(right);
+
+    if (rankDiff !== 0) {
+      return rankDiff;
+    }
+
+    const leftTakenTimeMs = getDraftMediaTakenTimeMs(left);
+    const rightTakenTimeMs = getDraftMediaTakenTimeMs(right);
+
+    if (leftTakenTimeMs !== null && rightTakenTimeMs !== null) {
+      const takenTimeDiff = leftTakenTimeMs - rightTakenTimeMs;
+
+      if (takenTimeDiff !== 0) {
+        return takenTimeDiff;
+      }
+    }
+
+    return left.order - right.order;
+  });
+}
+
 export function getMediaDuplicateKey(media: DraftMedia) {
   if (typeof media.fileSize !== 'number' || typeof media.lastModified !== 'number') {
     return null;
