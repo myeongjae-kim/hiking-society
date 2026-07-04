@@ -1021,6 +1021,10 @@ export function MediaViewer({
           axis === 'horizontal' &&
           absDeltaX >= mediaSwipeThresholdPx &&
           absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+        const isVerticalSwipe =
+          axis === 'vertical' &&
+          absDeltaY >= mediaSwipeThresholdPx &&
+          absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
         swipeGestureRef.current = null;
 
         if (isHorizontalSwipe && hasMultipleMedia) {
@@ -1032,6 +1036,14 @@ export function MediaViewer({
             showNextMedia();
           }
 
+          return;
+        }
+
+        if (isVerticalSwipe) {
+          shouldSuppressStageClickRef.current = true;
+          setIsMediaGestureActive(false);
+          setSwipeOffsetState(initialSwipeOffset);
+          setOpen(false);
           return;
         }
 
