@@ -59,6 +59,12 @@ type SwipeOffset = {
   y: number;
 };
 
+type DoubleTapTrack = {
+  timeStamp: number;
+  x: number;
+  y: number;
+};
+
 type InlineSwipeTrack = {
   fromIndex: number;
   nextIndex: number;
@@ -78,6 +84,9 @@ const mediaControlClassName =
 const mediaNavigationClickZoneRatio = 0.3;
 const mediaMinScale = 1;
 const mediaMaxScale = 4;
+const mediaDoubleTapScale = 2;
+const mediaDoubleTapTimeoutMs = 300;
+const mediaDoubleTapMaxDistancePx = 32;
 const mediaPanClickSuppressThresholdPx = 6;
 const mediaSwipeThresholdPx = 48;
 const mediaHorizontalSwipeRatio = 1.25;
@@ -281,6 +290,7 @@ export function MediaViewer({
   const panGestureRef = useRef<PanGesture | null>(null);
   const pinchGestureRef = useRef<PinchGesture | null>(null);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
+  const mediaDoubleTapRef = useRef<DoubleTapTrack | null>(null);
   const inlineActiveTouchPointerIdsRef = useRef<Set<number>>(new Set());
   const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
   const shouldSuppressInlineClickRef = useRef(false);
@@ -573,8 +583,13 @@ export function MediaViewer({
     setSwipeOffset(nextOffset);
   }, []);
 
+  const resetMediaDoubleTap = useCallback(() => {
+    mediaDoubleTapRef.current = null;
+  }, []);
+
   const resetMediaGesture = useCallback(() => {
     activePointersRef.current.clear();
+    resetMediaDoubleTap();
     panGestureRef.current = null;
     pinchGestureRef.current = null;
     shouldSuppressStageClickRef.current = false;
@@ -582,7 +597,84 @@ export function MediaViewer({
     setIsMediaGestureActive(false);
     setSwipeOffsetState(initialSwipeOffset);
     setMediaTransformState(initialMediaTransform);
-  }, [setMediaTransformState, setSwipeOffsetState]);
+  }, [resetMediaDoubleTap, setMediaTransformState, setSwipeOffsetState]);
+
+  const handleMediaDoubleTapCandidate = useCallback(
+    (event: PointerEvent<HTMLDivElement>, startX: number, startY: number) => {
+      if (event.pointerType !== 'touch' || selectedMediaIsVideo) {
+        resetMediaDoubleTap();
+        return false;
+      }
+
+      const deltaX = event.clientX - startX;
+      const deltaY = event.clientY - startY;
+
+      if (
+        Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
+        Math.abs(deltaY) >= mediaPanClickSuppressThresholdPx
+      ) {
+        resetMediaDoubleTap();
+        return false;
+      }
+
+      const mediaRect = selectedMediaSurfaceRef.current?.getBoundingClientRect();
+
+      if (
+        !mediaRect ||
+        event.clientX < mediaRect.left ||
+        event.clientX > mediaRect.right ||
+        event.clientY < mediaRect.top ||
+        event.clientY > mediaRect.bottom
+      ) {
+        resetMediaDoubleTap();
+        return false;
+      }
+
+      const tapPositionRatio =
+        mediaRect.width > 0 ? (event.clientX - mediaRect.left) / mediaRect.width : 0.5;
+
+      if (
+        tapPositionRatio <= mediaNavigationClickZoneRatio ||
+        tapPositionRatio >= 1 - mediaNavigationClickZoneRatio
+      ) {
+        resetMediaDoubleTap();
+        return false;
+      }
+
+      const lastTap = mediaDoubleTapRef.current;
+      const isDoubleTap =
+        lastTap !== null &&
+        event.timeStamp - lastTap.timeStamp <= mediaDoubleTapTimeoutMs &&
+        Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) <=
+          mediaDoubleTapMaxDistancePx;
+
+      if (!isDoubleTap) {
+        mediaDoubleTapRef.current = {
+          timeStamp: event.timeStamp,
+          x: event.clientX,
+          y: event.clientY,
+        };
+        return false;
+      }
+
+      event.preventDefault();
+      shouldSuppressStageClickRef.current = true;
+      resetMediaDoubleTap();
+
+      if (mediaTransformRef.current.scale > mediaMinScale) {
+        setMediaTransformState(initialMediaTransform);
+        return true;
+      }
+
+      setMediaTransformState({
+        scale: mediaDoubleTapScale,
+        translateX: 0,
+        translateY: 0,
+      });
+      return true;
+    },
+    [resetMediaDoubleTap, selectedMediaIsVideo, setMediaTransformState],
+  );
 
   const openMediaViewerAtIndex = useCallback(
     (index: number) => {
@@ -698,6 +790,7 @@ export function MediaViewer({
       ) {
         event.preventDefault();
         event.stopPropagation();
+        resetMediaDoubleTap();
         setOpen(false);
         return;
       }
@@ -729,14 +822,25 @@ export function MediaViewer({
         }
       }
     },
-    [hasMultipleMedia, isMediaZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
+    [
+      hasMultipleMedia,
+      isMediaZoomed,
+      resetMediaDoubleTap,
+      selectedMediaIsVideo,
+      showNextMedia,
+      showPreviousMedia,
+    ],
   );
 
-  const handleMetadataClick = useCallback((event: MouseEvent<HTMLElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setOpen(false);
-  }, []);
+  const handleMetadataClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      resetMediaDoubleTap();
+      setOpen(false);
+    },
+    [resetMediaDoubleTap],
+  );
 
   const startMediaGesture = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
@@ -758,6 +862,8 @@ export function MediaViewer({
       setIsMediaGestureActive(true);
 
       if (selectedMediaIsVideo) {
+        resetMediaDoubleTap();
+
         if (activePointersRef.current.size > 1) {
           swipeGestureRef.current = null;
           return;
@@ -776,6 +882,7 @@ export function MediaViewer({
       const activePointers = Array.from(activePointersRef.current.values());
 
       if (activePointers.length >= 2) {
+        resetMediaDoubleTap();
         panGestureRef.current = null;
         pinchGestureRef.current = {
           startDistance: getPointerDistance(activePointers[0], activePointers[1]),
@@ -807,7 +914,7 @@ export function MediaViewer({
         startY: event.clientY,
       };
     },
-    [selectedMediaIsVideo, setSwipeOffsetState],
+    [resetMediaDoubleTap, selectedMediaIsVideo, setSwipeOffsetState],
   );
 
   const updateMediaGesture = useCallback(
@@ -967,6 +1074,7 @@ export function MediaViewer({
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
 
+      const pointerStartedWithMultiplePointers = activePointersRef.current.size > 1;
       activePointersRef.current.delete(event.pointerId);
 
       if (selectedMediaIsVideo) {
@@ -1007,6 +1115,7 @@ export function MediaViewer({
 
         if (isVerticalSwipe) {
           shouldSuppressStageClickRef.current = true;
+          resetMediaDoubleTap();
           setSwipeOffsetState(initialSwipeOffset);
           setOpen(false);
           return;
@@ -1056,13 +1165,38 @@ export function MediaViewer({
 
         if (isVerticalSwipe) {
           shouldSuppressStageClickRef.current = true;
+          resetMediaDoubleTap();
           setIsMediaGestureActive(false);
           setSwipeOffsetState(initialSwipeOffset);
           setOpen(false);
           return;
         }
 
+        if (
+          !pointerStartedWithMultiplePointers &&
+          handleMediaDoubleTapCandidate(event, swipeGesture.startX, swipeGesture.startY)
+        ) {
+          setIsMediaGestureActive(false);
+          setSwipeOffsetState(initialSwipeOffset);
+          return;
+        }
+
         setSwipeOffsetState(initialSwipeOffset);
+      }
+
+      if (
+        !pointerStartedWithMultiplePointers &&
+        panGestureRef.current?.pointerId === event.pointerId &&
+        handleMediaDoubleTapCandidate(
+          event,
+          panGestureRef.current.startX,
+          panGestureRef.current.startY,
+        )
+      ) {
+        panGestureRef.current = null;
+        setIsMediaGestureActive(false);
+        setSwipeOffsetState(initialSwipeOffset);
+        return;
       }
 
       if (activePointers.length >= 2) {
@@ -1094,7 +1228,15 @@ export function MediaViewer({
       panGestureRef.current = null;
       setIsMediaGestureActive(false);
     },
-    [hasMultipleMedia, selectedMediaIsVideo, setSwipeOffsetState, showNextMedia, showPreviousMedia],
+    [
+      handleMediaDoubleTapCandidate,
+      hasMultipleMedia,
+      resetMediaDoubleTap,
+      selectedMediaIsVideo,
+      setSwipeOffsetState,
+      showNextMedia,
+      showPreviousMedia,
+    ],
   );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -1103,6 +1245,7 @@ export function MediaViewer({
     if (target instanceof Element && !target.closest('[data-media-modal-surface]')) {
       event.preventDefault();
       event.stopPropagation();
+      resetMediaDoubleTap();
       setOpen(false);
     }
   };
