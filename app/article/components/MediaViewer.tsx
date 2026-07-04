@@ -315,6 +315,12 @@ export function MediaViewer({
     [hasMultipleMedia, isMediaZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
   );
 
+  const handleMetadataClick = useCallback((event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpen(false);
+  }, []);
+
   const startImageGesture = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       if (selectedMediaIsVideo) {
@@ -476,7 +482,6 @@ export function MediaViewer({
 
       if (
         swipeGesture?.pointerId === event.pointerId &&
-        hasMultipleMedia &&
         mediaTransformRef.current.scale <= mediaMinScale
       ) {
         const pointer = {
@@ -487,12 +492,14 @@ export function MediaViewer({
         const deltaY = pointer.y - swipeGesture.startY;
         const absDeltaX = Math.abs(deltaX);
         const absDeltaY = Math.abs(deltaY);
-        const isSwipe =
+        const isHorizontalSwipe =
           absDeltaX >= mediaSwipeThresholdPx && absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+        const isVerticalSwipe =
+          absDeltaY >= mediaSwipeThresholdPx && absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
 
         swipeGestureRef.current = null;
 
-        if (isSwipe) {
+        if (isHorizontalSwipe && hasMultipleMedia) {
           shouldSuppressStageClickRef.current = true;
 
           if (deltaX > 0) {
@@ -501,6 +508,12 @@ export function MediaViewer({
             showNextMedia();
           }
 
+          return;
+        }
+
+        if (isVerticalSwipe) {
+          shouldSuppressStageClickRef.current = true;
+          setOpen(false);
           return;
         }
 
@@ -728,9 +741,7 @@ export function MediaViewer({
                 <footer
                   className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-2 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] sm:px-4 md:px-5 lg:grid lg:w-full lg:max-w-[min(100%,58rem)] lg:overflow-visible lg:px-4 lg:py-2.5"
                   data-media-modal-surface
-                  onClick={(event) => {
-                    event.stopPropagation();
-                  }}
+                  onClick={handleMetadataClick}
                 >
                   <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 lg:grid lg:min-w-0 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-x-5 lg:gap-y-2">
                     <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase lg:text-[0.72rem] lg:leading-none lg:tracking-[0.18em]">
@@ -765,9 +776,7 @@ export function MediaViewer({
                 <p
                   className="m-0 justify-self-center border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1 font-mono text-sm text-[var(--subtext0)]"
                   data-media-modal-surface
-                  onClick={(event) => {
-                    event.stopPropagation();
-                  }}
+                  onClick={handleMetadataClick}
                 >
                   {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
                 </p>
