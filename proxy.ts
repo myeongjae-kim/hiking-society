@@ -1,14 +1,33 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSafeRedirectTarget } from './app/auth/utils/redirectTarget';
 import { applicationContext } from './core/config/applicationContext';
 
 const { accessTokenCookieName, accessTokenMaxAgeSeconds, refreshTokenCookieName } =
   applicationContext().get('CookieConfig');
 
-const protectedPathPrefixes = ['/feed', '/me', '/members'];
+const protectedPathPrefixes = ['/article', '/feed', '/me', '/members'];
 
 function isProtectedPath(pathname: string) {
   return protectedPathPrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function getCurrentPathWithSearch(request: NextRequest) {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
+function getHomeRedirectWithNext(request: NextRequest) {
+  const url = new URL('/', request.url);
+
+  url.searchParams.set('next', getCurrentPathWithSearch(request));
+
+  return NextResponse.redirect(url);
+}
+
+function getAuthenticatedHomeRedirect(request: NextRequest) {
+  return NextResponse.redirect(
+    new URL(getSafeRedirectTarget(request.nextUrl.searchParams.get('next')), request.url),
   );
 }
 
@@ -64,12 +83,12 @@ async function issueAccessTokenFromRefreshToken(request: NextRequest, response: 
 export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname === '/') {
     if (await getValidAccessPayload(request)) {
-      return NextResponse.redirect(new URL('/feed', request.url));
+      return getAuthenticatedHomeRedirect(request);
     }
 
     const response = await issueAccessTokenFromRefreshToken(
       request,
-      NextResponse.redirect(new URL('/feed', request.url)),
+      getAuthenticatedHomeRedirect(request),
     );
 
     return response ?? NextResponse.next();
@@ -85,7 +104,7 @@ export async function proxy(request: NextRequest) {
 
   const response = await issueAccessTokenFromRefreshToken(request, NextResponse.next());
 
-  return response ?? NextResponse.redirect(new URL('/', request.url));
+  return response ?? getHomeRedirectWithNext(request);
 }
 
 export const config = {

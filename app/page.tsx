@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { LoginButton } from './auth/components/LoginButton';
+import { getSafeRedirectTarget } from './auth/utils/redirectTarget';
 
 const finalHeroTitle = '대학생(?)등산동아리';
 
@@ -19,6 +20,12 @@ type HeroTitleLine = {
   afterCursor?: string;
   beforeCursor: string;
   showCursor?: boolean;
+};
+
+type HomeProps = {
+  searchParams?: Promise<{
+    next?: string | string[];
+  }>;
 };
 
 const heroTitleFrameDuration = 90;
@@ -143,7 +150,9 @@ function getHeroTitleLines(frame: HeroTitleFrame): HeroTitleLine[] {
   ];
 }
 
-export default function Home() {
+export default async function Home({ searchParams }: HomeProps) {
+  const params = searchParams ? await searchParams : {};
+  const redirectTo = getSafeRedirectTarget(params.next);
   const finalHeroTitleLines = getHeroTitleLines({ before: finalHeroTitle, final: true });
 
   return (
@@ -198,7 +207,7 @@ export default function Home() {
           <h1 id="teaser-title" className="sr-only">
             {finalHeroTitle}
           </h1>
-          <LoginButton />
+          <LoginButton redirectTo={redirectTo} />
         </div>
       </section>
     </main>

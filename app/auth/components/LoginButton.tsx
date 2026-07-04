@@ -6,7 +6,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { loginWithGoogleCode } from '../actions/fetchPayloadFromGoogle';
 
-export const LoginButton = () => {
+type LoginButtonProps = {
+  redirectTo?: string;
+};
+
+export const LoginButton = ({ redirectTo = '/feed' }: LoginButtonProps) => {
   const [isPending, setIsPending] = useState(false);
   const login = useGoogleLogin({
     flow: 'auth-code',
@@ -14,7 +18,7 @@ export const LoginButton = () => {
       setIsPending(true);
       loginWithGoogleCode(tokenResponse.code)
         .then(() => {
-          window.location.href = '/feed';
+          window.location.href = redirectTo;
         })
         .catch((error: unknown) => {
           toast.error(error instanceof Error ? error.message : 'Login Failed.', {
