@@ -194,7 +194,7 @@ export function HikingForm({
       box-="round"
       onSubmit={handleSubmit}
     >
-      <Command>{hiking ? `산행 수정: ${hiking.id}` : '산행 등록'}</Command>
+      <Command>{hiking ? `hiking.edit: ${hiking.id}` : 'hiking.new'}</Command>
       <div
         className={`grid gap-1.5 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
           submitting ? 'opacity-70' : ''
