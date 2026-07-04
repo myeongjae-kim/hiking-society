@@ -50,6 +50,16 @@ export type LoadHikingArticlesResult =
       ok: true;
     };
 
+export type LoadArticleCommentsResult =
+  | {
+      error?: string;
+      ok: false;
+    }
+  | {
+      comments: readonly Comment[];
+      ok: true;
+    };
+
 export type ArticleMediaUploadTargetInput = {
   byteSize: number;
   contentType: string;
@@ -351,6 +361,28 @@ export async function loadHikingArticles(hikingId: HikingId): Promise<LoadHiking
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : '게시글을 불러오지 못했습니다.',
+      ok: false,
+    };
+  }
+}
+
+export async function loadArticleComments(
+  articleId: ArticleId,
+): Promise<LoadArticleCommentsResult> {
+  try {
+    const user = await requireMember();
+    const validatedArticleId = getRawId<ArticleId>(articleId);
+    const comments = await applicationContext()
+      .get('ListArticleCommentsUseCase')
+      .listArticleComments({
+        articleId: validatedArticleId,
+        currentUserId: user.id,
+      });
+
+    return { comments, ok: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : '댓글을 불러오지 못했습니다.',
       ok: false,
     };
   }

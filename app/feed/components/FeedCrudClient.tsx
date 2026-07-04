@@ -31,6 +31,7 @@ import {
   deleteArticle as deleteArticleAction,
   deleteComment as deleteCommentAction,
   deleteHiking as deleteHikingAction,
+  loadArticleComments as loadArticleCommentsAction,
   loadHikingArticles as loadHikingArticlesAction,
   prepareArticleMediaUploads,
   toggleArticleLike as toggleArticleLikeAction,
@@ -163,6 +164,10 @@ export function FeedCrudClient({
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [highlightedHikingId, setHighlightedHikingId] = useState<HikingId | null>(selectedHikingId);
   const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
+  const [commentCountDeltaState, setCommentCountDeltaState] = useState({
+    baseCommentCount: commentCount,
+    delta: 0,
+  });
   const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
 
   const hikingArticleCountById = useMemo(
@@ -188,8 +193,22 @@ export function FeedCrudClient({
     () => getCommentsByArticleId(loadedComments),
     [loadedComments],
   );
+  const articleHikingIdByArticleId = useMemo(
+    () =>
+      new Map<ArticleId, HikingId>(loadedArticles.map((article) => [article.id, article.hikingId])),
+    [loadedArticles],
+  );
+  const commentArticleIdByCommentId = useMemo(
+    () =>
+      new Map<CommentId, ArticleId>(
+        loadedComments.map((comment) => [comment.id, comment.articleId]),
+      ),
+    [loadedComments],
+  );
   const visibleArticleCount = articleCount;
-  const visibleCommentCount = commentCount;
+  const commentCountDelta =
+    commentCountDeltaState.baseCommentCount === commentCount ? commentCountDeltaState.delta : 0;
+  const visibleCommentCount = Math.max(0, commentCount + commentCountDelta);
   const activeHiking =
     activeHikingForm?.type === 'edit'
       ? initialHikings.find((hiking) => hiking.id === activeHikingForm.hikingId)
@@ -434,6 +453,71 @@ export function FeedCrudClient({
     });
   };
 
+  const refreshArticleComments = async (articleId: ArticleId) => {
+    const hikingId = articleHikingIdByArticleId.get(articleId);
+
+    if (!hikingId) {
+      throw new Error('댓글을 갱신할 게시글을 찾을 수 없습니다.');
+    }
+
+    const result = await loadArticleCommentsAction(articleId);
+
+    if (!result.ok) {
+      throw new Error(result.error ?? '댓글을 불러오지 못했습니다.');
+    }
+
+    setCommentsByHikingId((currentComments) => {
+      const hikingComments = currentComments[hikingId];
+
+      if (!hikingComments) {
+        return currentComments;
+      }
+
+      return {
+        ...currentComments,
+        [hikingId]: [
+          ...hikingComments.filter((comment) => comment.articleId !== articleId),
+          ...result.comments,
+        ],
+      };
+    });
+
+    return true;
+  };
+
+  const applyArticleLikeToggle = (articleId: ArticleId) => {
+    const hikingId = articleHikingIdByArticleId.get(articleId);
+
+    if (!hikingId) {
+      throw new Error('좋아요를 갱신할 게시글을 찾을 수 없습니다.');
+    }
+
+    setArticlesByHikingId((currentArticles) => {
+      const hikingArticles = currentArticles[hikingId];
+
+      if (!hikingArticles) {
+        return currentArticles;
+      }
+
+      return {
+        ...currentArticles,
+        [hikingId]: hikingArticles.map((article) => {
+          if (article.id !== articleId) {
+            return article;
+          }
+
+          const likedByCurrentUser = !article.likedByCurrentUser;
+
+          return {
+            ...article,
+            likedByCurrentUser,
+            likeCount: Math.max(0, article.likeCount + (likedByCurrentUser ? 1 : -1)),
+          };
+        }),
+      };
+    });
+  };
+
   const copyTextToClipboard = async (text: string) => {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -484,7 +568,7 @@ export function FeedCrudClient({
       errorKey: string;
       loadingLabel?: string;
       onSettled?: () => void;
-      onSuccess?: (result: Extract<T, { ok: true }>) => void;
+      onSuccess?: (result: T & { ok: true }) => Promise<void> | void;
       refresh?: boolean;
     },
   ) => {
@@ -503,11 +587,23 @@ export function FeedCrudClient({
           return;
         }
 
-        options.onSuccess?.(result as Extract<T, { ok: true }>);
-        setError(options.errorKey, null);
-        if (options.refresh !== false) {
-          router.refresh();
+        try {
+          await options.onSuccess?.(result as T & { ok: true });
+          setError(options.errorKey, null);
+          if (options.refresh !== false) {
+            router.refresh();
+          }
+        } catch (error) {
+          setError(
+            options.errorKey,
+            error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+          );
         }
+      } catch (error) {
+        setError(
+          options.errorKey,
+          error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+        );
       } finally {
         options.onSettled?.();
       }
@@ -852,7 +948,13 @@ export function FeedCrudClient({
 
     runAction(() => createCommentAction(formData), {
       errorKey: `comment-new-${articleId}`,
-      onSuccess: () => {
+      onSuccess: async () => {
+        await refreshArticleComments(articleId);
+        setCommentCountDeltaState((currentState) => ({
+          baseCommentCount: commentCount,
+          delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
+        }));
+
         if (parentCommentId === null) {
           setCommentFormResetKeyByArticleId((currentKeys) => ({
             ...currentKeys,
@@ -862,17 +964,30 @@ export function FeedCrudClient({
 
         setReplyingCommentId(null);
       },
+      refresh: false,
     });
   };
 
   const updateComment = (commentId: CommentId, body: string) => {
+    const articleId = commentArticleIdByCommentId.get(commentId);
+
+    if (!articleId) {
+      setError(`comment-edit-${commentId}`, '댓글을 갱신할 게시글을 찾을 수 없습니다.');
+      return;
+    }
+
     const formData = new FormData();
+    formData.set('articleId', articleId);
     formData.set('commentId', commentId);
     formData.set('body', body);
 
     runAction(() => updateCommentAction(formData), {
       errorKey: `comment-edit-${commentId}`,
-      onSuccess: () => setEditingCommentId(null),
+      onSuccess: async () => {
+        await refreshArticleComments(articleId);
+        setEditingCommentId(null);
+      },
+      refresh: false,
     });
   };
 
@@ -882,10 +997,23 @@ export function FeedCrudClient({
       confirmLabel: '삭제',
       onConfirm: () => {
         const formData = new FormData();
+        formData.set('articleId', comment.articleId);
         formData.set('commentId', comment.id);
         runAction(() => deleteCommentAction(formData), {
           errorKey: `comment-${comment.id}`,
-          onSuccess: () => setConfirmState(null),
+          onSuccess: async () => {
+            await refreshArticleComments(comment.articleId);
+            setConfirmState(null);
+
+            if (comment.deletedAt === null) {
+              setCommentCountDeltaState((currentState) => ({
+                baseCommentCount: commentCount,
+                delta:
+                  (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
+              }));
+            }
+          },
+          refresh: false,
         });
       },
       title: '댓글 삭제',
@@ -900,19 +1028,33 @@ export function FeedCrudClient({
     setLikePending(likePendingKey, true);
     runAction(() => toggleArticleLikeAction(formData), {
       errorKey: `article-${articleId}`,
+      onSuccess: () => applyArticleLikeToggle(articleId),
       onSettled: () => setLikePending(likePendingKey, false),
+      refresh: false,
     });
   };
 
   const toggleCommentLike = (commentId: CommentId) => {
+    const articleId = commentArticleIdByCommentId.get(commentId);
+
+    if (!articleId) {
+      setError(`comment-${commentId}`, '댓글을 갱신할 게시글을 찾을 수 없습니다.');
+      return;
+    }
+
     const likePendingKey = `comment-${commentId}` as LikePendingKey;
     const formData = new FormData();
+    formData.set('articleId', articleId);
     formData.set('commentId', commentId);
 
     setLikePending(likePendingKey, true);
     runAction(() => toggleCommentLikeAction(formData), {
       errorKey: `comment-${commentId}`,
+      onSuccess: async () => {
+        await refreshArticleComments(articleId);
+      },
       onSettled: () => setLikePending(likePendingKey, false),
+      refresh: false,
     });
   };
 

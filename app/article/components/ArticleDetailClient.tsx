@@ -110,7 +110,20 @@ export function ArticleDetailClient({
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
   const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
+  const [articleLikeOverride, setArticleLikeOverride] = useState<{
+    articleId: ArticleId;
+    likeCount: number;
+    likedByCurrentUser: boolean;
+  } | null>(null);
   const currentAuthorName = getAuthorName(currentUser);
+  const displayedArticle =
+    articleLikeOverride?.articleId === article.id
+      ? {
+          ...article,
+          likeCount: articleLikeOverride.likeCount,
+          likedByCurrentUser: articleLikeOverride.likedByCurrentUser,
+        }
+      : article;
 
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
@@ -133,6 +146,7 @@ export function ArticleDetailClient({
       loadingLabel?: string;
       onSettled?: () => void;
       onSuccess?: () => void;
+      refresh?: boolean;
     },
   ) => {
     setLoadingLabel(options.loadingLabel ?? null);
@@ -148,7 +162,9 @@ export function ArticleDetailClient({
 
         options.onSuccess?.();
         setError(options.errorKey, null);
-        router.refresh();
+        if (options.refresh !== false) {
+          router.refresh();
+        }
       } finally {
         options.onSettled?.();
       }
@@ -384,7 +400,18 @@ export function ArticleDetailClient({
     setLikePending(likePendingKey, true);
     runAction(() => toggleArticleLikeAction(formData), {
       errorKey: `article-${articleId}`,
+      onSuccess: () => {
+        setArticleLikeOverride({
+          articleId,
+          likedByCurrentUser: !displayedArticle.likedByCurrentUser,
+          likeCount: Math.max(
+            0,
+            displayedArticle.likeCount + (displayedArticle.likedByCurrentUser ? -1 : 1),
+          ),
+        });
+      },
       onSettled: () => setLikePending(likePendingKey, false),
+      refresh: false,
     });
   };
 
@@ -419,9 +446,9 @@ export function ArticleDetailClient({
         </section>
 
         <ArticlePanel
-          article={article}
-          articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
-          canEdit={article.authorUserId === currentUser.id}
+          article={displayedArticle}
+          articleLikePending={pendingLikeByKey[`article-${displayedArticle.id}`] === true}
+          canEdit={displayedArticle.authorUserId === currentUser.id}
           comments={comments}
           commentFormResetKey={commentFormResetKey}
           currentUserId={currentUser.id}
@@ -446,9 +473,9 @@ export function ArticleDetailClient({
         onOpenChange={(open) => !open && setConfirmState(null)}
       />
       <ArticleFormDialog
-        article={article}
-        error={errorByKey[`article-edit-${article.id}`]}
-        formKey={`article-edit-${article.id}`}
+        article={displayedArticle}
+        error={errorByKey[`article-edit-${displayedArticle.id}`]}
+        formKey={`article-edit-${displayedArticle.id}`}
         onCancel={() => {
           setError(`article-edit-${article.id}`, null);
           setEditingArticle(false);

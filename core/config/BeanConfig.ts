@@ -24,7 +24,10 @@ import { GoogleOAuthPort } from '../auth/application/port/out/GoogleOAuthPort';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';
 import { CookieConfig } from '../auth/config/CookieConfig';
 import { CommentCommandService } from '../comment/application/CommentCommandService';
+import { ListArticleCommentsService } from '../comment/application/ListArticleCommentsService';
 import { CommentCommandUseCase } from '../comment/application/port/in/CommentCommandUseCase';
+import { ListArticleCommentsUseCase } from '../comment/application/port/in/ListArticleCommentsUseCase';
+import { CommentQueryPort } from '../comment/application/port/out/CommentQueryPort';
 import { FeedDrizzleAdapter } from '../feed/adapter/FeedDrizzleAdapter';
 import { ListFeedService } from '../feed/application/ListFeedService';
 import { ListFeedUseCase } from '../feed/application/port/in/ListFeedUseCase';
@@ -67,12 +70,14 @@ export type Beans = {
   AuthCommandPort: AuthCommandPort;
   AuthQueryPort: AuthQueryPort;
   CommentCommandUseCase: CommentCommandUseCase;
+  CommentQueryPort: CommentQueryPort;
   FeedCommandPort: FeedCommandPort;
   FeedQueryPort: FeedQueryPort;
   GoogleOAuthPort: GoogleOAuthPort;
   HikingCommandUseCase: HikingCommandUseCase;
   LikeCommandPort: LikeCommandPort;
   LikeCommandUseCase: LikeCommandUseCase;
+  ListArticleCommentsUseCase: ListArticleCommentsUseCase;
   ListFeedUseCase: ListFeedUseCase;
   LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
   MediaStoragePort: MediaStoragePort;
@@ -108,6 +113,7 @@ export const beanConfig: BeanConfig<Beans> = {
   AuthCommandPort: (bind) => bind().to(AuthCommandAdapter),
   AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
   CommentCommandUseCase: (bind) => bind().to(CommentCommandService),
+  CommentQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
   FeedCommandPort: (bind) => bind().to(FeedDrizzleAdapter),
   FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
   GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
@@ -115,6 +121,7 @@ export const beanConfig: BeanConfig<Beans> = {
   LikeCommandPort: (bind) => bind().to(LikeDrizzleAdapter),
   LikeCommandUseCase: (bind) => bind().to(LikeCommandService),
   ListFeedUseCase: (bind) => bind().to(ListFeedService),
+  ListArticleCommentsUseCase: (bind) => bind().to(ListArticleCommentsService),
   LoginWithGoogleCodeUseCase: (bind) => bind().to(LoginWithGoogleCodeService),
   MediaStoragePort: (bind) => bind().to(S3MediaStorageAdapter),
   VerifyAccessTokenUseCase: (bind) => bind().to(VerifyTokenService),
