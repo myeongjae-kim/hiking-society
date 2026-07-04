@@ -1154,7 +1154,7 @@ export function MediaViewer({
             >
               <button
                 aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-                className="group relative block h-auto w-full touch-pan-y touch-pinch-zoom appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className="group relative block h-auto w-full touch-pinch-zoom appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                 onClick={handleInlineTriggerClick}
                 onPointerCancel={handleInlinePointerCancel}
                 onPointerDown={handleInlinePointerDown}
