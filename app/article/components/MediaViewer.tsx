@@ -77,6 +77,12 @@ function normalizeMetadataValue(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
+function formatMetadataDateTime(value: string | null | undefined) {
+  return (
+    normalizeMetadataValue(value)?.replace(/^(\d{4}):(\d{2}):(\d{2})(?=[ T]|$)/, '$1-$2-$3') ?? null
+  );
+}
+
 export function getMediaTakenTimeLabel(media: ArticleMedia) {
   if (media.mediaType !== 'image') {
     return null;
@@ -149,7 +155,7 @@ function getMetadataPanelItems(media: ArticleMedia) {
   const camera = getCameraLabel(media);
   const exposureItems = getExposureItems(media);
   const focalLength = normalizeMetadataValue(media.metadata.focalLengthIn35mmFilm);
-  const dateTime = normalizeMetadataValue(media.metadata.dateTime);
+  const dateTime = formatMetadataDateTime(media.metadata.dateTime);
 
   return [
     camera ? { label: 'camera', value: camera } : null,
@@ -738,26 +744,34 @@ export function MediaViewer({
 
           {selectedMetadataItems.length > 0 ? (
             <footer
-              className="grid max-h-[28svh] w-full max-w-[min(100%,58rem)] justify-self-center overflow-y-auto border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-3 py-2.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] sm:px-4"
+              className="w-full max-w-[min(100%,58rem)] justify-self-center overflow-x-hidden overflow-y-hidden border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_92%,var(--background0))] px-2 py-1.5 shadow-[0_0_0_1px_color-mix(in_srgb,var(--background0)_60%,transparent)] lg:grid lg:max-h-[28svh] lg:overflow-y-auto lg:px-4 lg:py-2.5"
               data-media-modal-surface
             >
-              <div className="grid gap-x-5 gap-y-2 sm:grid-cols-[auto_1fr_auto] sm:items-end">
-                <p className="m-0 font-mono text-[0.72rem] leading-none tracking-[0.18em] text-[var(--subtext0)] uppercase">
+              <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 lg:grid lg:min-w-0 lg:grid-cols-[auto_1fr_auto] lg:items-end lg:gap-x-5 lg:gap-y-2">
+                <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase lg:text-[0.72rem] lg:leading-none lg:tracking-[0.18em]">
                   frame {selectedIndex + 1}/{media.length}
                 </p>
-                <dl className="m-0 grid min-w-0 gap-x-4 gap-y-2 sm:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]">
-                  {selectedMetadataItems.map((item) => (
-                    <div className="grid min-w-0 gap-1" key={item.label}>
-                      <dt className="font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase">
+                <dl className="contents lg:m-0 lg:grid lg:min-w-0 lg:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] lg:gap-x-4 lg:gap-y-2">
+                  {selectedMetadataItems.map((item, index) => (
+                    <div className="contents lg:grid lg:min-w-0 lg:gap-1" key={item.label}>
+                      <dt className="sr-only font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase lg:not-sr-only">
                         {item.label}
                       </dt>
-                      <dd className="m-0 min-w-0 font-mono text-[0.9rem] leading-tight break-words text-[var(--foreground0)]">
+                      <dd className="m-0 max-w-full min-w-0 text-center font-mono text-xs leading-tight break-words text-[var(--foreground0)] lg:text-left lg:text-[0.9rem]">
                         {item.value}
+                        {index < selectedMetadataItems.length - 1 ? (
+                          <span
+                            aria-hidden="true"
+                            className="ml-2 text-[var(--overlay1)] lg:hidden"
+                          >
+                            ·
+                          </span>
+                        ) : null}
                       </dd>
                     </div>
                   ))}
                 </dl>
-                <p className="m-0 justify-self-start border-l-2 border-[var(--blue)] pl-2 font-mono text-[0.72rem] leading-none text-[var(--subtext0)] sm:justify-self-end">
+                <p className="m-0 hidden justify-self-start border-l-2 border-[var(--blue)] pl-2 font-mono text-[0.72rem] leading-none text-[var(--subtext0)] lg:block lg:justify-self-end">
                   photo data
                 </p>
               </div>
