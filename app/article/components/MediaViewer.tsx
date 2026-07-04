@@ -1416,7 +1416,7 @@ export function MediaViewer({
                   data-media-modal-surface
                   onClick={handleMetadataClick}
                 >
-                  {selectedMedia.mediaType} {selectedIndex + 1}/{media.length}
+                  frame {selectedIndex + 1}/{media.length}
                 </p>
               )}
             </div>
