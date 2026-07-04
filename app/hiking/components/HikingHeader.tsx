@@ -34,7 +34,7 @@ export function HikingHeader({
           className="m-0 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]"
           id={`hiking-${hiking.id}`}
         >
-          {hiking.mountainName}
+          {hiking.order}. {hiking.mountainName}
         </h2>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <span

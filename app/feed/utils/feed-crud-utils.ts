@@ -8,8 +8,12 @@ export type FeedGroup = {
   hiking: Hiking;
 };
 
-function compareDesc(left: string, right: string) {
+function compareDateDesc(left: string, right: string) {
   return right.localeCompare(left);
+}
+
+function compareNumberDesc(left: number, right: number) {
+  return right - left;
 }
 
 export function getAuthorName(user: {
@@ -25,11 +29,11 @@ export function getFeedGroups(
   articles: readonly Article[],
 ): FeedGroup[] {
   return [...hikings]
-    .sort((left, right) => compareDesc(left.hikingDate, right.hikingDate))
+    .sort((left, right) => compareNumberDesc(left.order, right.order))
     .map((hiking) => ({
       articles: articles
         .filter((article) => article.hikingId === hiking.id && article.deletedAt === null)
-        .sort((left, right) => compareDesc(left.createdAt, right.createdAt)),
+        .sort((left, right) => compareDateDesc(left.createdAt, right.createdAt)),
       hiking,
     }));
 }
