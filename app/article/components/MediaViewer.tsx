@@ -4,6 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { MouseEvent, PointerEvent, ReactNode, RefObject, TransitionEvent } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
+import { toast } from 'sonner';
 
 import { photoDialogOverlayClassName } from '@/app/common/components/styles';
 import type { ArticleMedia } from '@/core/article/domain';
@@ -572,6 +573,20 @@ export function MediaViewer({
     setMediaTransformState(initialMediaTransform);
   }, [setMediaTransformState, setSwipeOffsetState]);
 
+  const openMediaViewerAtIndex = useCallback(
+    (index: number) => {
+      const selectedMediaIndex = clamp(index, 0, Math.max(media.length - 1, 0));
+      if (media[selectedMediaIndex]?.mediaType === 'video') {
+        toast('동영상이 음소거 상태로 재생됩니다.');
+      }
+
+      resetMediaGesture();
+      setSelectedIndex(selectedMediaIndex);
+      setOpen(true);
+    },
+    [media, resetMediaGesture],
+  );
+
   const handleInlineTriggerClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>, index: number) => {
       if (shouldSuppressInlineClickRef.current) {
@@ -610,15 +625,13 @@ export function MediaViewer({
 
       event.preventDefault();
       event.stopPropagation();
-      resetMediaGesture();
-      setSelectedIndex(index);
-      setOpen(true);
+      openMediaViewerAtIndex(index);
     },
     [
       canShowNextInlineMedia,
       canShowPreviousInlineMedia,
       hasMultipleMedia,
-      resetMediaGesture,
+      openMediaViewerAtIndex,
       showNextInlineMedia,
       showPreviousInlineMedia,
     ],
@@ -1123,8 +1136,7 @@ export function MediaViewer({
           <button
             className={triggerClassName}
             onClick={() => {
-              resetMediaGesture();
-              setSelectedIndex(clamp(initialIndex, 0, Math.max(media.length - 1, 0)));
+              openMediaViewerAtIndex(initialIndex);
             }}
             type="button"
           >
@@ -1208,8 +1220,7 @@ export function MediaViewer({
                     <button
                       className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                       onClick={() => {
-                        resetMediaGesture();
-                        setSelectedIndex(index);
+                        openMediaViewerAtIndex(index);
                       }}
                       type="button"
                     >
