@@ -167,6 +167,8 @@ export async function createCompressedMp4File(
     throw new Error('동영상은 90초 이하만 선택해주세요.');
   }
 
+  const sourceThumbnailPromise = createThumbnail(file, file.name).catch(() => null);
+
   const [{ fetchFile }, ffmpeg] = await Promise.all([import('@ffmpeg/util'), getFfmpeg()]);
   const inputPath = `input-${crypto.randomUUID()}`;
   const outputPath = `output-${crypto.randomUUID()}.mp4`;
@@ -205,10 +207,9 @@ export async function createCompressedMp4File(
       lastModified: Date.now(),
       type: outputContentType,
     });
-    const [outputMetadata, thumbnailFile] = await Promise.all([
-      readVideoMetadata(outputFile),
-      createThumbnail(outputFile, file.name),
-    ]);
+    const outputMetadata = await readVideoMetadata(outputFile);
+    const sourceThumbnailFile = await sourceThumbnailPromise;
+    const thumbnailFile = sourceThumbnailFile ?? (await createThumbnail(outputFile, file.name));
 
     options.onProgress?.(1);
 
