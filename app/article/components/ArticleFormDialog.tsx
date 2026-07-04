@@ -37,7 +37,7 @@ export function ArticleFormDialog({
         <Dialog.Overlay className={dialogOverlayClassName} />
         <Dialog.Content className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none">
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
-          <div className="max-h-[calc(100svh-2rem)] w-full max-w-[48rem] overflow-y-auto">
+          <div className="max-h-[calc(100svh-2rem)] w-full max-w-[64rem] overflow-y-auto">
             <ArticleForm
               article={article}
               error={error}
