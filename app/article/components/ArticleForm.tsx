@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
@@ -13,7 +13,6 @@ import {
   hiddenFileInputClassName,
   inlineButtonClassName,
 } from '@/app/common/components/styles';
-import { getHikingDisplay } from '@/app/hiking/components/hikingFormUtils';
 import type { Article } from '@/core/article/domain';
 import type { Hiking } from '@/core/hiking/domain';
 
@@ -33,6 +32,7 @@ type ArticleFormProps = {
   error?: string;
   hiking?: Hiking;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (values: ArticleFormValues) => void;
   submitting?: boolean;
 };
@@ -44,15 +44,45 @@ function reorderDraftMedias(media: readonly DraftMedia[]) {
   }));
 }
 
+function getMediaDirtyKey(media: DraftMedia) {
+  return [
+    media.order,
+    media.objectKey ?? '',
+    media.url,
+    media.fileName,
+    media.fileSize ?? '',
+    media.lastModified ?? '',
+    media.mediaType,
+  ].join(':');
+}
+
+function isArticleFormDirty(values: ArticleFormValues, initialValues: ArticleFormValues) {
+  if (values.body !== initialValues.body) {
+    return true;
+  }
+
+  if (values.media.length !== initialValues.media.length) {
+    return true;
+  }
+
+  return values.media.some((media, index) => {
+    const initialMedia = initialValues.media[index];
+
+    return initialMedia === undefined || getMediaDirtyKey(media) !== getMediaDirtyKey(initialMedia);
+  });
+}
+
 export function ArticleForm({
   article,
   error,
   hiking,
   onCancel,
+  onDirtyChange,
   onSubmit,
   submitting = false,
 }: ArticleFormProps) {
-  const [values, setValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
+  const [initialValues] = useState<ArticleFormValues>(() => getArticleFormDefaults(article));
+  const [values, setValues] = useState<ArticleFormValues>(initialValues);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [processingLabel, setProcessingLabel] = useState('처리 중');
@@ -61,10 +91,15 @@ export function ArticleForm({
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const valuesRef = useRef(values);
   const disabled = isProcessingMedia || submitting;
+  const isDirty = useMemo(() => isArticleFormDirty(values, initialValues), [initialValues, values]);
 
   useEffect(() => {
     valuesRef.current = values;
   }, [values]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   useEffect(() => {
     return () => {
@@ -297,12 +332,10 @@ export function ArticleForm({
   };
 
   const handleCancel = () => {
-    values.media.forEach(revokeDraftMediaUrl);
     onCancel();
   };
 
   const duplicateMediaKeys = getDuplicateMediaKeys(values.media);
-  const hikingDisplay = hiking ? getHikingDisplay(hiking) : null;
 
   return (
     <>
