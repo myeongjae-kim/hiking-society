@@ -1,5 +1,7 @@
 import { ActionButton } from '@/app/common/components/ActionButton';
+import { inlineButtonClassName } from '@/app/common/components/styles';
 import type { Hiking } from '@/core/hiking/domain';
+import type { MouseEvent } from 'react';
 
 import { getHikingDisplay } from './hikingFormUtils';
 
@@ -8,6 +10,7 @@ type HikingHeaderProps = {
   error?: string;
   hiking: Hiking;
   onAddArticle: () => void;
+  onCopyLink: () => void;
   onDelete: () => void;
   onEdit: () => void;
 };
@@ -17,12 +20,13 @@ export function HikingHeader({
   error,
   hiking,
   onAddArticle,
+  onCopyLink,
   onDelete,
   onEdit,
 }: HikingHeaderProps) {
   const hikingDisplay = getHikingDisplay(hiking);
 
-  const runMenuAction = (event: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+  const runMenuAction = (event: MouseEvent<HTMLButtonElement>, action: () => void) => {
     event.currentTarget.closest('details')?.removeAttribute('open');
     action();
   };
@@ -31,10 +35,33 @@ export function HikingHeader({
     <>
       <header className="sticky top-2 z-20 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1.5 shadow-[0_0.35rem_0_var(--background0)] sm:px-4 sm:py-3">
         <h2
-          className="m-0 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]"
+          className="m-0 flex min-w-0 items-center gap-2 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]"
           id={`hiking-${hiking.id}`}
         >
-          {hiking.order}. {hiking.mountainName}
+          <span className="min-w-0">
+            {hiking.order}. {hiking.mountainName}
+          </span>
+          <button
+            aria-label={`${hiking.mountainName} 산행 링크 복사`}
+            className={`${inlineButtonClassName} aspect-square !min-h-[1.65rem] !min-w-[1.65rem] !px-1 !py-1 text-[0.95rem] sm:!min-h-[1.9rem] sm:!min-w-[1.9rem]`}
+            onClick={onCopyLink}
+            title="산행 링크 복사"
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71" />
+            </svg>
+          </button>
         </h2>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <span

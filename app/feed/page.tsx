@@ -1,12 +1,21 @@
 import { requireCurrentUser } from '@/app/auth/actions/session';
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
 import { applicationContext } from '@/core/config/applicationContext';
+import type { HikingId } from '@/core/hiking/domain';
 import { cookies } from 'next/headers';
 import { AssociateFeedNotice } from './components/AssociateFeedNotice';
 import { FeedCrudClient } from './components/FeedCrudClient';
 
-export default async function FeedPage() {
+type FeedPageProps = {
+  searchParams?: Promise<{
+    hikingId?: string | string[];
+  }>;
+};
+
+export default async function FeedPage({ searchParams }: FeedPageProps) {
   const user = await requireCurrentUser();
+  const params = searchParams ? await searchParams : {};
+  const hikingIdParam = Array.isArray(params.hikingId) ? params.hikingId[0] : params.hikingId;
 
   if (user.role === 'associate') {
     return <AssociateFeedNotice user={user} />;
@@ -28,6 +37,7 @@ export default async function FeedPage() {
       currentUser={user}
       hikings={hikings}
       notificationSnapshot={notificationSnapshot}
+      selectedHikingId={hikingIdParam ? (hikingIdParam as HikingId) : null}
     />
   );
 }

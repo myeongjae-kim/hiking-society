@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toast } from 'sonner';
 
 import { ArticleFormDialog } from '@/app/article/components/ArticleFormDialog';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
@@ -24,10 +25,10 @@ import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import {
+  cleanupArticleMediaUploads,
   createArticle as createArticleAction,
   createComment as createCommentAction,
   createHiking as createHikingAction,
-  cleanupArticleMediaUploads,
   deleteArticle as deleteArticleAction,
   deleteComment as deleteCommentAction,
   deleteHiking as deleteHikingAction,
@@ -54,6 +55,7 @@ type FeedCrudClientProps = {
   currentUser: AuthenticatedUser;
   hikings: readonly Hiking[];
   notificationSnapshot: NotificationListSnapshot;
+  selectedHikingId: HikingId | null;
 };
 
 type ActiveArticleForm =
@@ -121,8 +123,10 @@ export function FeedCrudClient({
   currentUser,
   hikings: initialHikings,
   notificationSnapshot,
+  selectedHikingId,
 }: FeedCrudClientProps) {
   const router = useRouter();
+  const scrolledHikingIdRef = useRef<HikingId | null>(null);
   const [isPending, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
   const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
@@ -184,6 +188,35 @@ export function FeedCrudClient({
     activeArticleForm?.type === 'create' ||
     (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
 
+  useEffect(() => {
+    if (!selectedHikingId || scrolledHikingIdRef.current === selectedHikingId) {
+      return;
+    }
+
+    const selectedHikingElement = document.getElementById(`hiking-section-${selectedHikingId}`);
+
+    if (!selectedHikingElement) {
+      return;
+    }
+
+    const alignSelectedHikingToTop = () => {
+      const selectedHikingTop = selectedHikingElement.getBoundingClientRect().top + window.scrollY;
+
+      scrolledHikingIdRef.current = selectedHikingId;
+      window.scrollTo({ top: Math.max(0, selectedHikingTop) });
+      selectedHikingElement.focus({ preventScroll: true });
+    };
+    const animationFrameId = window.requestAnimationFrame(alignSelectedHikingToTop);
+    const timeoutIds = [100, 350, 800].map((delay) =>
+      window.setTimeout(alignSelectedHikingToTop, delay),
+    );
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [selectedHikingId]);
+
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
       const nextErrors = { ...currentErrors };
@@ -196,6 +229,47 @@ export function FeedCrudClient({
 
       return nextErrors;
     });
+  };
+
+  const copyTextToClipboard = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.setAttribute('readonly', '');
+    textArea.style.left = '-9999px';
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    textArea.select();
+
+    try {
+      const copied = document.execCommand('copy');
+
+      if (!copied) {
+        throw new Error('Copy command failed.');
+      }
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const copyHikingLink = (hiking: Hiking) => {
+    const url = new URL('/feed', window.location.origin);
+    url.searchParams.set('hikingId', hiking.id);
+
+    copyTextToClipboard(url.toString())
+      .then(() => {
+        setError(`hiking-${hiking.id}`, null);
+        toast.success('산행 링크를 복사했습니다.', { position: 'bottom-center' });
+      })
+      .catch(() => {
+        setError(`hiking-${hiking.id}`, '링크 복사에 실패했습니다.');
+        toast.error('링크 복사에 실패했습니다.', { position: 'bottom-center' });
+      });
   };
 
   const runAction = (
@@ -626,9 +700,13 @@ export function FeedCrudClient({
 
           {groups.map((group, groupIndex) => (
             <section
-              className={gridStackClassName}
+              className={`${gridStackClassName} focus:outline-none ${
+                selectedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
+              }`}
+              id={`hiking-section-${group.hiking.id}`}
               key={`${group.hiking.id}-${groupIndex}`}
               aria-labelledby={`hiking-${group.hiking.id}`}
+              tabIndex={-1}
             >
               <HikingHeader
                 canManageHiking={group.hiking.authorUserId === currentUser.id}
@@ -637,6 +715,7 @@ export function FeedCrudClient({
                 onAddArticle={() =>
                   setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
                 }
+                onCopyLink={() => copyHikingLink(group.hiking)}
                 onDelete={() => requestDeleteHiking(group.hiking)}
                 onEdit={() => setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
               />
@@ -681,6 +760,7 @@ export function FeedCrudClient({
               </div>
             </section>
           ))}
+          {selectedHikingId ? <div aria-hidden="true" className="h-[100svh]" /> : null}
         </section>
 
         <StatusPanel
