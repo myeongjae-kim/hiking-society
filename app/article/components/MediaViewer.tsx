@@ -370,10 +370,9 @@ export function MediaViewer({
         startY: event.clientY,
       };
       shouldSuppressInlineClickRef.current = false;
-      setInlineSwipeTrack(createInlineSwipeTrack(0, false));
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [createInlineSwipeTrack, hasMultipleMedia, inlineCarousel],
+    [hasMultipleMedia, inlineCarousel],
   );
 
   const handleInlinePointerMove = useCallback(
@@ -445,7 +444,11 @@ export function MediaViewer({
       }
 
       if (!isHorizontalSwipe || !hasMultipleMedia) {
-        if (axis === 'horizontal' && absDeltaX >= mediaPanClickSuppressThresholdPx) {
+        if (
+          inlineSwipeTrack &&
+          axis === 'horizontal' &&
+          absDeltaX >= mediaPanClickSuppressThresholdPx
+        ) {
           setInlineSwipeTrack(createInlineSwipeTrack(0, true));
           return;
         }
@@ -469,7 +472,13 @@ export function MediaViewer({
 
       setInlineSwipeTrack(createInlineSwipeTrack(-width, true, targetIndex));
     },
-    [createInlineSwipeTrack, hasMultipleMedia, media.length, normalizedActiveInlineIndex],
+    [
+      createInlineSwipeTrack,
+      hasMultipleMedia,
+      inlineSwipeTrack,
+      media.length,
+      normalizedActiveInlineIndex,
+    ],
   );
 
   const handleInlinePointerCancel = useCallback(
