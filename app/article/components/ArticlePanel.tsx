@@ -27,6 +27,8 @@ type ArticlePanelProps = {
   editingCommentId: CommentId | null;
   errorByKey: Record<string, string>;
   highlightedCommentId?: CommentId | null;
+  isCommentCreateSubmitting: (articleId: ArticleId, parentCommentId: CommentId | null) => boolean;
+  isCommentEditSubmitting: (commentId: CommentId) => boolean;
   isCommentLikePending: (commentId: CommentId) => boolean;
   mobileMediaCarousel?: boolean;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
@@ -52,6 +54,8 @@ export function ArticlePanel({
   editingCommentId,
   errorByKey,
   highlightedCommentId = null,
+  isCommentCreateSubmitting,
+  isCommentEditSubmitting,
   isCommentLikePending,
   mobileMediaCarousel = false,
   onCreateComment,
@@ -180,6 +184,7 @@ export function ArticlePanel({
               onReply={onReplyComment}
               onSubmitEdit={onSubmitCommentEdit}
               onToggleLike={onToggleCommentLike}
+              submittingEdit={isCommentEditSubmitting(comment.id)}
               likeDisabled={isCommentLikePending(comment.id)}
               prompt="comment>"
               replies={visibleReplies}
@@ -191,6 +196,7 @@ export function ArticlePanel({
                   onCancel={() => onReplyComment(null)}
                   onSubmit={(body) => onCreateComment(article.id, body, comment.id)}
                   prompt="reply.new>"
+                  submitting={isCommentCreateSubmitting(article.id, comment.id)}
                 />
               </div>
             ) : null}
@@ -207,6 +213,7 @@ export function ArticlePanel({
                 onReply={onReplyComment}
                 onSubmitEdit={onSubmitCommentEdit}
                 onToggleLike={onToggleCommentLike}
+                submittingEdit={isCommentEditSubmitting(reply.id)}
                 likeDisabled={isCommentLikePending(reply.id)}
                 prompt="reply>"
                 replies={[]}
@@ -220,6 +227,7 @@ export function ArticlePanel({
           key={`comment-new-${article.id}-${commentFormResetKey}`}
           onSubmit={(body) => onCreateComment(article.id, body, null)}
           prompt="comment.new>"
+          submitting={isCommentCreateSubmitting(article.id, null)}
         />
       </section>
     </article>

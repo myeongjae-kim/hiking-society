@@ -16,6 +16,7 @@ type CommentLineProps = {
   onReply: (commentId: CommentId | null) => void;
   onSubmitEdit: (commentId: CommentId, body: string) => void;
   onToggleLike: (commentId: CommentId) => void;
+  submittingEdit: boolean;
   likeDisabled: boolean;
   prompt: string;
   replies: readonly Comment[];
@@ -33,6 +34,7 @@ export function CommentLine({
   onReply,
   onSubmitEdit,
   onToggleLike,
+  submittingEdit,
   likeDisabled,
   prompt,
   replies,
@@ -67,6 +69,7 @@ export function CommentLine({
           onCancel={() => onEdit(null)}
           onSubmit={(body) => onSubmitEdit(comment.id, body)}
           prompt={`${prompt}.edit`}
+          submitting={submittingEdit}
         />
       ) : (
         <>

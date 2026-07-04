@@ -12,6 +12,7 @@ import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { boxBorderClassName, gridStackClassName } from '@/app/common/components/styles';
+import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { StatusPanel } from '@/app/feed/components/StatusPanel';
@@ -88,6 +89,11 @@ type UploadedArticleMedia = {
   width: number | null;
 };
 
+const getCommentCreateSingleFlightKey = (articleId: ArticleId, parentCommentId: CommentId | null) =>
+  `comment-create-${articleId}-${parentCommentId ?? 'root'}`;
+
+const getCommentUpdateSingleFlightKey = (commentId: CommentId) => `comment-update-${commentId}`;
+
 function hasRecordKey<T>(record: Record<string, T>, key: string) {
   return Object.prototype.hasOwnProperty.call(record, key);
 }
@@ -143,6 +149,7 @@ export function FeedCrudClient({
   const hikingSectionElementsRef = useRef<Map<string, HTMLElement>>(new Map());
   const loadingHikingIdsRef = useRef<Set<string>>(new Set());
   const scrolledHikingIdRef = useRef<HikingId | null>(null);
+  const singleFlightAction = useSingleFlightAction();
   const [isPending, startTransition] = useTransition();
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
   const [articlesByHikingId, setArticlesByHikingId] = useState<Record<string, readonly Article[]>>(
@@ -244,6 +251,26 @@ export function FeedCrudClient({
   const articleFormDialogOpen =
     activeArticleForm?.type === 'create' ||
     (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
+  const activeHikingSingleFlightKey =
+    activeHikingForm?.type === 'create'
+      ? 'hiking-create'
+      : activeHikingForm?.type === 'edit'
+        ? `hiking-update-${activeHikingForm.hikingId}`
+        : null;
+  const activeArticleSingleFlightKey =
+    activeArticleForm?.type === 'create'
+      ? `article-create-${activeArticleForm.hikingId}`
+      : activeArticleForm?.type === 'edit'
+        ? `article-update-${activeArticleForm.articleId}`
+        : null;
+  const activeHikingSubmitting =
+    (activeHikingSingleFlightKey !== null &&
+      singleFlightAction.isRunning(activeHikingSingleFlightKey)) ||
+    (isPending && loadingLabel !== null);
+  const activeArticleSubmitting =
+    (activeArticleSingleFlightKey !== null &&
+      singleFlightAction.isRunning(activeArticleSingleFlightKey)) ||
+    (isPending && loadingLabel !== null);
 
   const getHikingArticleCount = useCallback(
     (hikingId: HikingId) => hikingArticleCountById.get(hikingId) ?? 0,
@@ -603,44 +630,57 @@ export function FeedCrudClient({
       onSettled?: () => void;
       onSuccess?: (result: T & { ok: true }) => Promise<void> | void;
       refresh?: boolean;
+      singleFlightKey?: string;
     },
   ) => {
-    if (options.loadingLabel) {
-      setLoadingLabel(options.loadingLabel);
-    } else {
-      setLoadingLabel(null);
+    const execute = async () => {
+      if (options.loadingLabel) {
+        setLoadingLabel(options.loadingLabel);
+      } else {
+        setLoadingLabel(null);
+      }
+
+      await new Promise<void>((resolve) => {
+        startTransition(async () => {
+          try {
+            const result = await action();
+
+            if (!result.ok) {
+              setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
+              return;
+            }
+
+            try {
+              await options.onSuccess?.(result as T & { ok: true });
+              setError(options.errorKey, null);
+              if (options.refresh !== false) {
+                router.refresh();
+              }
+            } catch (error) {
+              setError(
+                options.errorKey,
+                error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+              );
+            }
+          } catch (error) {
+            setError(
+              options.errorKey,
+              error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+            );
+          } finally {
+            options.onSettled?.();
+            resolve();
+          }
+        });
+      });
+    };
+
+    if (options.singleFlightKey) {
+      void singleFlightAction.run(options.singleFlightKey, execute);
+      return;
     }
 
-    startTransition(async () => {
-      try {
-        const result = await action();
-
-        if (!result.ok) {
-          setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
-          return;
-        }
-
-        try {
-          await options.onSuccess?.(result as T & { ok: true });
-          setError(options.errorKey, null);
-          if (options.refresh !== false) {
-            router.refresh();
-          }
-        } catch (error) {
-          setError(
-            options.errorKey,
-            error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
-          );
-        }
-      } catch (error) {
-        setError(
-          options.errorKey,
-          error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
-        );
-      } finally {
-        options.onSettled?.();
-      }
-    });
+    void execute();
   };
 
   const setLikePending = (key: LikePendingKey, pending: boolean) => {
@@ -809,6 +849,7 @@ export function FeedCrudClient({
       errorKey: 'hiking-new',
       loadingLabel: '산행 저장 중',
       onSuccess: () => setActiveHikingForm(null),
+      singleFlightKey: 'hiking-create',
     });
   };
 
@@ -820,6 +861,7 @@ export function FeedCrudClient({
       errorKey: `hiking-edit-${hikingId}`,
       loadingLabel: '산행 저장 중',
       onSuccess: () => setActiveHikingForm(null),
+      singleFlightKey: `hiking-update-${hikingId}`,
     });
   };
 
@@ -879,6 +921,7 @@ export function FeedCrudClient({
         errorKey: `article-new-${hikingId}`,
         loadingLabel: '게시글 저장 중',
         onSuccess: () => setActiveArticleForm(null),
+        singleFlightKey: `article-create-${hikingId}`,
       },
     );
   };
@@ -950,6 +993,7 @@ export function FeedCrudClient({
           setActiveArticleForm(null);
         },
         refresh: false,
+        singleFlightKey: `article-update-${articleId}`,
       },
     );
   };
@@ -998,6 +1042,7 @@ export function FeedCrudClient({
         setReplyingCommentId(null);
       },
       refresh: false,
+      singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
     });
   };
 
@@ -1021,6 +1066,7 @@ export function FeedCrudClient({
         setEditingCommentId(null);
       },
       refresh: false,
+      singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
     });
   };
 
@@ -1198,6 +1244,16 @@ export function FeedCrudClient({
                             onToggleArticleLike={toggleArticleLike}
                             onToggleCommentLike={toggleCommentLike}
                             articleLikePending={pendingLikeByKey[`article-${article.id}`] === true}
+                            isCommentCreateSubmitting={(articleId, parentCommentId) =>
+                              singleFlightAction.isRunning(
+                                getCommentCreateSingleFlightKey(articleId, parentCommentId),
+                              )
+                            }
+                            isCommentEditSubmitting={(commentId) =>
+                              singleFlightAction.isRunning(
+                                getCommentUpdateSingleFlightKey(commentId),
+                              )
+                            }
                             isCommentLikePending={(commentId) =>
                               pendingLikeByKey[`comment-${commentId}`] === true
                             }
@@ -1294,7 +1350,7 @@ export function FeedCrudClient({
           }
         }}
         open={hikingFormDialogOpen}
-        submitting={isPending && loadingLabel !== null}
+        submitting={activeHikingSubmitting}
         title={activeHikingFormTitle}
       />
       <ArticleFormDialog
@@ -1319,7 +1375,7 @@ export function FeedCrudClient({
           }
         }}
         open={articleFormDialogOpen}
-        submitting={isPending && loadingLabel !== null}
+        submitting={activeArticleSubmitting}
         title={activeArticleFormTitle}
       />
       <LoadingOverlay label={loadingLabel ?? undefined} open={isPending && loadingLabel !== null} />

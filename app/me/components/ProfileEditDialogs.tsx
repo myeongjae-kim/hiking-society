@@ -34,6 +34,7 @@ type ProfileImageEditDialogProps = {
 const initialState: ProfileActionState = { ok: false };
 const maxProfileImageSourceBytes = 12 * 1024 * 1024;
 const profileImageMaxWidth = 640;
+const profileSaveCooldownMs = 800;
 const webpQuality = 85;
 
 function getProfileInitial(value: string) {
@@ -104,28 +105,67 @@ function TextProfileEditDialog({
   title,
 }: TextProfileEditDialogProps) {
   const [open, setOpen] = useState(false);
+  const submitLockedRef = useRef(false);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [cooldownPending, setCooldownPending] = useState(false);
+
+  const releaseAfterCooldown = useCallback(() => {
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current);
+    }
+
+    cooldownTimerRef.current = setTimeout(() => {
+      cooldownTimerRef.current = null;
+      submitLockedRef.current = false;
+      setCooldownPending(false);
+    }, profileSaveCooldownMs);
+  }, []);
+
   const actionWithClose = useCallback(
     async (prevState: ProfileActionState, formData: FormData) => {
-      const result = await action(prevState, formData);
+      try {
+        const result = await action(prevState, formData);
 
-      if (result.ok) {
-        setOpen(false);
+        if (result.ok) {
+          setOpen(false);
+        }
+
+        return result;
+      } finally {
+        releaseAfterCooldown();
       }
-
-      return result;
     },
-    [action],
+    [action, releaseAfterCooldown],
   );
   const [state, formAction, pending] = useActionState(actionWithClose, initialState);
+  const submitting = pending || cooldownPending;
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    if (submitLockedRef.current) {
+      event.preventDefault();
+      return;
+    }
+
+    submitLockedRef.current = true;
+    setCooldownPending(true);
+  };
 
   return (
     <ProfileDialogShell open={open} setOpen={setOpen} title={title}>
-      <form action={formAction} className="grid gap-4">
+      <form action={formAction} className="grid gap-4" onSubmit={handleSubmit}>
         <label className="grid min-w-0 gap-1.5 text-sm text-[var(--subtext0)]">
           <span>{fieldLabel}</span>
           <input
             defaultValue={defaultValue}
-            disabled={pending}
+            disabled={submitting}
             maxLength={maxLength}
             name={fieldName}
             required
@@ -135,12 +175,12 @@ function TextProfileEditDialog({
         {state.error ? <p className="m-0 text-sm text-[var(--red)]">{state.error}</p> : null}
         <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--overlay0)] pt-3">
           <Dialog.Close asChild>
-            <button className={inlineButtonClassName} disabled={pending} type="button">
+            <button className={inlineButtonClassName} disabled={submitting} type="button">
               취소
             </button>
           </Dialog.Close>
-          <button className={inlineButtonClassName} disabled={pending} type="submit">
-            {pending ? (
+          <button className={inlineButtonClassName} disabled={submitting} type="submit">
+            {submitting ? (
               <>
                 <span is-="spinner" variant-="dots"></span>
                 저장 중
@@ -190,6 +230,8 @@ export function ProfileImageEditDialog({
 }: ProfileImageEditDialogProps) {
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitLockedRef = useRef(false);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [state, setState] = useState<ProfileActionState>(initialState);
   const [pending, setPending] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(profileImageUrl);
@@ -198,6 +240,18 @@ export function ProfileImageEditDialog({
   const [imageError, setImageError] = useState<string | null>(null);
   const initial = getProfileInitial(displayName);
 
+  const releaseImageSubmitAfterCooldown = () => {
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current);
+    }
+
+    cooldownTimerRef.current = setTimeout(() => {
+      cooldownTimerRef.current = null;
+      submitLockedRef.current = false;
+      setPending(false);
+    }, profileSaveCooldownMs);
+  };
+
   useEffect(() => {
     return () => {
       if (previewUrl?.startsWith('blob:')) {
@@ -205,6 +259,14 @@ export function ProfileImageEditDialog({
       }
     };
   }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current);
+      }
+    };
+  }, []);
 
   const setPreview = (nextUrl: string | null) => {
     setPreviewUrl((currentUrl) => {
@@ -231,7 +293,7 @@ export function ProfileImageEditDialog({
   const handleImageSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (pending || imageError) {
+    if (submitLockedRef.current || pending || imageError) {
       return;
     }
 
@@ -242,6 +304,7 @@ export function ProfileImageEditDialog({
       formData.set('removeProfileImage', 'on');
     }
 
+    submitLockedRef.current = true;
     setPending(true);
     setState(initialState);
 
@@ -295,7 +358,7 @@ export function ProfileImageEditDialog({
         ok: false,
       });
     } finally {
-      setPending(false);
+      releaseImageSubmitAfterCooldown();
     }
   };
 

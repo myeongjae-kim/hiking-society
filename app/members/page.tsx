@@ -4,6 +4,7 @@ import { canChangeRole, type UserRole } from '@/core/auth/model/roles';
 import { applicationContext } from '@/core/config/applicationContext';
 import Link from 'next/link';
 import { updateMemberRole } from './actions/updateMemberRole';
+import { MemberRoleForm } from './components/MemberRoleForm';
 
 const roleOptions = ['associate', 'member', 'admin'] as const satisfies readonly UserRole[];
 
@@ -61,7 +62,7 @@ export default async function MembersPage() {
                   <td>{formatDate(member.createdAt)}</td>
                   <td>{formatDate(member.lastLoginAt)}</td>
                   <td>
-                    <form action={updateMemberRole} className="flex flex-wrap items-center gap-2">
+                    <MemberRoleForm action={updateMemberRole}>
                       <input type="hidden" name="userId" value={member.id} />
                       <select
                         className="bg-[var(--background1)] px-2 py-1 text-[var(--foreground0)]"
@@ -90,7 +91,7 @@ export default async function MembersPage() {
                       >
                         저장
                       </button>
-                    </form>
+                    </MemberRoleForm>
                   </td>
                 </tr>
               ))}

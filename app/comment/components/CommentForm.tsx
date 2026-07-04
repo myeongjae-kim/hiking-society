@@ -13,6 +13,7 @@ type CommentFormProps = {
   onCancel?: () => void;
   onSubmit: (body: string) => void;
   prompt: string;
+  submitting?: boolean;
 };
 
 export function CommentForm({
@@ -22,11 +23,17 @@ export function CommentForm({
   onCancel,
   onSubmit,
   prompt,
+  submitting = false,
 }: CommentFormProps) {
   const [body, setBody] = useState(initialBody);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (submitting) {
+      return;
+    }
+
     onSubmit(body);
   };
 
@@ -46,7 +53,9 @@ export function CommentForm({
       {error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
       <div className="flex flex-wrap justify-end gap-2">
         {onCancel ? <ActionButton onClick={onCancel}>취소</ActionButton> : null}
-        <ActionButton type="submit">저장</ActionButton>
+        <ActionButton disabled={submitting} type="submit">
+          저장
+        </ActionButton>
       </div>
     </form>
   );

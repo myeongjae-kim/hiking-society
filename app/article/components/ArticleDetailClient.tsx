@@ -8,6 +8,7 @@ import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { boxBorderClassName } from '@/app/common/components/styles';
+import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
 import {
   cleanupArticleMediaUploads,
   createComment as createCommentAction,
@@ -55,6 +56,11 @@ type UploadedArticleMedia = {
   width: number | null;
 };
 
+const getCommentCreateSingleFlightKey = (articleId: ArticleId, parentCommentId: CommentId | null) =>
+  `comment-create-${articleId}-${parentCommentId ?? 'root'}`;
+
+const getCommentUpdateSingleFlightKey = (commentId: CommentId) => `comment-update-${commentId}`;
+
 async function uploadDirectToS3(file: File, uploadUrl: string) {
   const response = await fetch(uploadUrl, {
     body: file,
@@ -101,6 +107,7 @@ export function ArticleDetailClient({
   notificationSnapshot,
 }: ArticleDetailClientProps) {
   const router = useRouter();
+  const singleFlightAction = useSingleFlightAction();
   const [isPending, startTransition] = useTransition();
   const [editingArticle, setEditingArticle] = useState(false);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
@@ -124,6 +131,10 @@ export function ArticleDetailClient({
           likedByCurrentUser: articleLikeOverride.likedByCurrentUser,
         }
       : article;
+  const articleUpdateSingleFlightKey = `article-update-${article.id}`;
+  const articleUpdateSubmitting =
+    singleFlightAction.isRunning(articleUpdateSingleFlightKey) ||
+    (isPending && loadingLabel !== null);
 
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
@@ -147,28 +158,46 @@ export function ArticleDetailClient({
       onSettled?: () => void;
       onSuccess?: () => void;
       refresh?: boolean;
+      singleFlightKey?: string;
     },
   ) => {
-    setLoadingLabel(options.loadingLabel ?? null);
+    const execute = async () => {
+      setLoadingLabel(options.loadingLabel ?? null);
 
-    startTransition(async () => {
-      try {
-        const result = await action();
+      await new Promise<void>((resolve) => {
+        startTransition(async () => {
+          try {
+            const result = await action();
 
-        if (!result.ok) {
-          setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
-          return;
-        }
+            if (!result.ok) {
+              setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
+              return;
+            }
 
-        options.onSuccess?.();
-        setError(options.errorKey, null);
-        if (options.refresh !== false) {
-          router.refresh();
-        }
-      } finally {
-        options.onSettled?.();
-      }
-    });
+            options.onSuccess?.();
+            setError(options.errorKey, null);
+            if (options.refresh !== false) {
+              router.refresh();
+            }
+          } catch (error) {
+            setError(
+              options.errorKey,
+              error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+            );
+          } finally {
+            options.onSettled?.();
+            resolve();
+          }
+        });
+      });
+    };
+
+    if (options.singleFlightKey) {
+      void singleFlightAction.run(options.singleFlightKey, execute);
+      return;
+    }
+
+    void execute();
   };
 
   const setLikePending = (key: LikePendingKey, pending: boolean) => {
@@ -319,6 +348,7 @@ export function ArticleDetailClient({
         errorKey: `article-edit-${article.id}`,
         loadingLabel: '게시글 저장 중',
         onSuccess: () => setEditingArticle(false),
+        singleFlightKey: articleUpdateSingleFlightKey,
       },
     );
   };
@@ -360,6 +390,7 @@ export function ArticleDetailClient({
 
         setReplyingCommentId(null);
       },
+      singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
     });
   };
 
@@ -372,6 +403,7 @@ export function ArticleDetailClient({
     runAction(() => updateCommentAction(formData), {
       errorKey: `comment-edit-${commentId}`,
       onSuccess: () => setEditingCommentId(null),
+      singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
     });
   };
 
@@ -455,6 +487,14 @@ export function ArticleDetailClient({
           editingCommentId={editingCommentId}
           errorByKey={errorByKey}
           highlightedCommentId={highlightedCommentId}
+          isCommentCreateSubmitting={(articleId, parentCommentId) =>
+            singleFlightAction.isRunning(
+              getCommentCreateSingleFlightKey(articleId, parentCommentId),
+            )
+          }
+          isCommentEditSubmitting={(commentId) =>
+            singleFlightAction.isRunning(getCommentUpdateSingleFlightKey(commentId))
+          }
           isCommentLikePending={(commentId) => pendingLikeByKey[`comment-${commentId}`] === true}
           onCreateComment={createComment}
           onDeleteArticle={requestDeleteArticle}
@@ -488,7 +528,7 @@ export function ArticleDetailClient({
         }}
         onSubmit={updateArticle}
         open={editingArticle}
-        submitting={isPending && loadingLabel !== null}
+        submitting={articleUpdateSubmitting}
         title="게시글 수정"
       />
       <LoadingOverlay label={loadingLabel ?? undefined} open={isPending && loadingLabel !== null} />
