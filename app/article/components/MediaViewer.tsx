@@ -644,53 +644,44 @@ export function MediaViewer({
 
   const handleMediaStageClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+
       const selectedMediaSurface = selectedMediaSurfaceRef.current;
       const isSelectedMediaClick = selectedMediaSurface?.contains(event.target as Node) ?? false;
 
       if (shouldSuppressStageClickRef.current) {
-        event.preventDefault();
-        event.stopPropagation();
         shouldSuppressStageClickRef.current = false;
         return;
+      }
+
+      if (isSelectedMediaClick && isMediaZoomed) {
+        return;
+      }
+
+      if (hasMultipleMedia) {
+        const mediaRect = event.currentTarget.getBoundingClientRect();
+        const clickPositionRatio =
+          mediaRect.width > 0 ? (event.clientX - mediaRect.left) / mediaRect.width : 0.5;
+
+        if (clickPositionRatio <= mediaNavigationClickZoneRatio) {
+          showPreviousMedia();
+          return;
+        }
+
+        if (clickPositionRatio >= 1 - mediaNavigationClickZoneRatio) {
+          showNextMedia();
+          return;
+        }
       }
 
       if (selectedMediaIsVideo && isSelectedMediaClick) {
         return;
       }
 
-      if (isSelectedMediaClick && isMediaZoomed) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
-
-      if (isSelectedMediaClick && hasMultipleMedia) {
-        const clickPositionRatio = event.clientX / window.innerWidth;
-
-        if (clickPositionRatio <= mediaNavigationClickZoneRatio) {
-          event.preventDefault();
-          event.stopPropagation();
-          showPreviousMedia();
-          return;
-        }
-
-        if (clickPositionRatio >= 1 - mediaNavigationClickZoneRatio) {
-          event.preventDefault();
-          event.stopPropagation();
-          showNextMedia();
-          return;
-        }
-      }
-
       if (isSelectedMediaClick) {
-        event.preventDefault();
-        event.stopPropagation();
         return;
       }
-
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(false);
     },
     [hasMultipleMedia, isMediaZoomed, selectedMediaIsVideo, showNextMedia, showPreviousMedia],
   );
@@ -898,11 +889,6 @@ export function MediaViewer({
           axis === 'horizontal' &&
           absDeltaX >= mediaSwipeThresholdPx &&
           absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
-        const isVerticalSwipe =
-          axis === 'vertical' &&
-          absDeltaY >= mediaSwipeThresholdPx &&
-          absDeltaY >= absDeltaX * mediaHorizontalSwipeRatio;
-
         swipeGestureRef.current = null;
 
         if (isHorizontalSwipe && hasMultipleMedia) {
@@ -914,12 +900,6 @@ export function MediaViewer({
             showNextMedia();
           }
 
-          return;
-        }
-
-        if (isVerticalSwipe) {
-          shouldSuppressStageClickRef.current = true;
-          setOpen(false);
           return;
         }
 
