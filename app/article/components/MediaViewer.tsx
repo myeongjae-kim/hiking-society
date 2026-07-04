@@ -433,9 +433,41 @@ export function MediaViewer({
         absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
       const canMoveToPrevious = deltaX > 0 && canShowPreviousInlineMedia;
       const canMoveToNext = deltaX < 0 && canShowNextInlineMedia;
+      const isTap =
+        absDeltaX < mediaPanClickSuppressThresholdPx &&
+        absDeltaY < mediaPanClickSuppressThresholdPx;
 
       if (shouldSuppressInlineClick) {
         suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+      }
+
+      if (isTap && event.pointerType !== 'mouse') {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const pointerPositionRatio =
+          rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+
+        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+        resetInlineSwipeGesture();
+
+        if (pointerPositionRatio <= mediaNavigationClickZoneRatio) {
+          if (canShowPreviousInlineMedia) {
+            showPreviousInlineMedia();
+          }
+
+          return;
+        }
+
+        if (pointerPositionRatio >= 1 - mediaNavigationClickZoneRatio) {
+          if (canShowNextInlineMedia) {
+            showNextInlineMedia();
+          }
+
+          return;
+        }
+
+        setSelectedIndex(normalizedActiveInlineIndex);
+        setOpen(true);
+        return;
       }
 
       if (!isHorizontalSwipe || (!canMoveToPrevious && !canMoveToNext)) {
@@ -456,8 +488,11 @@ export function MediaViewer({
     [
       canShowNextInlineMedia,
       canShowPreviousInlineMedia,
+      normalizedActiveInlineIndex,
       resetInlineSwipeGesture,
       setInlineSwipeOffsetState,
+      showNextInlineMedia,
+      showPreviousInlineMedia,
     ],
   );
 
@@ -978,15 +1013,15 @@ export function MediaViewer({
             <figure
               aria-label={`${authorName}의 게시글 미디어`}
               className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)] sm:hidden"
-              onPointerCancel={handleInlinePointerCancel}
-              onPointerDown={handleInlinePointerDown}
-              onPointerMove={handleInlinePointerMove}
-              onPointerUp={handleInlinePointerUp}
             >
               <div className="relative">
                 <button
                   className="group block h-auto w-full touch-pan-y appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                   onClick={(event) => handleInlineTriggerClick(event, normalizedActiveInlineIndex)}
+                  onPointerCancel={handleInlinePointerCancel}
+                  onPointerDown={handleInlinePointerDown}
+                  onPointerMove={handleInlinePointerMove}
+                  onPointerUp={handleInlinePointerUp}
                   type="button"
                 >
                   <span
