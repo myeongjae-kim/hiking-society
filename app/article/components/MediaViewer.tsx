@@ -68,6 +68,8 @@ type InlineSwipeTrack = {
   targetIndex: number;
 };
 
+type MediaSwipeTrack = InlineSwipeTrack;
+
 type InlineMediaFrameProps = {
   authorName: string;
   media: ArticleMedia | null;
@@ -153,6 +155,23 @@ function InlineMediaFrame({ authorName, media }: InlineMediaFrameProps) {
           </span>
         </>
       ) : null}
+    </span>
+  );
+}
+
+function MediaImageFrame({ authorName, media }: InlineMediaFrameProps) {
+  if (!media || media.mediaType !== 'image') {
+    return <span aria-hidden="true" className="block h-full w-full bg-[var(--surface0)]" />;
+  }
+
+  return (
+    <span className="grid h-full w-full place-items-center">
+      <img
+        alt={`${authorName}의 산행 사진이나 동영상 ${media.order}`}
+        className="block max-h-full max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain select-none"
+        draggable={false}
+        src={media.url}
+      />
     </span>
   );
 }
@@ -284,6 +303,7 @@ export function MediaViewer({
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
   const [inlineSwipeTrack, setInlineSwipeTrack] = useState<InlineSwipeTrack | null>(null);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
+  const [mediaSwipeTrack, setMediaSwipeTrack] = useState<MediaSwipeTrack | null>(null);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
   const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -512,9 +532,52 @@ export function MediaViewer({
     [inlineSwipeTrack],
   );
 
+  const handleMediaSwipeTrackTransitionEnd = useCallback(
+    (event: TransitionEvent<HTMLDivElement>) => {
+      if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
+        return;
+      }
+
+      if (!mediaSwipeTrack?.settling) {
+        return;
+      }
+
+      setSelectedIndex(mediaSwipeTrack.targetIndex);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setMediaSwipeTrack(null);
+        });
+      });
+    },
+    [mediaSwipeTrack],
+  );
+
   const renderedInlineSwipeTrack = hasMultipleMedia
     ? (inlineSwipeTrack ?? createInlineSwipeTrack(0, false))
     : null;
+
+  const createMediaSwipeTrack = useCallback(
+    (offsetX: number, settling: boolean, targetIndex = selectedIndex) => {
+      if (!hasMultipleMedia || media.length === 0 || selectedMediaIsVideo) {
+        return null;
+      }
+
+      return {
+        fromIndex: selectedIndex,
+        nextIndex: getWrappedIndex(selectedIndex + 1, media.length),
+        offsetX,
+        previousIndex: getWrappedIndex(selectedIndex - 1, media.length),
+        settling,
+        targetIndex,
+      };
+    },
+    [hasMultipleMedia, media.length, selectedIndex, selectedMediaIsVideo],
+  );
+
+  const renderedMediaSwipeTrack =
+    open && hasMultipleMedia && !selectedMediaIsVideo && !isMediaZoomed
+      ? (mediaSwipeTrack ?? createMediaSwipeTrack(0, false))
+      : null;
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
     const normalizedTransform =
@@ -546,6 +609,7 @@ export function MediaViewer({
     shouldSuppressStageClickRef.current = false;
     swipeGestureRef.current = null;
     setIsMediaGestureActive(false);
+    setMediaSwipeTrack(null);
     setSwipeOffsetState(initialSwipeOffset);
     setMediaTransformState(initialMediaTransform);
   }, [setMediaTransformState, setSwipeOffsetState]);
@@ -881,14 +945,16 @@ export function MediaViewer({
         swipeGesture.axis = axis;
 
         if (axis === 'horizontal') {
-          const maxSwipeOffsetX = window.innerWidth * mediaSwipePreviewMaxWidthRatio;
-          setSwipeOffsetState({
-            x: clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX),
-            y: 0,
-          });
+          const maxSwipeOffsetX = window.innerWidth;
+
+          setSwipeOffsetState(initialSwipeOffset);
+          setMediaSwipeTrack(
+            createMediaSwipeTrack(clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX), false),
+          );
           return;
         }
 
+        setMediaSwipeTrack(null);
         const maxSwipeOffsetY = window.innerHeight * mediaSwipePreviewMaxHeightRatio;
         setSwipeOffsetState({
           x: 0,
@@ -920,7 +986,7 @@ export function MediaViewer({
         translateY: panGesture.startTranslateY + deltaY,
       });
     },
-    [selectedMediaIsVideo, setMediaTransformState, setSwipeOffsetState],
+    [createMediaSwipeTrack, selectedMediaIsVideo, setMediaTransformState, setSwipeOffsetState],
   );
 
   const finishMediaGesture = useCallback(
@@ -1010,12 +1076,17 @@ export function MediaViewer({
 
         if (isHorizontalSwipe && hasMultipleMedia) {
           shouldSuppressStageClickRef.current = true;
-
-          if (deltaX > 0) {
-            showPreviousMedia();
-          } else {
-            showNextMedia();
-          }
+          setIsMediaGestureActive(false);
+          setSwipeOffsetState(initialSwipeOffset);
+          setMediaSwipeTrack(
+            createMediaSwipeTrack(
+              deltaX > 0 ? window.innerWidth : -window.innerWidth,
+              true,
+              deltaX > 0
+                ? getWrappedIndex(selectedIndex - 1, media.length)
+                : getWrappedIndex(selectedIndex + 1, media.length),
+            ),
+          );
 
           return;
         }
@@ -1023,9 +1094,14 @@ export function MediaViewer({
         if (isVerticalSwipe) {
           shouldSuppressStageClickRef.current = true;
           setIsMediaGestureActive(false);
+          setMediaSwipeTrack(null);
           setSwipeOffsetState(initialSwipeOffset);
           setOpen(false);
           return;
+        }
+
+        if (axis === 'horizontal' && absDeltaX >= mediaPanClickSuppressThresholdPx) {
+          setMediaSwipeTrack(createMediaSwipeTrack(0, true));
         }
 
         setSwipeOffsetState(initialSwipeOffset);
@@ -1060,7 +1136,16 @@ export function MediaViewer({
       panGestureRef.current = null;
       setIsMediaGestureActive(false);
     },
-    [hasMultipleMedia, selectedMediaIsVideo, setSwipeOffsetState, showNextMedia, showPreviousMedia],
+    [
+      createMediaSwipeTrack,
+      hasMultipleMedia,
+      media.length,
+      selectedIndex,
+      selectedMediaIsVideo,
+      setSwipeOffsetState,
+      showNextMedia,
+      showPreviousMedia,
+    ],
   );
 
   const closeOnBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -1343,20 +1428,53 @@ export function MediaViewer({
                   />
                 )
               ) : (
-                <img
-                  alt={`${authorName}의 산행 사진이나 동영상 ${selectedMedia.order}`}
-                  className={`max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
-                    isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
-                  } ${
-                    isMediaZoomed ? (isMediaGestureActive ? 'cursor-grabbing' : 'cursor-grab') : ''
-                  }`}
-                  draggable={false}
-                  ref={selectedMediaSurfaceRef as RefObject<HTMLImageElement>}
-                  src={selectedMedia.url}
-                  style={{
-                    transform: `translate3d(${mediaTransform.translateX + swipeOffset.x}px, ${mediaTransform.translateY + swipeOffset.y}px, 0) scale(${mediaTransform.scale})`,
-                  }}
-                />
+                <div className="relative max-h-[calc(100svh-10rem)] max-w-full overflow-hidden">
+                  <img
+                    alt={`${authorName}의 산행 사진이나 동영상 ${selectedMedia.order}`}
+                    className={`block max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
+                      isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
+                    } ${
+                      isMediaZoomed
+                        ? isMediaGestureActive
+                          ? 'cursor-grabbing'
+                          : 'cursor-grab'
+                        : ''
+                    }`}
+                    draggable={false}
+                    ref={selectedMediaSurfaceRef as RefObject<HTMLImageElement>}
+                    src={selectedMedia.url}
+                    style={{
+                      transform: `translate3d(${mediaTransform.translateX + swipeOffset.x}px, ${mediaTransform.translateY + swipeOffset.y}px, 0) scale(${mediaTransform.scale})`,
+                    }}
+                  />
+                  {renderedMediaSwipeTrack ? (
+                    <div
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-0 grid w-[300%] grid-cols-3 will-change-transform ${
+                        renderedMediaSwipeTrack.settling
+                          ? 'transition-transform duration-150 ease-out'
+                          : ''
+                      }`}
+                      onTransitionEnd={handleMediaSwipeTrackTransitionEnd}
+                      style={{
+                        transform: `translate3d(calc(-33.333333% + ${renderedMediaSwipeTrack.offsetX}px), 0, 0)`,
+                      }}
+                    >
+                      <MediaImageFrame
+                        authorName={authorName}
+                        media={media[renderedMediaSwipeTrack.previousIndex] ?? null}
+                      />
+                      <MediaImageFrame
+                        authorName={authorName}
+                        media={media[renderedMediaSwipeTrack.fromIndex] ?? null}
+                      />
+                      <MediaImageFrame
+                        authorName={authorName}
+                        media={media[renderedMediaSwipeTrack.nextIndex] ?? null}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               )}
 
               {selectedMetadataItems.length > 0 ? (
