@@ -139,6 +139,7 @@ export function FeedCrudClient({
 }: FeedCrudClientProps) {
   const router = useRouter();
   const hikingSectionElementsRef = useRef<Map<string, HTMLElement>>(new Map());
+  const loadedHikingIdsRef = useRef<Set<string>>(new Set());
   const loadingHikingIdsRef = useRef<Set<string>>(new Set());
   const scrolledHikingIdRef = useRef<HikingId | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -224,6 +225,7 @@ export function FeedCrudClient({
   const articleFormDialogOpen =
     activeArticleForm?.type === 'create' ||
     (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
+  const formDialogOpen = hikingFormDialogOpen || articleFormDialogOpen;
 
   const getHikingArticleCount = useCallback(
     (hikingId: HikingId) => hikingArticleCountById.get(hikingId) ?? 0,
@@ -235,6 +237,7 @@ export function FeedCrudClient({
       const articleTotal = getHikingArticleCount(hikingId);
 
       if (articleTotal === 0) {
+        loadedHikingIdsRef.current.add(hikingId);
         setHikingArticleLoadStateById((currentStates) => ({
           ...currentStates,
           [hikingId]: { status: 'loaded' },
@@ -256,7 +259,7 @@ export function FeedCrudClient({
         return;
       }
 
-      if (!options.retry && hasRecordKey(articlesByHikingId, hikingId)) {
+      if (!options.retry && loadedHikingIdsRef.current.has(hikingId)) {
         return;
       }
 
@@ -291,6 +294,7 @@ export function FeedCrudClient({
             ...currentStates,
             [hikingId]: { status: 'loaded' },
           }));
+          loadedHikingIdsRef.current.add(hikingId);
         })
         .catch((error: unknown) => {
           setHikingArticleLoadStateById((currentStates) => ({
@@ -305,7 +309,7 @@ export function FeedCrudClient({
           loadingHikingIdsRef.current.delete(hikingId);
         });
     },
-    [articlesByHikingId, getHikingArticleCount],
+    [getHikingArticleCount],
   );
 
   const registerHikingSection = useCallback((hikingId: HikingId, element: HTMLElement | null) => {
@@ -321,6 +325,7 @@ export function FeedCrudClient({
     let cancelled = false;
 
     loadingHikingIdsRef.current.clear();
+    loadedHikingIdsRef.current.clear();
     queueMicrotask(() => {
       if (cancelled) {
         return;
@@ -355,6 +360,10 @@ export function FeedCrudClient({
   }, [loadHikingArticles, selectedHikingId]);
 
   useEffect(() => {
+    if (formDialogOpen) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -372,16 +381,13 @@ export function FeedCrudClient({
           observer.unobserve(entry.target);
         }
       },
-      { rootMargin: '640px 0px' },
+      { rootMargin: '0px 0px 640px 0px' },
     );
 
     for (const [hikingId, element] of hikingSectionElementsRef.current) {
       const typedHikingId = hikingId as HikingId;
 
-      if (
-        getHikingArticleCount(typedHikingId) === 0 ||
-        hasRecordKey(articlesByHikingId, hikingId)
-      ) {
+      if (getHikingArticleCount(typedHikingId) === 0 || loadedHikingIdsRef.current.has(hikingId)) {
         continue;
       }
 
@@ -389,7 +395,7 @@ export function FeedCrudClient({
     }
 
     return () => observer.disconnect();
-  }, [articlesByHikingId, getHikingArticleCount, groups, loadHikingArticles]);
+  }, [formDialogOpen, getHikingArticleCount, initialHikings, loadHikingArticles]);
 
   useEffect(() => {
     if (!selectedHikingId || scrolledHikingIdRef.current === selectedHikingId) {
