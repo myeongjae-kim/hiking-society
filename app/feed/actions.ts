@@ -6,6 +6,7 @@ import type {
 } from '@/core/article/application/port/in/ArticleCommandUseCase';
 import type { ArticleMediaUploadTarget } from '@/core/article/application/port/out/MediaStoragePort';
 import type { Article, ArticleId } from '@/core/article/domain';
+import type { ArticleDetailSnapshot } from '@/core/article/model/ArticleDetailSnapshot';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type {
   Altitude,
@@ -27,6 +28,16 @@ type ActionResult = {
   error?: string;
   ok: boolean;
 };
+
+type ArticleMutationResult =
+  | {
+      error?: string;
+      ok: false;
+    }
+  | {
+      snapshot: ArticleDetailSnapshot;
+      ok: true;
+    };
 
 export type LoadHikingArticlesResult =
   | {
@@ -415,7 +426,7 @@ export async function createArticle(formData: FormData): Promise<ActionResult> {
   }
 }
 
-export async function updateArticle(formData: FormData): Promise<ActionResult> {
+export async function updateArticle(formData: FormData): Promise<ArticleMutationResult> {
   try {
     const user = await requireMember();
     const articleId = getId<ArticleId>(formData, 'articleId');
@@ -435,9 +446,22 @@ export async function updateArticle(formData: FormData): Promise<ActionResult> {
       userId: user.id,
     });
 
-    return success(articleId);
+    const snapshot = await applicationContext()
+      .get('GetArticleDetailUseCase')
+      .get({ articleId, currentUserId: user.id });
+
+    if (!snapshot) {
+      throw new Error('수정한 게시글을 불러오지 못했습니다.');
+    }
+
+    revalidatePath(`/article/${articleId}`);
+
+    return { ok: true, snapshot };
   } catch (error) {
-    return toActionResult(error);
+    return {
+      error: error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
+      ok: false,
+    };
   }
 }
 

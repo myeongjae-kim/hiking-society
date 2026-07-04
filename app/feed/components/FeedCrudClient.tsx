@@ -478,13 +478,14 @@ export function FeedCrudClient({
       });
   };
 
-  const runAction = (
-    action: () => Promise<{ error?: string; ok: boolean }>,
+  const runAction = <T extends { error?: string; ok: boolean }>(
+    action: () => Promise<T>,
     options: {
       errorKey: string;
       loadingLabel?: string;
       onSettled?: () => void;
-      onSuccess?: () => void;
+      onSuccess?: (result: Extract<T, { ok: true }>) => void;
+      refresh?: boolean;
     },
   ) => {
     if (options.loadingLabel) {
@@ -502,9 +503,11 @@ export function FeedCrudClient({
           return;
         }
 
-        options.onSuccess?.();
+        options.onSuccess?.(result as Extract<T, { ok: true }>);
         setError(options.errorKey, null);
-        router.refresh();
+        if (options.refresh !== false) {
+          router.refresh();
+        }
       } finally {
         options.onSettled?.();
       }
@@ -783,7 +786,41 @@ export function FeedCrudClient({
       {
         errorKey: `article-edit-${articleId}`,
         loadingLabel: '게시글 저장 중',
-        onSuccess: () => setActiveArticleForm(null),
+        onSuccess: (result) => {
+          setArticlesByHikingId((currentArticles) => {
+            const hikingArticles = currentArticles[result.snapshot.article.hikingId];
+
+            if (!hikingArticles) {
+              return currentArticles;
+            }
+
+            return {
+              ...currentArticles,
+              [result.snapshot.article.hikingId]: hikingArticles.map((article) =>
+                article.id === result.snapshot.article.id ? result.snapshot.article : article,
+              ),
+            };
+          });
+          setCommentsByHikingId((currentComments) => {
+            const hikingComments = currentComments[result.snapshot.article.hikingId];
+
+            if (!hikingComments) {
+              return currentComments;
+            }
+
+            return {
+              ...currentComments,
+              [result.snapshot.article.hikingId]: [
+                ...hikingComments.filter(
+                  (comment) => comment.articleId !== result.snapshot.article.id,
+                ),
+                ...result.snapshot.comments,
+              ],
+            };
+          });
+          setActiveArticleForm(null);
+        },
+        refresh: false,
       },
     );
   };
