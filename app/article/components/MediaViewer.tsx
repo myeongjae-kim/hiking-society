@@ -1145,7 +1145,7 @@ export function MediaViewer({
                 {hasMultipleMedia ? (
                   <div
                     aria-label="게시글 미디어 위치"
-                    className="flex items-center justify-center gap-1.5 py-1"
+                    className="flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1.5 overflow-hidden px-2 py-1"
                   >
                     {media.map((item, index) => (
                       <span
