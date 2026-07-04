@@ -650,6 +650,27 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort {
       if (metadataRows.length > 0) {
         await tx.insert(articleMediaMetadataTable).values(metadataRows);
       }
+
+      const recipients = await tx
+        .select({ id: userTable.id })
+        .from(userTable)
+        .where(isNull(userTable.deletedAt));
+
+      if (recipients.length > 0) {
+        const contentExcerpt = createNotificationContentExcerpt(input.body);
+        const notifications: (typeof notificationTable.$inferInsert)[] = recipients.map(
+          (recipient) => ({
+            actorUserId: input.authorUserId,
+            articleId: article.id,
+            commentId: null,
+            contentExcerpt,
+            recipientUserId: recipient.id,
+            type: 'article_created',
+          }),
+        );
+
+        await tx.insert(notificationTable).values(notifications);
+      }
     });
   }
 

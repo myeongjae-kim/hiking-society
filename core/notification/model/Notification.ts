@@ -5,7 +5,12 @@ import type { AuthorName, Brand, IsoDateTimeString } from '@/core/common/domain'
 export type NotificationId = Brand<string, 'NotificationId'>;
 
 export type NotificationType =
-  'article_comment' | 'article_reply' | 'comment_reply' | 'article_like' | 'comment_like';
+  | 'article_created'
+  | 'article_comment'
+  | 'article_reply'
+  | 'comment_reply'
+  | 'article_like'
+  | 'comment_like';
 
 export type NotificationSummary = {
   readonly id: NotificationId;

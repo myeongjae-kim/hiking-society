@@ -18,6 +18,7 @@ import { sql } from 'drizzle-orm';
 export const userRoleEnum = pgEnum('user_role', ['admin', 'member', 'associate']);
 export const articleMediaTypeEnum = pgEnum('article_media_type', ['image', 'video']);
 export const notificationTypeEnum = pgEnum('notification_type', [
+  'article_created',
   'article_comment',
   'article_reply',
   'comment_reply',

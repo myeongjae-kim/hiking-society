@@ -66,6 +66,8 @@ function getNotificationHref(notification: NotificationSummary) {
 
 function getNotificationMessage(notification: NotificationSummary) {
   switch (notification.type) {
+    case 'article_created':
+      return `${notification.actorName}님이 새 게시글을 등록했습니다.`;
     case 'article_comment':
       return `${notification.actorName}님이 내 게시글에 댓글을 남겼습니다.`;
     case 'article_reply':
