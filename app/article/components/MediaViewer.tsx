@@ -275,6 +275,7 @@ export function MediaViewer({
   const shouldSuppressInlineClickRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
+  const [inlineTransitionCoverIndex, setInlineTransitionCoverIndex] = useState<number | null>(null);
   const [inlineSwipeOffset, setInlineSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
   const [isInlineSwipeActive, setIsInlineSwipeActive] = useState(false);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
@@ -346,6 +347,7 @@ export function MediaViewer({
     inlineSwipeGestureRef.current = null;
     inlineTransitionDirectionRef.current = null;
     setIsInlineSwipeActive(false);
+    setInlineTransitionCoverIndex(null);
     setInlineSwipeOffsetState(initialSwipeOffset);
   }, [setInlineSwipeOffsetState]);
 
@@ -367,6 +369,7 @@ export function MediaViewer({
       };
       inlineTransitionDirectionRef.current = null;
       shouldSuppressInlineClickRef.current = false;
+      setInlineTransitionCoverIndex(null);
       setIsInlineSwipeActive(false);
       setInlineSwipeOffsetState(initialSwipeOffset);
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -522,21 +525,25 @@ export function MediaViewer({
       }
 
       inlineTransitionDirectionRef.current = null;
+      const targetInlineIndex =
+        media.length > 0 ? getWrappedIndex(activeInlineIndex + direction, media.length) : 0;
       flushSync(() => {
         setIsInlineSwipeActive(true);
+        setInlineTransitionCoverIndex(targetInlineIndex);
         setInlineSwipeOffsetState(initialSwipeOffset);
-        setActiveInlineIndex((currentIndex) =>
-          media.length > 0 ? getWrappedIndex(currentIndex + direction, media.length) : 0,
-        );
+        setActiveInlineIndex(targetInlineIndex);
       });
 
       event.currentTarget.getBoundingClientRect();
 
       window.requestAnimationFrame(() => {
         setIsInlineSwipeActive(false);
+        window.requestAnimationFrame(() => {
+          setInlineTransitionCoverIndex(null);
+        });
       });
     },
-    [media.length, setInlineSwipeOffsetState],
+    [activeInlineIndex, media.length, setInlineSwipeOffsetState],
   );
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
@@ -1173,6 +1180,17 @@ export function MediaViewer({
                     <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
                     <InlineMediaFrame authorName={authorName} media={nextInlineMedia} />
                   </span>
+                  {inlineTransitionCoverIndex !== null ? (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 z-10 block overflow-hidden bg-[var(--surface0)]"
+                    >
+                      <InlineMediaFrame
+                        authorName={authorName}
+                        media={media[inlineTransitionCoverIndex] ?? null}
+                      />
+                    </span>
+                  ) : null}
                 </button>
               </div>
 
