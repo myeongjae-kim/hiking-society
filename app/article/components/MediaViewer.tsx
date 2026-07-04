@@ -1,7 +1,14 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type { MouseEvent, PointerEvent, ReactNode, RefObject, TransitionEvent } from 'react';
+import type {
+  MouseEvent,
+  PointerEvent,
+  ReactNode,
+  RefObject,
+  TouchEvent,
+  TransitionEvent,
+} from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -258,6 +265,18 @@ function getPointerDistance(firstPointer: GesturePointer, secondPointer: Gesture
   return Math.hypot(firstPointer.x - secondPointer.x, firstPointer.y - secondPointer.y);
 }
 
+function getTouchByIdentifier(touches: TouchEvent<HTMLElement>['touches'], identifier: number) {
+  for (let index = 0; index < touches.length; index += 1) {
+    const touch = touches.item(index);
+
+    if (touch?.identifier === identifier) {
+      return touch;
+    }
+  }
+
+  return null;
+}
+
 function getDominantSwipeAxis(deltaX: number, deltaY: number): SwipeAxis | null {
   const absDeltaX = Math.abs(deltaX);
   const absDeltaY = Math.abs(deltaY);
@@ -309,7 +328,6 @@ export function MediaViewer({
   const pinchGestureRef = useRef<PinchGesture | null>(null);
   const selectedMediaSurfaceRef = useRef<HTMLElement>(null);
   const mediaDoubleTapRef = useRef<DoubleTapTrack | null>(null);
-  const inlineActiveTouchPointerIdsRef = useRef<Set<number>>(new Set());
   const inlineSwipeGestureRef = useRef<SwipeGesture | null>(null);
   const shouldSuppressInlineClickRef = useRef(false);
   const shouldSuppressStageClickRef = useRef(false);
@@ -368,12 +386,6 @@ export function MediaViewer({
     setInlineSwipeTrack(null);
   }, []);
 
-  const releaseInlinePointerCaptures = useCallback((element: HTMLElement) => {
-    for (const pointerId of inlineActiveTouchPointerIdsRef.current) {
-      releasePointerCaptureIfActive(element, pointerId);
-    }
-  }, []);
-
   const createInlineSwipeTrack = useCallback(
     (offsetX: number, settling: boolean, targetIndex = normalizedActiveInlineIndex) => {
       const fromIndex = normalizedActiveInlineIndex;
@@ -400,19 +412,12 @@ export function MediaViewer({
         return;
       }
 
-      if (event.pointerType === 'mouse' && event.button !== 0) {
+      if (event.pointerType === 'touch') {
         return;
       }
 
-      if (event.pointerType === 'touch') {
-        inlineActiveTouchPointerIdsRef.current.add(event.pointerId);
-
-        if (inlineActiveTouchPointerIdsRef.current.size > 1) {
-          releaseInlinePointerCaptures(event.currentTarget);
-          resetInlineSwipeGesture();
-          suppressNextClickTemporarily(shouldSuppressInlineClickRef);
-          return;
-        }
+      if (event.pointerType === 'mouse' && event.button !== 0) {
+        return;
       }
 
       inlineSwipeGestureRef.current = {
@@ -424,15 +429,12 @@ export function MediaViewer({
       shouldSuppressInlineClickRef.current = false;
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [hasMultipleMedia, inlineCarousel, releaseInlinePointerCaptures, resetInlineSwipeGesture],
+    [hasMultipleMedia, inlineCarousel],
   );
 
   const handleInlinePointerMove = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      if (event.pointerType === 'touch' && inlineActiveTouchPointerIdsRef.current.size > 1) {
-        releaseInlinePointerCaptures(event.currentTarget);
-        resetInlineSwipeGesture();
-        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+      if (event.pointerType === 'touch') {
         return;
       }
 
@@ -471,13 +473,13 @@ export function MediaViewer({
 
       setInlineSwipeTrack(null);
     },
-    [createInlineSwipeTrack, releaseInlinePointerCaptures, resetInlineSwipeGesture],
+    [createInlineSwipeTrack],
   );
 
   const handleInlinePointerUp = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
       if (event.pointerType === 'touch') {
-        inlineActiveTouchPointerIdsRef.current.delete(event.pointerId);
+        return;
       }
 
       const inlineSwipeGesture = inlineSwipeGestureRef.current;
@@ -545,7 +547,7 @@ export function MediaViewer({
   const handleInlinePointerCancel = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
       if (event.pointerType === 'touch') {
-        inlineActiveTouchPointerIdsRef.current.delete(event.pointerId);
+        return;
       }
 
       releasePointerCaptureIfActive(event.currentTarget, event.pointerId);
@@ -553,6 +555,157 @@ export function MediaViewer({
     },
     [resetInlineSwipeGesture],
   );
+
+  const handleInlineTouchStart = useCallback(
+    (event: TouchEvent<HTMLButtonElement>) => {
+      if (!inlineCarousel || !hasMultipleMedia) {
+        return;
+      }
+
+      if (event.touches.length !== 1) {
+        resetInlineSwipeGesture();
+        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+        return;
+      }
+
+      const touch = event.touches.item(0);
+
+      if (!touch) {
+        return;
+      }
+
+      inlineSwipeGestureRef.current = {
+        axis: null,
+        pointerId: touch.identifier,
+        startX: touch.clientX,
+        startY: touch.clientY,
+      };
+      shouldSuppressInlineClickRef.current = false;
+    },
+    [hasMultipleMedia, inlineCarousel, resetInlineSwipeGesture],
+  );
+
+  const handleInlineTouchMove = useCallback(
+    (event: TouchEvent<HTMLButtonElement>) => {
+      const inlineSwipeGesture = inlineSwipeGestureRef.current;
+
+      if (!inlineSwipeGesture || event.touches.length !== 1) {
+        resetInlineSwipeGesture();
+        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+        return;
+      }
+
+      const touch = getTouchByIdentifier(event.touches, inlineSwipeGesture.pointerId);
+
+      if (!touch) {
+        resetInlineSwipeGesture();
+        return;
+      }
+
+      const deltaX = touch.clientX - inlineSwipeGesture.startX;
+      const deltaY = touch.clientY - inlineSwipeGesture.startY;
+      const axis = inlineSwipeGesture.axis ?? getInlineSwipeAxis(deltaX, deltaY);
+
+      if (
+        Math.abs(deltaX) >= mediaPanClickSuppressThresholdPx ||
+        Math.abs(deltaY) >= mediaPanClickSuppressThresholdPx
+      ) {
+        shouldSuppressInlineClickRef.current = true;
+      }
+
+      if (!axis) {
+        return;
+      }
+
+      inlineSwipeGesture.axis = axis;
+
+      if (axis === 'horizontal') {
+        const maxSwipeOffsetX = event.currentTarget.clientWidth || window.innerWidth;
+
+        event.preventDefault();
+        setInlineSwipeTrack(
+          createInlineSwipeTrack(clamp(deltaX, -maxSwipeOffsetX, maxSwipeOffsetX), false),
+        );
+        return;
+      }
+
+      setInlineSwipeTrack(null);
+    },
+    [createInlineSwipeTrack, resetInlineSwipeGesture],
+  );
+
+  const handleInlineTouchEnd = useCallback(
+    (event: TouchEvent<HTMLButtonElement>) => {
+      const inlineSwipeGesture = inlineSwipeGestureRef.current;
+
+      if (!inlineSwipeGesture) {
+        return;
+      }
+
+      const touch = getTouchByIdentifier(event.changedTouches, inlineSwipeGesture.pointerId);
+
+      if (!touch) {
+        return;
+      }
+
+      inlineSwipeGestureRef.current = null;
+
+      const deltaX = touch.clientX - inlineSwipeGesture.startX;
+      const deltaY = touch.clientY - inlineSwipeGesture.startY;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+      const axis = inlineSwipeGesture.axis ?? getInlineSwipeAxis(deltaX, deltaY);
+      const isHorizontalSwipe =
+        axis === 'horizontal' &&
+        absDeltaX >= mediaSwipeThresholdPx &&
+        absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
+
+      if (axis === 'horizontal' && absDeltaX >= mediaPanClickSuppressThresholdPx) {
+        suppressNextClickTemporarily(shouldSuppressInlineClickRef);
+      }
+
+      if (!isHorizontalSwipe || !hasMultipleMedia) {
+        if (
+          inlineSwipeTrack &&
+          axis === 'horizontal' &&
+          absDeltaX >= mediaPanClickSuppressThresholdPx
+        ) {
+          event.preventDefault();
+          setInlineSwipeTrack(createInlineSwipeTrack(0, true));
+          return;
+        }
+
+        setInlineSwipeTrack(null);
+        return;
+      }
+
+      event.preventDefault();
+      const width = event.currentTarget.clientWidth || window.innerWidth;
+      const fromIndex = normalizedActiveInlineIndex;
+      const targetIndex =
+        deltaX > 0
+          ? getWrappedIndex(fromIndex - 1, media.length)
+          : getWrappedIndex(fromIndex + 1, media.length);
+
+      if (deltaX > 0) {
+        setInlineSwipeTrack(createInlineSwipeTrack(width, true, targetIndex));
+        return;
+      }
+
+      setInlineSwipeTrack(createInlineSwipeTrack(-width, true, targetIndex));
+    },
+    [
+      createInlineSwipeTrack,
+      hasMultipleMedia,
+      inlineSwipeTrack,
+      media.length,
+      normalizedActiveInlineIndex,
+    ],
+  );
+
+  const handleInlineTouchCancel = useCallback(() => {
+    resetInlineSwipeGesture();
+  }, [resetInlineSwipeGesture]);
 
   const handleInlineSwipeTrackTransitionEnd = useCallback(
     (event: TransitionEvent<HTMLSpanElement>) => {
@@ -1317,12 +1470,16 @@ export function MediaViewer({
             >
               <button
                 aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-                className="group relative block h-auto w-full touch-pan-y touch-pinch-zoom appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+                className="group relative block h-auto w-full appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                 onClick={handleInlineTriggerClick}
                 onPointerCancel={handleInlinePointerCancel}
                 onPointerDown={handleInlinePointerDown}
                 onPointerMove={handleInlinePointerMove}
                 onPointerUp={handleInlinePointerUp}
+                onTouchCancel={handleInlineTouchCancel}
+                onTouchEnd={handleInlineTouchEnd}
+                onTouchMove={handleInlineTouchMove}
+                onTouchStart={handleInlineTouchStart}
                 type="button"
               >
                 <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
