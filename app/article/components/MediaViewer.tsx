@@ -281,18 +281,18 @@ export function MediaViewer({
   const [swipeOffset, setSwipeOffset] = useState<SwipeOffset>(initialSwipeOffset);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const hasMultipleMedia = media.length > 1;
-  const maxInlineIndex = Math.max(media.length - 1, 0);
-  const normalizedActiveInlineIndex = clamp(activeInlineIndex, 0, maxInlineIndex);
+  const normalizedActiveInlineIndex =
+    media.length > 0 ? getWrappedIndex(activeInlineIndex, media.length) : 0;
   const activeInlineMedia = media[normalizedActiveInlineIndex] ?? media[0];
-  const previousInlineMedia =
-    normalizedActiveInlineIndex > 0 ? (media[normalizedActiveInlineIndex - 1] ?? null) : null;
-  const nextInlineMedia =
-    normalizedActiveInlineIndex < maxInlineIndex
-      ? (media[normalizedActiveInlineIndex + 1] ?? null)
-      : null;
+  const previousInlineMedia = hasMultipleMedia
+    ? (media[getWrappedIndex(normalizedActiveInlineIndex - 1, media.length)] ?? null)
+    : null;
+  const nextInlineMedia = hasMultipleMedia
+    ? (media[getWrappedIndex(normalizedActiveInlineIndex + 1, media.length)] ?? null)
+    : null;
   const activeInlineTakenTime = getMediaTakenTimeLabel(activeInlineMedia);
-  const canShowPreviousInlineMedia = normalizedActiveInlineIndex > 0;
-  const canShowNextInlineMedia = normalizedActiveInlineIndex < maxInlineIndex;
+  const canShowPreviousInlineMedia = hasMultipleMedia;
+  const canShowNextInlineMedia = hasMultipleMedia;
   const selectedMedia = media[selectedIndex] ?? media[0];
   const selectedMediaIsVideo = selectedMedia.mediaType === 'video';
   const selectedVideoAspectRatio =
@@ -317,17 +317,19 @@ export function MediaViewer({
     inlineTransitionDirectionRef.current = null;
     setInlineSwipeOffset(initialSwipeOffset);
     setIsInlineSwipeActive(false);
-    setActiveInlineIndex((currentIndex) => Math.max(clamp(currentIndex, 0, maxInlineIndex) - 1, 0));
-  }, [maxInlineIndex]);
+    setActiveInlineIndex((currentIndex) =>
+      media.length > 0 ? getWrappedIndex(currentIndex - 1, media.length) : 0,
+    );
+  }, [media.length]);
 
   const showNextInlineMedia = useCallback(() => {
     inlineTransitionDirectionRef.current = null;
     setInlineSwipeOffset(initialSwipeOffset);
     setIsInlineSwipeActive(false);
     setActiveInlineIndex((currentIndex) =>
-      Math.min(clamp(currentIndex, 0, maxInlineIndex) + 1, maxInlineIndex),
+      media.length > 0 ? getWrappedIndex(currentIndex + 1, media.length) : 0,
     );
-  }, [maxInlineIndex]);
+  }, [media.length]);
 
   const setInlineSwipeOffsetState = useCallback((nextOffset: SwipeOffset) => {
     setInlineSwipeOffset((currentOffset) =>
@@ -390,20 +392,16 @@ export function MediaViewer({
       if (axis === 'horizontal') {
         const width = event.currentTarget.clientWidth || window.innerWidth;
         const maxOffset = width;
-        const resistedDeltaX =
-          (deltaX > 0 && !canShowPreviousInlineMedia) || (deltaX < 0 && !canShowNextInlineMedia)
-            ? deltaX * 0.28
-            : deltaX;
 
         event.preventDefault();
         setIsInlineSwipeActive(true);
         setInlineSwipeOffsetState({
-          x: clamp(resistedDeltaX, -maxOffset, maxOffset),
+          x: clamp(deltaX, -maxOffset, maxOffset),
           y: 0,
         });
       }
     },
-    [canShowNextInlineMedia, canShowPreviousInlineMedia, setInlineSwipeOffsetState],
+    [setInlineSwipeOffsetState],
   );
 
   const handleInlinePointerUp = useCallback(
@@ -431,8 +429,8 @@ export function MediaViewer({
         axis === 'horizontal' &&
         absDeltaX >= mediaSwipeThresholdPx &&
         absDeltaX >= absDeltaY * mediaHorizontalSwipeRatio;
-      const canMoveToPrevious = deltaX > 0 && canShowPreviousInlineMedia;
-      const canMoveToNext = deltaX < 0 && canShowNextInlineMedia;
+      const canMoveToPrevious = deltaX > 0 && hasMultipleMedia;
+      const canMoveToNext = deltaX < 0 && hasMultipleMedia;
       const isTap =
         absDeltaX < mediaPanClickSuppressThresholdPx &&
         absDeltaY < mediaPanClickSuppressThresholdPx;
@@ -488,6 +486,7 @@ export function MediaViewer({
     [
       canShowNextInlineMedia,
       canShowPreviousInlineMedia,
+      hasMultipleMedia,
       normalizedActiveInlineIndex,
       resetInlineSwipeGesture,
       setInlineSwipeOffsetState,
@@ -523,7 +522,9 @@ export function MediaViewer({
       flushSync(() => {
         setIsInlineSwipeActive(true);
         setInlineSwipeOffsetState(initialSwipeOffset);
-        setActiveInlineIndex((currentIndex) => clamp(currentIndex + direction, 0, maxInlineIndex));
+        setActiveInlineIndex((currentIndex) =>
+          media.length > 0 ? getWrappedIndex(currentIndex + direction, media.length) : 0,
+        );
       });
 
       event.currentTarget.getBoundingClientRect();
@@ -532,7 +533,7 @@ export function MediaViewer({
         setIsInlineSwipeActive(false);
       });
     },
-    [maxInlineIndex, setInlineSwipeOffsetState],
+    [media.length, setInlineSwipeOffsetState],
   );
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
