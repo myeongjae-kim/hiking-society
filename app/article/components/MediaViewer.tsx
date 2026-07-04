@@ -1,15 +1,7 @@
 'use client';
 
 import * as Dialog from '@radix-ui/react-dialog';
-import type {
-  MouseEvent,
-  PointerEvent,
-  ReactNode,
-  RefObject,
-  Touch,
-  TouchEvent,
-  TransitionEvent,
-} from 'react';
+import type { MouseEvent, PointerEvent, ReactNode, RefObject, TransitionEvent } from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -79,7 +71,6 @@ type InlineSwipeTrack = {
 type InlineMediaFrameProps = {
   authorName: string;
   media: ArticleMedia | null;
-  transform?: MediaTransform;
 };
 
 const mediaControlClassName =
@@ -139,31 +130,20 @@ function VideoPlayOverlay() {
   );
 }
 
-function InlineMediaFrame({
-  authorName,
-  media,
-  transform = initialMediaTransform,
-}: InlineMediaFrameProps) {
+function InlineMediaFrame({ authorName, media }: InlineMediaFrameProps) {
   if (!media) {
     return <span aria-hidden="true" className="block aspect-4/3 w-full bg-[var(--background0)]" />;
   }
-
-  const isZoomed = transform.scale > mediaMinScale;
 
   return (
     <span className="relative block min-w-0">
       <img
         alt={`${authorName}의 산행 사진이나 동영상 ${media.order}`}
-        className={`block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter,transform] ${
-          isZoomed ? '' : 'group-hover:brightness-110'
-        }`}
+        className="block aspect-4/3 w-full bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
         decoding="async"
         draggable={false}
         loading="lazy"
         src={media.thumbnailUrl ?? media.url}
-        style={{
-          transform: `translate3d(${transform.translateX}px, ${transform.translateY}px, 0) scale(${transform.scale})`,
-        }}
       />
       {media.mediaType === 'video' ? (
         <>
@@ -263,13 +243,6 @@ function getPointerDistance(firstPointer: GesturePointer, secondPointer: Gesture
   return Math.hypot(firstPointer.x - secondPointer.x, firstPointer.y - secondPointer.y);
 }
 
-function getTouchDistance(firstTouch: Touch, secondTouch: Touch) {
-  return Math.hypot(
-    firstTouch.clientX - secondTouch.clientX,
-    firstTouch.clientY - secondTouch.clientY,
-  );
-}
-
 function getDominantSwipeAxis(deltaX: number, deltaY: number): SwipeAxis | null {
   const absDeltaX = Math.abs(deltaX);
   const absDeltaY = Math.abs(deltaY);
@@ -298,8 +271,6 @@ export function MediaViewer({
 }: MediaViewerProps) {
   const viewerId = useId();
   const activePointersRef = useRef<Map<number, GesturePointer>>(new Map());
-  const inlineMediaTransformRef = useRef<MediaTransform>(initialMediaTransform);
-  const inlinePinchGestureRef = useRef<PinchGesture | null>(null);
   const mediaTransformRef = useRef<MediaTransform>(initialMediaTransform);
   const panGestureRef = useRef<PanGesture | null>(null);
   const pinchGestureRef = useRef<PinchGesture | null>(null);
@@ -311,8 +282,6 @@ export function MediaViewer({
   const swipeGestureRef = useRef<SwipeGesture | null>(null);
   const [open, setOpen] = useState(false);
   const [activeInlineIndex, setActiveInlineIndex] = useState(0);
-  const [inlineMediaTransform, setInlineMediaTransform] =
-    useState<MediaTransform>(initialMediaTransform);
   const [inlineSwipeTrack, setInlineSwipeTrack] = useState<InlineSwipeTrack | null>(null);
   const [isMediaGestureActive, setIsMediaGestureActive] = useState(false);
   const [mediaTransform, setMediaTransform] = useState<MediaTransform>(initialMediaTransform);
@@ -345,40 +314,19 @@ export function MediaViewer({
       ? '좌우 스와이프 또는 키보드 화살표로 동영상을 이동하고 Escape 키로 닫을 수 있습니다.'
       : '좌우 화살표 또는 화면 가장자리 클릭으로 사진이나 동영상을 이동하고 Escape 키로 닫을 수 있습니다.';
 
-  const setInlineMediaTransformState = useCallback((nextTransform: MediaTransform) => {
-    const normalizedTransform =
-      nextTransform.scale <= mediaMinScale
-        ? initialMediaTransform
-        : {
-            scale: clamp(nextTransform.scale, mediaMinScale, mediaMaxScale),
-            translateX: nextTransform.translateX,
-            translateY: nextTransform.translateY,
-          };
-
-    inlineMediaTransformRef.current = normalizedTransform;
-    setInlineMediaTransform(normalizedTransform);
-  }, []);
-
-  const resetInlineMediaGesture = useCallback(() => {
-    inlinePinchGestureRef.current = null;
-    inlineSwipeGestureRef.current = null;
-    setInlineSwipeTrack(null);
-    setInlineMediaTransformState(initialMediaTransform);
-  }, [setInlineMediaTransformState]);
-
   const showPreviousInlineMedia = useCallback(() => {
-    resetInlineMediaGesture();
+    setInlineSwipeTrack(null);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex - 1, media.length) : 0,
     );
-  }, [media.length, resetInlineMediaGesture]);
+  }, [media.length]);
 
   const showNextInlineMedia = useCallback(() => {
-    resetInlineMediaGesture();
+    setInlineSwipeTrack(null);
     setActiveInlineIndex((currentIndex) =>
       media.length > 0 ? getWrappedIndex(currentIndex + 1, media.length) : 0,
     );
-  }, [media.length, resetInlineMediaGesture]);
+  }, [media.length]);
 
   const resetInlineSwipeGesture = useCallback(() => {
     inlineSwipeGestureRef.current = null;
@@ -407,12 +355,7 @@ export function MediaViewer({
 
   const handleInlinePointerDown = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      if (
-        !inlineCarousel ||
-        !hasMultipleMedia ||
-        inlinePinchGestureRef.current ||
-        inlineMediaTransformRef.current.scale > mediaMinScale
-      ) {
+      if (!inlineCarousel || !hasMultipleMedia) {
         return;
       }
 
@@ -434,10 +377,6 @@ export function MediaViewer({
 
   const handleInlinePointerMove = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      if (inlinePinchGestureRef.current || inlineMediaTransformRef.current.scale > mediaMinScale) {
-        return;
-      }
-
       const inlineSwipeGesture = inlineSwipeGestureRef.current;
 
       if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
@@ -478,11 +417,6 @@ export function MediaViewer({
 
   const handleInlinePointerUp = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
-      if (inlinePinchGestureRef.current || inlineMediaTransformRef.current.scale > mediaMinScale) {
-        inlineSwipeGestureRef.current = null;
-        return;
-      }
-
       const inlineSwipeGesture = inlineSwipeGestureRef.current;
 
       if (!inlineSwipeGesture || inlineSwipeGesture.pointerId !== event.pointerId) {
@@ -558,69 +492,6 @@ export function MediaViewer({
     [resetInlineSwipeGesture],
   );
 
-  const handleInlineTouchStart = useCallback(
-    (event: TouchEvent<HTMLButtonElement>) => {
-      if (!inlineCarousel || activeInlineMedia.mediaType !== 'image' || event.touches.length < 2) {
-        return;
-      }
-
-      event.preventDefault();
-      inlineSwipeGestureRef.current = null;
-      setInlineSwipeTrack(null);
-      shouldSuppressInlineClickRef.current = true;
-      inlinePinchGestureRef.current = {
-        startDistance: getTouchDistance(event.touches[0], event.touches[1]),
-        startScale: inlineMediaTransformRef.current.scale,
-      };
-    },
-    [activeInlineMedia.mediaType, inlineCarousel],
-  );
-
-  const handleInlineTouchMove = useCallback(
-    (event: TouchEvent<HTMLButtonElement>) => {
-      const inlinePinchGesture = inlinePinchGestureRef.current;
-
-      if (
-        !inlinePinchGesture ||
-        inlinePinchGesture.startDistance === 0 ||
-        event.touches.length < 2
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-      shouldSuppressInlineClickRef.current = true;
-      setInlineMediaTransformState({
-        scale: clamp(
-          (inlinePinchGesture.startScale * getTouchDistance(event.touches[0], event.touches[1])) /
-            inlinePinchGesture.startDistance,
-          mediaMinScale,
-          mediaMaxScale,
-        ),
-        translateX: 0,
-        translateY: 0,
-      });
-    },
-    [setInlineMediaTransformState],
-  );
-
-  const handleInlineTouchEnd = useCallback((event: TouchEvent<HTMLButtonElement>) => {
-    if (!inlinePinchGestureRef.current) {
-      return;
-    }
-
-    if (event.touches.length >= 2) {
-      inlinePinchGestureRef.current = {
-        startDistance: getTouchDistance(event.touches[0], event.touches[1]),
-        startScale: inlineMediaTransformRef.current.scale,
-      };
-      return;
-    }
-
-    inlinePinchGestureRef.current = null;
-    suppressNextClickTemporarily(shouldSuppressInlineClickRef);
-  }, []);
-
   const handleInlineSwipeTrackTransitionEnd = useCallback(
     (event: TransitionEvent<HTMLSpanElement>) => {
       if (event.target !== event.currentTarget || event.propertyName !== 'transform') {
@@ -642,9 +513,7 @@ export function MediaViewer({
   );
 
   const renderedInlineSwipeTrack = hasMultipleMedia
-    ? inlineMediaTransform.scale <= mediaMinScale
-      ? (inlineSwipeTrack ?? createInlineSwipeTrack(0, false))
-      : null
+    ? (inlineSwipeTrack ?? createInlineSwipeTrack(0, false))
     : null;
 
   const setMediaTransformState = useCallback((nextTransform: MediaTransform) => {
@@ -704,13 +573,6 @@ export function MediaViewer({
         return;
       }
 
-      if (inlineMediaTransformRef.current.scale > mediaMinScale) {
-        event.preventDefault();
-        event.stopPropagation();
-        setInlineMediaTransformState(initialMediaTransform);
-        return;
-      }
-
       if (hasMultipleMedia) {
         const rect = event.currentTarget.getBoundingClientRect();
         const clickPositionRatio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
@@ -732,15 +594,12 @@ export function MediaViewer({
 
       event.preventDefault();
       event.stopPropagation();
-      resetInlineMediaGesture();
       openMediaViewerAtIndex(normalizedActiveInlineIndex);
     },
     [
       hasMultipleMedia,
       normalizedActiveInlineIndex,
       openMediaViewerAtIndex,
-      resetInlineMediaGesture,
-      setInlineMediaTransformState,
       showNextInlineMedia,
       showPreviousInlineMedia,
     ],
@@ -1267,17 +1126,9 @@ export function MediaViewer({
                 onPointerDown={handleInlinePointerDown}
                 onPointerMove={handleInlinePointerMove}
                 onPointerUp={handleInlinePointerUp}
-                onTouchCancel={handleInlineTouchEnd}
-                onTouchEnd={handleInlineTouchEnd}
-                onTouchMove={handleInlineTouchMove}
-                onTouchStart={handleInlineTouchStart}
                 type="button"
               >
-                <InlineMediaFrame
-                  authorName={authorName}
-                  media={activeInlineMedia}
-                  transform={inlineMediaTransform}
-                />
+                <InlineMediaFrame authorName={authorName} media={activeInlineMedia} />
                 {renderedInlineSwipeTrack ? (
                   <span
                     aria-hidden="true"
