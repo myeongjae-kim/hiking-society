@@ -56,8 +56,8 @@ export function FeedCrudClient({
     setCommentsByHikingId: articleLoader.setCommentsByHikingId,
   });
 
-  const activeHikingForm = actions.activeHikingForm;
-  const activeArticleForm = actions.activeArticleForm;
+  const activeHikingForm = actions.dialogState.activeHikingForm;
+  const activeArticleForm = actions.dialogState.activeArticleForm;
   const activeHiking =
     activeHikingForm?.type === 'edit'
       ? initialHikings.find((hiking) => hiking.id === activeHikingForm.hikingId)
@@ -84,53 +84,32 @@ export function FeedCrudClient({
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 px-1.5 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
         <section className={gridStackClassName} aria-label="산행 글 피드">
-          <FeedIntroPanel onCreateHiking={() => actions.setActiveHikingForm({ type: 'create' })} />
+          <FeedIntroPanel
+            onCreateHiking={() => actions.sectionActions.setActiveHikingForm({ type: 'create' })}
+          />
           {articleLoader.groups.map((group, groupIndex) => (
             <FeedHikingSection
-              articlesByHikingId={articleLoader.articlesByHikingId}
-              commentFormResetKeyByArticleId={actions.commentFormResetKeyByArticleId}
-              commentsByArticleId={articleLoader.commentsByArticleId}
+              actions={actions.sectionActions}
               currentUserId={currentUser.id}
-              editingCommentId={actions.editingCommentId}
-              errorByKey={actions.errorByKey}
-              getHikingArticleCount={articleLoader.getHikingArticleCount}
               group={group}
               groupIndex={groupIndex}
-              highlightedHikingId={actions.highlightedHikingId}
-              isCommentCreateSubmitting={actions.isCommentCreateSubmitting}
-              isCommentEditSubmitting={actions.isCommentEditSubmitting}
-              isCommentLikePending={actions.isCommentLikePending}
               key={`${group.hiking.id}-${groupIndex}`}
-              loadHikingArticles={articleLoader.loadHikingArticles}
-              loadStateByHikingId={articleLoader.hikingArticleLoadStateById}
-              onAddArticle={(hikingId) =>
-                actions.setActiveArticleForm({ hikingId, type: 'create' })
-              }
-              onCopyArticleLink={actions.copyArticleLink}
-              onCopyHikingLink={actions.copyHikingLink}
-              onCreateComment={actions.createComment}
-              onDeleteArticle={actions.requestDeleteArticle}
-              onDeleteComment={actions.requestDeleteComment}
-              onDeleteHiking={actions.requestDeleteHiking}
-              onEditArticle={(articleId) =>
-                actions.setActiveArticleForm({ articleId, type: 'edit' })
-              }
-              onEditComment={actions.setEditingCommentId}
-              onEditHiking={(hikingId) => actions.setActiveHikingForm({ hikingId, type: 'edit' })}
-              onReplyComment={actions.setReplyingCommentId}
-              onSubmitCommentEdit={actions.updateComment}
-              onToggleArticleLike={actions.toggleArticleLike}
-              onToggleCommentLike={actions.toggleCommentLike}
-              pendingLikeByKey={actions.pendingLikeByKey}
-              registerHikingSection={articleLoader.registerHikingSection}
-              replyingCommentId={actions.replyingCommentId}
+              loader={{
+                articlesByHikingId: articleLoader.articlesByHikingId,
+                commentsByArticleId: articleLoader.commentsByArticleId,
+                getHikingArticleCount: articleLoader.getHikingArticleCount,
+                loadHikingArticles: articleLoader.loadHikingArticles,
+                loadStateByHikingId: articleLoader.hikingArticleLoadStateById,
+                registerHikingSection: articleLoader.registerHikingSection,
+              }}
+              state={actions.sectionState}
             />
           ))}
         </section>
 
         <StatusPanel
           articleCount={articleCount}
-          commentCount={actions.visibleCommentCount}
+          commentCount={actions.statusState.visibleCommentCount}
           currentAuthorName={currentAuthorName}
           groupCount={articleLoader.groups.length}
           hikingCount={initialHikings.length}
@@ -138,28 +117,16 @@ export function FeedCrudClient({
       </div>
       <FeedFooter
         articleCount={articleCount}
-        commentCount={actions.visibleCommentCount}
+        commentCount={actions.statusState.visibleCommentCount}
         hikingCount={initialHikings.length}
       />
       <FeedDialogs
-        activeArticle={activeArticle}
-        activeArticleForm={actions.activeArticleForm}
-        activeArticleHiking={activeArticleHiking}
-        activeArticleSubmitting={actions.activeArticleSubmitting}
-        activeHiking={activeHiking}
-        activeHikingForm={actions.activeHikingForm}
-        activeHikingSubmitting={actions.activeHikingSubmitting}
-        confirmState={actions.confirmState}
-        errorByKey={actions.errorByKey}
-        loadingLabel={actions.loadingLabel}
-        loadingOverlayOpen={actions.loadingOverlayOpen}
-        onCloseArticleForm={actions.closeActiveArticleForm}
-        onCloseHikingForm={actions.closeActiveHikingForm}
-        onConfirmOpenChange={(open) => !open && actions.setConfirmState(null)}
-        onCreateArticle={actions.createArticle}
-        onCreateHiking={actions.createHiking}
-        onUpdateArticle={actions.updateArticle}
-        onUpdateHiking={actions.updateHiking}
+        actions={{
+          ...actions.dialogActions,
+          onConfirmOpenChange: (open) => !open && actions.dialogActions.setConfirmState(null),
+        }}
+        entities={{ activeArticle, activeArticleHiking, activeHiking }}
+        state={actions.dialogState}
       />
     </main>
   );

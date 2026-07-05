@@ -2,28 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type Dispatch, type SetStateAction } from 'react';
-import { toast } from 'sonner';
 
-import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
-import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
-import type { UploadedArticleMedia } from '@/app/article/utils/article-media-upload';
 import { $api } from '@/app/common/api/$api';
-import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import type { ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { useMutationRunner } from '@/app/common/hooks/useMutationRunner';
-import type { HikingFormValues } from '@/app/hiking/components/hikingFormTypes';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
-import type { Hiking, HikingId } from '@/core/hiking/domain';
+import type { HikingId } from '@/core/hiking/domain';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
-import {
-  getCommentCreateSingleFlightKey,
-  getCommentUpdateSingleFlightKey,
-  type ActiveArticleForm,
-  type ActiveHikingForm,
-  type LikePendingKey,
-} from '../utils/feedCrudTypes';
+import { useFeedArticleActions } from './useFeedArticleActions';
+import { useFeedCommentActions } from './useFeedCommentActions';
+import { useFeedHikingActions } from './useFeedHikingActions';
+import { useFeedLikeActions } from './useFeedLikeActions';
+import { useFeedLinkActions } from './useFeedLinkActions';
 
 type UseFeedCrudActionsInput = {
   articleHikingIdByArticleId: Map<ArticleId, HikingId>;
@@ -34,47 +26,6 @@ type UseFeedCrudActionsInput = {
   setCommentsByHikingId: Dispatch<SetStateAction<Record<string, readonly Comment[]>>>;
   selectedHikingId: HikingId | null;
 };
-
-async function copyTextToClipboard(text: string) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-
-  const textArea = document.createElement('textarea');
-  textArea.value = text;
-  textArea.setAttribute('readonly', '');
-  textArea.style.left = '-9999px';
-  textArea.style.position = 'fixed';
-  textArea.style.top = '0';
-  document.body.appendChild(textArea);
-  textArea.select();
-
-  try {
-    const copied = document.execCommand('copy');
-
-    if (!copied) {
-      throw new Error('Copy command failed.');
-    }
-  } finally {
-    document.body.removeChild(textArea);
-  }
-}
-
-function createHikingBody(values: HikingFormValues) {
-  return {
-    altitude: values.altitude.trim() ? Number(values.altitude) : null,
-    completedTime: values.completedTime,
-    hikingDate: values.hikingDate,
-    latitude: Number(values.latitude),
-    longitude: Number(values.longitude),
-    mountainName: values.mountainName,
-    participantsCsv: values.participantsCsv,
-    restaurantAddress: values.restaurantAddress,
-    startedTime: values.startedTime,
-    timezone: values.timezone,
-  };
-}
 
 export function useFeedCrudActions({
   articleHikingIdByArticleId,
@@ -87,97 +38,17 @@ export function useFeedCrudActions({
 }: UseFeedCrudActionsInput) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { deleteUploadedArticleMedia, uploadArticleMedia } = useArticleMediaUploader();
-  const createHikingMutation = $api.useMutation('post', '/api/hikings');
-  const updateHikingMutation = $api.useMutation('patch', '/api/hikings/{hikingId}');
-  const deleteHikingMutation = $api.useMutation('delete', '/api/hikings/{hikingId}');
-  const createArticleMutation = $api.useMutation('post', '/api/articles');
-  const updateArticleMutation = $api.useMutation('patch', '/api/articles/{articleId}');
-  const deleteArticleMutation = $api.useMutation('delete', '/api/articles/{articleId}');
-  const toggleArticleLikeMutation = $api.useMutation('post', '/api/articles/{articleId}/like');
-  const createCommentMutation = $api.useMutation('post', '/api/articles/{articleId}/comments');
-  const updateCommentMutation = $api.useMutation('patch', '/api/comments/{commentId}');
-  const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
-  const toggleCommentLikeMutation = $api.useMutation('post', '/api/comments/{commentId}/like');
-  const { errorByKey, isPending, isRunning, loadingLabel, runMutation, setError, setLoadingLabel } =
-    useMutationRunner();
-  const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
-  const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
-  const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
-  const [commentFormResetKeyByArticleId, setCommentFormResetKeyByArticleId] = useState<
-    Record<string, number>
-  >({});
+  const runner = useMutationRunner();
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
-  const [highlightedHikingId, setHighlightedHikingId] = useState<HikingId | null>(selectedHikingId);
-  const [commentCountDeltaState, setCommentCountDeltaState] = useState({
-    baseCommentCount: commentCount,
-    delta: 0,
-  });
-  const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
-
-  const commentCountDelta =
-    commentCountDeltaState.baseCommentCount === commentCount ? commentCountDeltaState.delta : 0;
-  const visibleCommentCount = Math.max(0, commentCount + commentCountDelta);
-  const activeHikingSingleFlightKey =
-    activeHikingForm?.type === 'create'
-      ? 'hiking-create'
-      : activeHikingForm?.type === 'edit'
-        ? `hiking-update-${activeHikingForm.hikingId}`
-        : null;
-  const activeArticleSingleFlightKey =
-    activeArticleForm?.type === 'create'
-      ? `article-create-${activeArticleForm.hikingId}`
-      : activeArticleForm?.type === 'edit'
-        ? `article-update-${activeArticleForm.articleId}`
-        : null;
-  const activeHikingSubmitting =
-    (activeHikingSingleFlightKey !== null && isRunning(activeHikingSingleFlightKey)) ||
-    (isPending && loadingLabel !== null);
-  const activeArticleSubmitting =
-    (activeArticleSingleFlightKey !== null && isRunning(activeArticleSingleFlightKey)) ||
-    (isPending && loadingLabel !== null);
-
   const invalidateQueryKeys = (queryKeys: readonly QueryKey[]) => {
     void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
   };
-
-  const setLikePending = (key: LikePendingKey, pending: boolean) => {
-    setPendingLikeByKey((currentPending) => {
-      const nextPending = { ...currentPending };
-
-      if (pending) {
-        nextPending[key] = true;
-      } else {
-        delete nextPending[key];
-      }
-
-      return nextPending;
-    });
-  };
-
-  const closeActiveArticleForm = () => {
-    if (activeArticleForm?.type === 'create') {
-      setError(`article-new-${activeArticleForm.hikingId}`, null);
-    }
-
-    if (activeArticleForm?.type === 'edit') {
-      setError(`article-edit-${activeArticleForm.articleId}`, null);
-    }
-
-    setActiveArticleForm(null);
-  };
-
-  const closeActiveHikingForm = () => {
-    if (activeHikingForm?.type === 'create') {
-      setError('hiking-new', null);
-    }
-
-    if (activeHikingForm?.type === 'edit') {
-      setError(`hiking-edit-${activeHikingForm.hikingId}`, null);
-    }
-
-    setActiveHikingForm(null);
+  const refreshRoute = () => router.refresh();
+  const actionDeps = {
+    invalidateQueryKeys,
+    refreshRoute,
+    runner,
+    setConfirmState,
   };
 
   const refreshArticleComments = async (articleId: ArticleId) => {
@@ -213,507 +84,88 @@ export function useFeedCrudActions({
     return true;
   };
 
-  const applyArticleLikeToggle = (articleId: ArticleId) => {
-    const hikingId = articleHikingIdByArticleId.get(articleId);
+  const hikingActions = useFeedHikingActions({
+    ...actionDeps,
+    getHikingArticleCount,
+  });
+  const articleActions = useFeedArticleActions({
+    ...actionDeps,
+    setArticlesByHikingId,
+    setCommentsByHikingId,
+  });
+  const commentActions = useFeedCommentActions({
+    ...actionDeps,
+    commentArticleIdByCommentId,
+    commentCount,
+    refreshArticleComments,
+  });
+  const likeActions = useFeedLikeActions({
+    articleHikingIdByArticleId,
+    commentArticleIdByCommentId,
+    invalidateQueryKeys,
+    refreshArticleComments,
+    runner,
+    setArticlesByHikingId,
+  });
+  const linkActions = useFeedLinkActions({
+    selectedHikingId,
+    setError: runner.setError,
+  });
 
-    if (!hikingId) {
-      throw new Error('좋아요를 갱신할 글을 찾을 수 없습니다.');
-    }
-
-    setArticlesByHikingId((currentArticles) => {
-      const hikingArticles = currentArticles[hikingId];
-
-      if (!hikingArticles) {
-        return currentArticles;
-      }
-
-      return {
-        ...currentArticles,
-        [hikingId]: hikingArticles.map((article) => {
-          if (article.id !== articleId) {
-            return article;
-          }
-
-          const likedByCurrentUser = !article.likedByCurrentUser;
-
-          return {
-            ...article,
-            likedByCurrentUser,
-            likeCount: Math.max(0, article.likeCount + (likedByCurrentUser ? 1 : -1)),
-          };
-        }),
-      };
-    });
+  const sectionState = {
+    commentFormResetKeyByArticleId: commentActions.commentFormResetKeyByArticleId,
+    editingCommentId: commentActions.editingCommentId,
+    errorByKey: runner.errorByKey,
+    highlightedHikingId: linkActions.highlightedHikingId,
+    isCommentCreateSubmitting: commentActions.isCommentCreateSubmitting,
+    isCommentEditSubmitting: commentActions.isCommentEditSubmitting,
+    isCommentLikePending: likeActions.isCommentLikePending,
+    pendingLikeByKey: likeActions.pendingLikeByKey,
+    replyingCommentId: commentActions.replyingCommentId,
   };
-
-  const copyHikingLink = (hiking: Hiking) => {
-    const hikingHref = `/feed?hikingId=${encodeURIComponent(hiking.id)}`;
-    const url = new URL(hikingHref, window.location.origin);
-
-    setHighlightedHikingId(hiking.id);
-    window.history.replaceState(window.history.state, '', hikingHref);
-
-    copyTextToClipboard(url.toString())
-      .then(() => {
-        setError(`hiking-${hiking.id}`, null);
-        toast.success('산행 링크를 복사했습니다.', { position: 'bottom-center' });
-      })
-      .catch(() => {
-        setError(`hiking-${hiking.id}`, '링크 복사에 실패했습니다.');
-        toast.error('링크 복사에 실패했습니다.', { position: 'bottom-center' });
-      });
+  const sectionActions = {
+    copyArticleLink: linkActions.copyArticleLink,
+    copyHikingLink: linkActions.copyHikingLink,
+    createComment: commentActions.createComment,
+    requestDeleteArticle: articleActions.requestDeleteArticle,
+    requestDeleteComment: commentActions.requestDeleteComment,
+    requestDeleteHiking: hikingActions.requestDeleteHiking,
+    setActiveArticleForm: articleActions.setActiveArticleForm,
+    setActiveHikingForm: hikingActions.setActiveHikingForm,
+    setEditingCommentId: commentActions.setEditingCommentId,
+    setReplyingCommentId: commentActions.setReplyingCommentId,
+    toggleArticleLike: likeActions.toggleArticleLike,
+    toggleCommentLike: likeActions.toggleCommentLike,
+    updateComment: commentActions.updateComment,
   };
-
-  const copyArticleLink = (article: Article) => {
-    const articleHref = `/article/${encodeURIComponent(article.id)}`;
-    const url = new URL(articleHref, window.location.origin);
-
-    copyTextToClipboard(url.toString())
-      .then(() => {
-        setError(`article-${article.id}`, null);
-        toast.success('글 링크를 복사했습니다.', { position: 'bottom-center' });
-      })
-      .catch(() => {
-        setError(`article-${article.id}`, '링크 복사에 실패했습니다.');
-        toast.error('링크 복사에 실패했습니다.', { position: 'bottom-center' });
-      });
+  const dialogState = {
+    activeArticleForm: articleActions.activeArticleForm,
+    activeArticleSubmitting: articleActions.activeArticleSubmitting,
+    activeHikingForm: hikingActions.activeHikingForm,
+    activeHikingSubmitting: hikingActions.activeHikingSubmitting,
+    confirmState,
+    errorByKey: runner.errorByKey,
+    loadingLabel: runner.loadingLabel,
+    loadingOverlayOpen: runner.isPending && runner.loadingLabel !== null,
   };
-
-  const createArticleFormData = async (
-    values: ArticleFormValues,
-    identifiers: { articleId?: ArticleId; hikingId?: HikingId },
-  ) => {
-    const body = {
-      existingMedia: [] as {
-        byteSize?: number;
-        contentType?: string;
-        durationMs?: number | null;
-        height?: number | null;
-        mediaType: 'image' | 'video';
-        metadata?: Record<string, string | null | undefined> | null;
-        objectKey?: string;
-        order: number;
-        thumbnailUrl?: string | null;
-        url: string;
-        width?: number | null;
-      }[],
-      uploadedMedia: [] as UploadedArticleMedia[],
-      body: values.body,
-      ...identifiers,
-    };
-    const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values, setLoadingLabel);
-    const existingMedia = values.media
-      .filter((media) => !media.file)
-      .map((media) => ({
-        byteSize: media.byteSize,
-        contentType: media.contentType,
-        durationMs: media.durationMs,
-        height: media.height,
-        mediaType: media.mediaType,
-        metadata: media.metadata,
-        objectKey: media.objectKey,
-        order: media.order,
-        thumbnailUrl: media.thumbnailUrl,
-        url: media.url,
-        width: media.width,
-      }));
-
-    return { body: { ...body, existingMedia, uploadedMedia }, uploadedObjectKeys };
+  const dialogActions = {
+    closeActiveArticleForm: articleActions.closeActiveArticleForm,
+    closeActiveHikingForm: hikingActions.closeActiveHikingForm,
+    createArticle: articleActions.createArticle,
+    createHiking: hikingActions.createHiking,
+    setConfirmState,
+    updateArticle: articleActions.updateArticle,
+    updateHiking: hikingActions.updateHiking,
   };
-
-  const createHiking = (values: HikingFormValues) => {
-    runMutation(
-      {
-        errorKey: 'hiking-new',
-        loadingLabel: '산행 저장 중',
-        singleFlightKey: 'hiking-create',
-      },
-      async () => {
-        await createHikingMutation.mutateAsync({ body: createHikingBody(values) });
-        setActiveHikingForm(null);
-        invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.notifications()]);
-        router.refresh();
-      },
-    );
-  };
-
-  const updateHiking = (hikingId: HikingId, values: HikingFormValues) => {
-    runMutation(
-      {
-        errorKey: `hiking-edit-${hikingId}`,
-        loadingLabel: '산행 저장 중',
-        singleFlightKey: `hiking-update-${hikingId}`,
-      },
-      async () => {
-        await updateHikingMutation.mutateAsync({
-          body: createHikingBody(values),
-          params: { path: { hikingId } },
-        });
-        setActiveHikingForm(null);
-        invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hikingId)]);
-        router.refresh();
-      },
-    );
-  };
-
-  const requestDeleteHiking = (hiking: Hiking) => {
-    const hasArticles = getHikingArticleCount(hiking.id) > 0;
-
-    if (hasArticles) {
-      setError(`hiking-${hiking.id}`, '글이 있는 산행은 삭제할 수 없습니다.');
-      return;
-    }
-
-    setConfirmState({
-      body: `${hiking.mountainName} 산행 기록을 삭제합니다.`,
-      confirmLabel: '삭제',
-      onConfirm: () => {
-        runMutation(
-          {
-            errorKey: `hiking-${hiking.id}`,
-          },
-          async () => {
-            await deleteHikingMutation.mutateAsync({
-              params: { path: { hikingId: hiking.id } },
-            });
-            setConfirmState(null);
-            invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hiking.id)]);
-            router.refresh();
-          },
-        );
-      },
-      title: '산행 삭제',
-    });
-  };
-
-  const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
-    if (values.media.length === 0) {
-      setError(`article-new-${hikingId}`, '글은 사진이나 동영상 없이 저장할 수 없습니다.');
-      return;
-    }
-
-    runMutation(
-      {
-        errorKey: `article-new-${hikingId}`,
-        loadingLabel: '글 저장 중',
-        singleFlightKey: `article-create-${hikingId}`,
-      },
-      async () => {
-        let uploadedObjectKeys: string[] = [];
-        try {
-          const articleFormData = await createArticleFormData(values, {
-            hikingId,
-          });
-          uploadedObjectKeys = articleFormData.uploadedObjectKeys;
-
-          setLoadingLabel('글 저장 중');
-          await createArticleMutation.mutateAsync({
-            body: { ...articleFormData.body, hikingId },
-          });
-
-          setActiveArticleForm(null);
-          invalidateQueryKeys([
-            apiQueryKeys.feed(),
-            apiQueryKeys.hikingArticles(hikingId),
-            apiQueryKeys.notifications(),
-          ]);
-          router.refresh();
-        } catch (error) {
-          if (uploadedObjectKeys.length > 0) {
-            setLoadingLabel('업로드 파일 정리 중');
-            await deleteUploadedArticleMedia(uploadedObjectKeys);
-          }
-
-          throw new Error(error instanceof Error ? error.message : '글을 저장하지 못했습니다.');
-        }
-      },
-    );
-  };
-
-  const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
-    if (values.media.length === 0) {
-      setError(`article-edit-${articleId}`, '글은 사진이나 동영상 없이 저장할 수 없습니다.');
-      return;
-    }
-
-    runMutation(
-      {
-        errorKey: `article-edit-${articleId}`,
-        loadingLabel: '글 저장 중',
-        singleFlightKey: `article-update-${articleId}`,
-      },
-      async () => {
-        let uploadedObjectKeys: string[] = [];
-        try {
-          const articleFormData = await createArticleFormData(values, {
-            articleId,
-          });
-          uploadedObjectKeys = articleFormData.uploadedObjectKeys;
-
-          setLoadingLabel('글 저장 중');
-          const result = await updateArticleMutation.mutateAsync({
-            body: articleFormData.body,
-            params: { path: { articleId } },
-          });
-
-          if (!result) {
-            throw new Error('글을 저장하지 못했습니다.');
-          }
-
-          const snapshot = result as unknown as { article: Article; comments: readonly Comment[] };
-
-          setArticlesByHikingId((currentArticles) => {
-            const hikingArticles = currentArticles[snapshot.article.hikingId];
-
-            if (!hikingArticles) {
-              return currentArticles;
-            }
-
-            return {
-              ...currentArticles,
-              [snapshot.article.hikingId]: hikingArticles.map((article) =>
-                article.id === snapshot.article.id ? snapshot.article : article,
-              ),
-            };
-          });
-          setCommentsByHikingId((currentComments) => {
-            const hikingComments = currentComments[snapshot.article.hikingId];
-
-            if (!hikingComments) {
-              return currentComments;
-            }
-
-            return {
-              ...currentComments,
-              [snapshot.article.hikingId]: [
-                ...hikingComments.filter((comment) => comment.articleId !== snapshot.article.id),
-                ...snapshot.comments,
-              ],
-            };
-          });
-          setActiveArticleForm(null);
-          invalidateQueryKeys([
-            apiQueryKeys.articleDetail(articleId),
-            apiQueryKeys.hikingArticles(snapshot.article.hikingId),
-          ]);
-        } catch (error) {
-          if (uploadedObjectKeys.length > 0) {
-            setLoadingLabel('업로드 파일 정리 중');
-            await deleteUploadedArticleMedia(uploadedObjectKeys);
-          }
-
-          throw new Error(error instanceof Error ? error.message : '글을 저장하지 못했습니다.');
-        }
-      },
-    );
-  };
-
-  const requestDeleteArticle = (article: Article) => {
-    setConfirmState({
-      body: '정말 삭제할까요?',
-      confirmLabel: '삭제',
-      onConfirm: () => {
-        runMutation(
-          {
-            errorKey: `article-${article.id}`,
-          },
-          async () => {
-            await deleteArticleMutation.mutateAsync({
-              params: { path: { articleId: article.id } },
-            });
-            setConfirmState(null);
-            invalidateQueryKeys([
-              apiQueryKeys.articleDetail(article.id),
-              apiQueryKeys.feed(),
-              apiQueryKeys.hikingArticles(article.hikingId),
-            ]);
-            router.refresh();
-          },
-        );
-      },
-      title: '글 삭제',
-    });
-  };
-
-  const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    runMutation(
-      {
-        errorKey: `comment-new-${articleId}`,
-        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
-      },
-      async () => {
-        await createCommentMutation.mutateAsync({
-          body: { body, parentCommentId },
-          params: { path: { articleId } },
-        });
-        await refreshArticleComments(articleId);
-        setCommentCountDeltaState((currentState) => ({
-          baseCommentCount: commentCount,
-          delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
-        }));
-
-        if (parentCommentId === null) {
-          setCommentFormResetKeyByArticleId((currentKeys) => ({
-            ...currentKeys,
-            [articleId]: (currentKeys[articleId] ?? 0) + 1,
-          }));
-        }
-
-        setReplyingCommentId(null);
-        invalidateQueryKeys([
-          apiQueryKeys.articleComments(articleId),
-          apiQueryKeys.notifications(),
-        ]);
-      },
-    );
-  };
-
-  const updateComment = (commentId: CommentId, body: string) => {
-    const articleId = commentArticleIdByCommentId.get(commentId);
-
-    if (!articleId) {
-      setError(`comment-edit-${commentId}`, '댓글을 갱신할 글을 찾을 수 없습니다.');
-      return;
-    }
-
-    runMutation(
-      {
-        errorKey: `comment-edit-${commentId}`,
-        singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
-      },
-      async () => {
-        await updateCommentMutation.mutateAsync({
-          body: { body },
-          params: { path: { commentId } },
-        });
-        await refreshArticleComments(articleId);
-        setEditingCommentId(null);
-        invalidateQueryKeys([apiQueryKeys.articleComments(articleId)]);
-      },
-    );
-  };
-
-  const requestDeleteComment = (comment: Comment) => {
-    setConfirmState({
-      body: '정말 삭제할까요?',
-      confirmLabel: '삭제',
-      onConfirm: () => {
-        runMutation(
-          {
-            errorKey: `comment-${comment.id}`,
-          },
-          async () => {
-            await deleteCommentMutation.mutateAsync({
-              params: { path: { commentId: comment.id } },
-            });
-            await refreshArticleComments(comment.articleId);
-            setConfirmState(null);
-
-            if (comment.deletedAt === null) {
-              setCommentCountDeltaState((currentState) => ({
-                baseCommentCount: commentCount,
-                delta:
-                  (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
-              }));
-            }
-
-            invalidateQueryKeys([apiQueryKeys.articleComments(comment.articleId)]);
-          },
-        );
-      },
-      title: '댓글 삭제',
-    });
-  };
-
-  const toggleArticleLike = (articleId: ArticleId) => {
-    const likePendingKey = `article-${articleId}` as LikePendingKey;
-    const hikingId = articleHikingIdByArticleId.get(articleId);
-
-    setLikePending(likePendingKey, true);
-    runMutation(
-      {
-        errorKey: `article-${articleId}`,
-        onSettled: () => setLikePending(likePendingKey, false),
-      },
-      async () => {
-        await toggleArticleLikeMutation.mutateAsync({
-          params: { path: { articleId } },
-        });
-        applyArticleLikeToggle(articleId);
-        invalidateQueryKeys([
-          apiQueryKeys.articleDetail(articleId),
-          ...(hikingId ? [apiQueryKeys.hikingArticles(hikingId)] : []),
-        ]);
-      },
-    );
-  };
-
-  const toggleCommentLike = (commentId: CommentId) => {
-    const articleId = commentArticleIdByCommentId.get(commentId);
-
-    if (!articleId) {
-      setError(`comment-${commentId}`, '댓글을 갱신할 글을 찾을 수 없습니다.');
-      return;
-    }
-
-    const likePendingKey = `comment-${commentId}` as LikePendingKey;
-
-    setLikePending(likePendingKey, true);
-    runMutation(
-      {
-        errorKey: `comment-${commentId}`,
-        onSettled: () => setLikePending(likePendingKey, false),
-      },
-      async () => {
-        await toggleCommentLikeMutation.mutateAsync({
-          params: { path: { commentId } },
-        });
-        await refreshArticleComments(articleId);
-        invalidateQueryKeys([apiQueryKeys.articleComments(articleId)]);
-      },
-    );
+  const statusState = {
+    visibleCommentCount: commentActions.visibleCommentCount,
   };
 
   return {
-    activeArticleForm,
-    activeArticleSubmitting,
-    activeHikingForm,
-    activeHikingSubmitting,
-    closeActiveArticleForm,
-    closeActiveHikingForm,
-    commentFormResetKeyByArticleId,
-    confirmState,
-    copyArticleLink,
-    copyHikingLink,
-    createArticle,
-    createComment,
-    createHiking,
-    editingCommentId,
-    errorByKey,
-    highlightedHikingId,
-    isCommentCreateSubmitting: (articleId: ArticleId, parentCommentId: CommentId | null) =>
-      isRunning(getCommentCreateSingleFlightKey(articleId, parentCommentId)),
-    isCommentEditSubmitting: (commentId: CommentId) =>
-      isRunning(getCommentUpdateSingleFlightKey(commentId)),
-    isCommentLikePending: (commentId: CommentId) =>
-      pendingLikeByKey[`comment-${commentId}`] === true,
-    loadingLabel,
-    loadingOverlayOpen: isPending && loadingLabel !== null,
-    pendingLikeByKey,
-    replyingCommentId,
-    requestDeleteArticle,
-    requestDeleteComment,
-    requestDeleteHiking,
-    setActiveArticleForm,
-    setActiveHikingForm,
-    setConfirmState,
-    setEditingCommentId,
-    setReplyingCommentId,
-    toggleArticleLike,
-    toggleCommentLike,
-    updateArticle,
-    updateComment,
-    updateHiking,
-    visibleCommentCount,
+    dialogActions,
+    dialogState,
+    sectionActions,
+    sectionState,
+    statusState,
   };
 }

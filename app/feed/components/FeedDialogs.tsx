@@ -12,120 +12,107 @@ import type { Hiking, HikingId } from '@/core/hiking/domain';
 import type { ActiveArticleForm, ActiveHikingForm } from '../utils/feedCrudTypes';
 
 type FeedDialogsProps = {
-  activeArticle: Article | undefined;
-  activeArticleForm: ActiveArticleForm;
-  activeArticleHiking: Hiking | undefined;
-  activeArticleSubmitting: boolean;
-  activeHiking: Hiking | undefined;
-  activeHikingForm: ActiveHikingForm;
-  activeHikingSubmitting: boolean;
-  confirmState: ConfirmState;
-  errorByKey: Record<string, string>;
-  loadingLabel: string | null;
-  loadingOverlayOpen: boolean;
-  onCloseArticleForm: () => void;
-  onCloseHikingForm: () => void;
-  onConfirmOpenChange: (open: boolean) => void;
-  onCreateArticle: (hikingId: HikingId, values: ArticleFormValues) => void;
-  onCreateHiking: (values: HikingFormValues) => void;
-  onUpdateArticle: (articleId: Article['id'], values: ArticleFormValues) => void;
-  onUpdateHiking: (hikingId: HikingId, values: HikingFormValues) => void;
+  entities: {
+    activeArticle: Article | undefined;
+    activeArticleHiking: Hiking | undefined;
+    activeHiking: Hiking | undefined;
+  };
+  state: {
+    activeArticleForm: ActiveArticleForm;
+    activeArticleSubmitting: boolean;
+    activeHikingForm: ActiveHikingForm;
+    activeHikingSubmitting: boolean;
+    confirmState: ConfirmState;
+    errorByKey: Record<string, string>;
+    loadingLabel: string | null;
+    loadingOverlayOpen: boolean;
+  };
+  actions: {
+    closeActiveArticleForm: () => void;
+    closeActiveHikingForm: () => void;
+    createArticle: (hikingId: HikingId, values: ArticleFormValues) => void;
+    createHiking: (values: HikingFormValues) => void;
+    onConfirmOpenChange: (open: boolean) => void;
+    updateArticle: (articleId: Article['id'], values: ArticleFormValues) => void;
+    updateHiking: (hikingId: HikingId, values: HikingFormValues) => void;
+  };
 };
 
-export function FeedDialogs({
-  activeArticle,
-  activeArticleForm,
-  activeArticleHiking,
-  activeArticleSubmitting,
-  activeHiking,
-  activeHikingForm,
-  activeHikingSubmitting,
-  confirmState,
-  errorByKey,
-  loadingLabel,
-  loadingOverlayOpen,
-  onCloseArticleForm,
-  onCloseHikingForm,
-  onConfirmOpenChange,
-  onCreateArticle,
-  onCreateHiking,
-  onUpdateArticle,
-  onUpdateHiking,
-}: FeedDialogsProps) {
+export function FeedDialogs({ actions, entities, state }: FeedDialogsProps) {
   const activeHikingFormKey =
-    activeHikingForm?.type === 'create'
+    state.activeHikingForm?.type === 'create'
       ? 'hiking-new'
-      : activeHikingForm?.type === 'edit'
-        ? `hiking-edit-${activeHikingForm.hikingId}`
+      : state.activeHikingForm?.type === 'edit'
+        ? `hiking-edit-${state.activeHikingForm.hikingId}`
         : null;
-  const activeHikingFormTitle = activeHikingForm?.type === 'edit' ? '산행 수정' : '산행 등록';
+  const activeHikingFormTitle = state.activeHikingForm?.type === 'edit' ? '산행 수정' : '산행 등록';
   const hikingFormDialogOpen =
-    activeHikingForm?.type === 'create' ||
-    (activeHikingForm?.type === 'edit' && activeHiking !== undefined);
+    state.activeHikingForm?.type === 'create' ||
+    (state.activeHikingForm?.type === 'edit' && entities.activeHiking !== undefined);
   const activeArticleFormKey =
-    activeArticleForm?.type === 'create'
-      ? `article-new-${activeArticleForm.hikingId}`
-      : activeArticleForm?.type === 'edit'
-        ? `article-edit-${activeArticleForm.articleId}`
+    state.activeArticleForm?.type === 'create'
+      ? `article-new-${state.activeArticleForm.hikingId}`
+      : state.activeArticleForm?.type === 'edit'
+        ? `article-edit-${state.activeArticleForm.articleId}`
         : null;
-  const activeArticleFormTitle = activeArticleForm?.type === 'edit' ? '글 수정' : '글 작성';
+  const activeArticleFormTitle = state.activeArticleForm?.type === 'edit' ? '글 수정' : '글 작성';
   const articleFormDialogOpen =
-    activeArticleForm?.type === 'create' ||
-    (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
+    state.activeArticleForm?.type === 'create' ||
+    (state.activeArticleForm?.type === 'edit' && entities.activeArticle !== undefined);
 
   return (
     <>
-      <ConfirmDialog confirmState={confirmState} onOpenChange={onConfirmOpenChange} />
+      <ConfirmDialog confirmState={state.confirmState} onOpenChange={actions.onConfirmOpenChange} />
       <HikingFormDialog
-        error={activeHikingFormKey ? errorByKey[activeHikingFormKey] : undefined}
+        error={activeHikingFormKey ? state.errorByKey[activeHikingFormKey] : undefined}
         formKey={activeHikingFormKey ?? 'hiking-form'}
-        hiking={activeHiking}
-        onCancel={onCloseHikingForm}
+        hiking={entities.activeHiking}
+        onCancel={actions.closeActiveHikingForm}
         onOpenChange={(open) => {
           if (!open) {
-            onCloseHikingForm();
+            actions.closeActiveHikingForm();
           }
         }}
         onSubmit={(values) => {
-          if (activeHikingForm?.type === 'create') {
-            onCreateHiking(values);
+          if (state.activeHikingForm?.type === 'create') {
+            actions.createHiking(values);
             return;
           }
 
-          if (activeHikingForm?.type === 'edit') {
-            onUpdateHiking(activeHikingForm.hikingId, values);
+          if (state.activeHikingForm?.type === 'edit') {
+            actions.updateHiking(state.activeHikingForm.hikingId, values);
           }
         }}
         open={hikingFormDialogOpen}
-        submitting={activeHikingSubmitting}
+        submitting={state.activeHikingSubmitting}
         title={activeHikingFormTitle}
       />
       <ArticleFormDialog
-        article={activeArticle}
-        error={activeArticleFormKey ? errorByKey[activeArticleFormKey] : undefined}
+        article={entities.activeArticle}
+        error={activeArticleFormKey ? state.errorByKey[activeArticleFormKey] : undefined}
         formKey={activeArticleFormKey ?? 'article-form'}
-        hiking={activeArticleHiking}
-        onCancel={onCloseArticleForm}
+        hiking={entities.activeArticleHiking}
+        onCancel={actions.closeActiveArticleForm}
         onOpenChange={(open) => {
           if (!open) {
-            onCloseArticleForm();
+            actions.closeActiveArticleForm();
           }
         }}
         onSubmit={(values) => {
-          if (activeArticleForm?.type === 'create') {
-            onCreateArticle(activeArticleForm.hikingId, values);
+          if (state.activeArticleForm?.type === 'create') {
+            actions.createArticle(state.activeArticleForm.hikingId, values);
             return;
           }
 
-          if (activeArticleForm?.type === 'edit') {
-            onUpdateArticle(activeArticleForm.articleId, values);
+          if (state.activeArticleForm?.type === 'edit') {
+            actions.updateArticle(state.activeArticleForm.articleId, values);
           }
         }}
         open={articleFormDialogOpen}
-        submitting={activeArticleSubmitting}
+        submitting={state.activeArticleSubmitting}
         title={activeArticleFormTitle}
       />
-      <LoadingOverlay label={loadingLabel ?? undefined} open={loadingOverlayOpen} />
+      <LoadingOverlay label={state.loadingLabel ?? undefined} open={state.loadingOverlayOpen} />
     </>
   );
 }
