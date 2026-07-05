@@ -194,7 +194,7 @@ export function NotificationPopover({
       <Popover.Portal>
         <Popover.Content
           align="end"
-          className="z-[70] grid w-[min(24rem,calc(100vw-1rem))] gap-2 border border-[var(--overlay0)] bg-[var(--background0)] p-2 text-[var(--foreground0)] shadow-[0.25rem_0.25rem_0_var(--surface0)]"
+          className="z-[70] ml-1.5 grid w-[min(24rem,calc(100vw-1rem))] gap-2 border border-[var(--overlay0)] bg-[var(--background0)] p-2 text-[var(--foreground0)] shadow-[0.25rem_0.25rem_0_var(--surface0)]"
           sideOffset={8}
         >
           <div className="flex items-center justify-between gap-2 px-1">
