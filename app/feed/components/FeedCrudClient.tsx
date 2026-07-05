@@ -633,6 +633,21 @@ export function FeedCrudClient({
       });
   };
 
+  const copyArticleLink = (article: Article) => {
+    const articleHref = `/article/${encodeURIComponent(article.id)}`;
+    const url = new URL(articleHref, window.location.origin);
+
+    copyTextToClipboard(url.toString())
+      .then(() => {
+        setError(`article-${article.id}`, null);
+        toast.success('게시글 링크를 복사했습니다.', { position: 'bottom-center' });
+      })
+      .catch(() => {
+        setError(`article-${article.id}`, '링크 복사에 실패했습니다.');
+        toast.error('링크 복사에 실패했습니다.', { position: 'bottom-center' });
+      });
+  };
+
   const runAction = <T extends { error?: string; ok: boolean }>(
     action: () => Promise<T>,
     options: {
@@ -1324,6 +1339,7 @@ export function FeedCrudClient({
                             key={article.id}
                             mobileMediaCarousel
                             onCreateComment={createComment}
+                            onCopyArticleLink={() => copyArticleLink(article)}
                             onDeleteArticle={() => requestDeleteArticle(article)}
                             onDeleteComment={requestDeleteComment}
                             onEditArticle={() =>

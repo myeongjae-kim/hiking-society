@@ -19,6 +19,7 @@ import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { ArticleFormDialog } from './ArticleFormDialog';
 import type { ArticleFormValues } from './articleFormTypes';
 import { ArticlePanel } from './ArticlePanel';
@@ -77,6 +78,32 @@ async function uploadDirectToS3(file: File, uploadUrl: string) {
 
   if (!response.ok) {
     throw new Error('S3 업로드에 실패했습니다.');
+  }
+}
+
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.setAttribute('readonly', '');
+  textArea.style.left = '-9999px';
+  textArea.style.position = 'fixed';
+  textArea.style.top = '0';
+  document.body.appendChild(textArea);
+  textArea.select();
+
+  try {
+    const copied = document.execCommand('copy');
+
+    if (!copied) {
+      throw new Error('Copy command failed.');
+    }
+  } finally {
+    document.body.removeChild(textArea);
   }
 }
 
@@ -512,6 +539,18 @@ export function ArticleDetailClient({
     );
   };
 
+  const copyCurrentArticleLink = () => {
+    copyTextToClipboard(window.location.href)
+      .then(() => {
+        setError(`article-${article.id}`, null);
+        toast.success('게시글 링크를 복사했습니다.', { position: 'bottom-center' });
+      })
+      .catch(() => {
+        setError(`article-${article.id}`, '링크 복사에 실패했습니다.');
+        toast.error('링크 복사에 실패했습니다.', { position: 'bottom-center' });
+      });
+  };
+
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
       <FeedTopbar
@@ -626,6 +665,7 @@ export function ArticleDetailClient({
           }
           isCommentLikePending={(commentId) => pendingLikeByKey[`comment-${commentId}`] === true}
           onCreateComment={createComment}
+          onCopyArticleLink={copyCurrentArticleLink}
           onDeleteArticle={requestDeleteArticle}
           onDeleteComment={requestDeleteComment}
           onEditArticle={() => setEditingArticle(true)}

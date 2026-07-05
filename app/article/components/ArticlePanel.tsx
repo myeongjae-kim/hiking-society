@@ -10,7 +10,7 @@ import { ActionButton } from '@/app/common/components/ActionButton';
 import { AuthorBadge } from '@/app/common/components/AuthorBadge';
 import { Command } from '@/app/common/components/Command';
 import { InlineMeta } from '@/app/common/components/InlineMeta';
-import { boxBorderClassName } from '@/app/common/components/styles';
+import { boxBorderClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 
@@ -32,6 +32,7 @@ type ArticlePanelProps = {
   isCommentLikePending: (commentId: CommentId) => boolean;
   mobileMediaCarousel?: boolean;
   onCreateComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
+  onCopyArticleLink?: () => void;
   onDeleteArticle: () => void;
   onDeleteComment: (comment: Comment) => void;
   onEditArticle: () => void;
@@ -59,6 +60,7 @@ export function ArticlePanel({
   isCommentLikePending,
   mobileMediaCarousel = false,
   onCreateComment,
+  onCopyArticleLink,
   onDeleteArticle,
   onDeleteComment,
   onEditArticle,
@@ -113,12 +115,39 @@ export function ArticlePanel({
       <header className="grid gap-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <Command>article.open {article.id}</Command>
-          {canEdit ? (
+          {canEdit || onCopyArticleLink ? (
             <div className="flex flex-wrap gap-2">
-              <ActionButton onClick={onEditArticle}>수정</ActionButton>
-              <ActionButton onClick={onDeleteArticle} tone="danger">
-                삭제
-              </ActionButton>
+              {onCopyArticleLink ? (
+                <button
+                  aria-label="게시글 링크 복사"
+                  className={`${inlineButtonClassName} aspect-square !min-h-[1.75rem] !min-w-[1.75rem] !px-1 !py-1`}
+                  onClick={onCopyArticleLink}
+                  title="게시글 링크 복사"
+                  type="button"
+                >
+                  <svg
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71" />
+                  </svg>
+                </button>
+              ) : null}
+              {canEdit ? (
+                <>
+                  <ActionButton onClick={onEditArticle}>수정</ActionButton>
+                  <ActionButton onClick={onDeleteArticle} tone="danger">
+                    삭제
+                  </ActionButton>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>
