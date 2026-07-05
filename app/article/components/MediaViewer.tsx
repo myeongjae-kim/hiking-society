@@ -1667,6 +1667,7 @@ export function MediaViewer({
                         isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
                       }`}
                       controls
+                      loop
                       muted
                       playsInline
                       poster={selectedMedia.thumbnailUrl ?? undefined}
@@ -1685,6 +1686,7 @@ export function MediaViewer({
                       isMediaGestureActive ? '' : 'transition-transform duration-150 ease-out'
                     }`}
                     controls
+                    loop
                     muted
                     playsInline
                     poster={selectedMedia.thumbnailUrl ?? undefined}
