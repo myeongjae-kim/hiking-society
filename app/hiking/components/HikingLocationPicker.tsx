@@ -253,7 +253,7 @@ export function HikingLocationPicker({
         <div className="grid max-h-44 gap-1 overflow-y-auto border border-[var(--overlay0)] bg-[var(--background1)] p-1">
           {results.map((result) => (
             <button
-              className="!grid !h-auto !min-h-0 w-full min-w-0 appearance-none content-start justify-items-start gap-1 !border !border-[var(--overlay0)] !bg-[var(--background0)] !bg-none !px-2 !py-2 text-left text-sm leading-[1.35] !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+              className="!block !h-auto !min-h-0 w-full min-w-0 appearance-none overflow-hidden !border !border-[var(--overlay0)] !bg-[var(--background0)] !bg-none !px-2 !py-2 text-left text-sm leading-[1.35] !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
               disabled={submitting}
               key={result.id}
               onClick={() =>
@@ -264,10 +264,8 @@ export function HikingLocationPicker({
               }
               type="button"
             >
-              <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
-                {result.label}
-              </span>
-              <span className="mt-0.5 block font-mono text-xs text-[var(--subtext0)]">
+              <span className="block min-w-0 truncate text-left">{result.label}</span>
+              <span className="mt-0.5 hidden text-left font-mono text-xs text-[var(--subtext0)] sm:block">
                 {formatCoordinate(result.latitude)}, {formatCoordinate(result.longitude)}
               </span>
             </button>
