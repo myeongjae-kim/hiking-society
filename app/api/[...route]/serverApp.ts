@@ -2,10 +2,7 @@ import { CookieConfig } from '@/core/auth/config/CookieConfig';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { authMiddleware } from './config/auth';
 import { globalErrorHandler } from './config/globalErrorHandler';
-import AuthProfileController from './controllers/AuthProfileController';
-import FeedArticleController from './controllers/FeedArticleController';
-import GeocodingController from './controllers/GeocodingController';
-import NotificationMemberController from './controllers/NotificationMemberController';
+import { apiControllers } from './controllers';
 
 export const serverApp = new OpenAPIHono().basePath('/api');
 
@@ -48,9 +45,4 @@ if (process.env.NODE_ENV !== 'production') {
   );
 }
 
-[
-  AuthProfileController,
-  FeedArticleController,
-  GeocodingController,
-  NotificationMemberController,
-].forEach((controller) => serverApp.route('/', controller));
+apiControllers.forEach((controller) => serverApp.route('/', controller));

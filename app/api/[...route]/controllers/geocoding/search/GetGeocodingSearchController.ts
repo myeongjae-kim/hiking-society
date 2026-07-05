@@ -1,9 +1,12 @@
 import { createRoute } from '@hono/zod-openapi';
-import { apiErrorSchema } from '../config/ApiError';
-import { Controller } from '../config/Controller';
-import { badRequest } from '../config/apiUtils';
-import { requireApiRole } from '../config/auth';
-import { geocodingSearchQuerySchema, geocodingSearchResponseSchema } from '../schemas';
+import { apiErrorSchema } from '@/app/api/[...route]/config/ApiError';
+import { Controller } from '@/app/api/[...route]/config/Controller';
+import { badRequest } from '@/app/api/[...route]/config/apiUtils';
+import { requireApiRole } from '@/app/api/[...route]/config/auth';
+import {
+  geocodingSearchQuerySchema,
+  geocodingSearchResponseSchema,
+} from '@/app/api/[...route]/schemas';
 
 const controller = Controller();
 const cacheTtlMs = 1000 * 60 * 10;
