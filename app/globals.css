@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
 
 @font-face {
   font-family: "_neodgm";
@@ -57,6 +58,17 @@
 }
 
 @layer base {
+  .maplibregl-popup-content {
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .maplibregl-popup-tip {
+    display: none !important;
+  }
+
   [data-webtui-theme]:not([data-webtui-theme^="catppuccin"]):not([data-webtui-theme="osmium"]) {
     --surface0: var(--background1);
     --surface1: var(--background2);

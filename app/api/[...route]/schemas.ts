@@ -170,6 +170,23 @@ export const notificationListResponseSchema = z
   })
   .openapi('NotificationListResponse');
 
+export const geocodingSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(160),
+});
+
+export const geocodingSearchResponseSchema = z
+  .object({
+    results: z.array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        latitude: z.number(),
+        longitude: z.number(),
+      }),
+    ),
+  })
+  .openapi('GeocodingSearchResponse');
+
 export const memberSchema = z
   .object({
     createdAt: z.string(),

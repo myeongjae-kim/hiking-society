@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
@@ -17,6 +18,18 @@ import type { Hiking } from '@/core/hiking/domain';
 import { readPhotoMetadataFromFile } from './exifGps';
 import type { HikingFormValues } from './hikingFormTypes';
 import { getHikingFormDefaults } from './hikingFormUtils';
+
+const HikingLocationPicker = dynamic(
+  () => import('./HikingLocationPicker').then((module) => module.HikingLocationPicker),
+  {
+    loading: () => (
+      <div className="grid h-[20rem] place-items-center border border-[var(--overlay0)] bg-[var(--background1)] text-sm text-[var(--subtext0)]">
+        지도 불러오는 중...
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 const exifPhotoAccept =
   'image/jpeg,image/tiff,image/heic,image/heif,.jpg,.jpeg,.tif,.tiff,.heic,.heif';
@@ -61,6 +74,7 @@ export function HikingForm({
     '사진을 선택하거나 드롭하면 EXIF 좌표, 고도, 촬영시각을 채웁니다.',
   );
   const [isMetadataDropActive, setIsMetadataDropActive] = useState(false);
+  const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
 
   const updateValue = (key: keyof HikingFormValues, value: string) => {
     setValues((currentValues) => ({
@@ -293,6 +307,32 @@ export function HikingForm({
             value={values.longitude}
           />
         </FieldLabel>
+        <div className="grid gap-2 sm:col-span-2">
+          <button
+            aria-expanded={isLocationPickerOpen}
+            className={`${inlineButtonClassName} justify-self-start`}
+            onClick={() => setIsLocationPickerOpen((open) => !open)}
+            type="button"
+          >
+            지도에서 좌표 선택
+          </button>
+          {isLocationPickerOpen ? (
+            <div className="border border-[var(--overlay0)] bg-[var(--background0)] p-3">
+              <HikingLocationPicker
+                latitude={values.latitude}
+                longitude={values.longitude}
+                onSelect={(coordinate) =>
+                  setValues((currentValues) => ({
+                    ...currentValues,
+                    latitude: coordinate.latitude,
+                    longitude: coordinate.longitude,
+                  }))
+                }
+                submitting={submitting}
+              />
+            </div>
+          ) : null}
+        </div>
         <FieldLabel label="고도(m)">
           <input
             className={fieldClassName}

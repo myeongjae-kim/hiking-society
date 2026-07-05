@@ -4,6 +4,7 @@ import { authMiddleware } from './config/auth';
 import { globalErrorHandler } from './config/globalErrorHandler';
 import AuthProfileController from './controllers/AuthProfileController';
 import FeedArticleController from './controllers/FeedArticleController';
+import GeocodingController from './controllers/GeocodingController';
 import NotificationMemberController from './controllers/NotificationMemberController';
 
 export const serverApp = new OpenAPIHono().basePath('/api');
@@ -47,6 +48,9 @@ if (process.env.NODE_ENV !== 'production') {
   );
 }
 
-[AuthProfileController, FeedArticleController, NotificationMemberController].forEach((controller) =>
-  serverApp.route('/', controller),
-);
+[
+  AuthProfileController,
+  FeedArticleController,
+  GeocodingController,
+  NotificationMemberController,
+].forEach((controller) => serverApp.route('/', controller));

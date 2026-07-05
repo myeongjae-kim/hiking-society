@@ -1114,6 +1114,61 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/geocoding/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: {
+      parameters: {
+        query: {
+          q: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Geocoding search results */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['GeocodingSearchResponse'];
+          };
+        };
+        /** @description Bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ApiError'];
+          };
+        };
+        /** @description Unauthorized */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ApiError'];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/notifications': {
     parameters: {
       query?: never;
@@ -1421,6 +1476,14 @@ export interface components {
     };
     CommentsResponse: {
       comments: components['schemas']['Comment'][];
+    };
+    GeocodingSearchResponse: {
+      results: {
+        id: string;
+        label: string;
+        latitude: number;
+        longitude: number;
+      }[];
     };
     NotificationListResponse: {
       hasMoreNotifications: boolean;
