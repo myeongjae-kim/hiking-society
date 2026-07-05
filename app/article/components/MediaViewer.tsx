@@ -853,7 +853,7 @@ export function MediaViewer({
     (index: number) => {
       const selectedMediaIndex = clamp(index, 0, Math.max(media.length - 1, 0));
       if (media[selectedMediaIndex]?.mediaType === 'video') {
-        toast('동영상이 음소거 상태로 재생됩니다.');
+        toast('동영상이 음소거 상태로 재생됩니다.', { position: 'bottom-center' });
       }
 
       resetMediaGesture();
