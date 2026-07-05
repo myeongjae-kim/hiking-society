@@ -379,7 +379,7 @@ export function ArticleForm({
               />
             </label>
           </FieldLabel>
-          <p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">
+          <p className="m-0 hidden text-xs leading-[1.35] text-[var(--subtext0)] sm:block">
             파일을 이 영역에 드롭해도 추가됩니다.
           </p>
           {mediaError ? <p className="m-0 text-sm text-[var(--red)]">{mediaError}</p> : null}
