@@ -20,6 +20,14 @@ If WebTUI does not provide an appropriate component for the interaction, use Rad
 Use Tailwind CSS utilities as much as possible for application styling.
 <!-- END:ui-component-agent-rules -->
 
+<!-- BEGIN:api-client-agent-rules -->
+# API Client
+
+Do not use `fetchClient` directly. Use `$api.useQuery()` and `$api.useMutation()` instead.
+
+When a `queryKey` is needed, use `$api.queryOptions().queryKey`.
+<!-- END:api-client-agent-rules -->
+
 <!-- BEGIN:backend-architecture-agent-rules -->
 # Backend Architecture
 
