@@ -664,6 +664,7 @@ export function ArticleDetailClient({
             singleFlightAction.isRunning(getCommentUpdateSingleFlightKey(commentId))
           }
           isCommentLikePending={(commentId) => pendingLikeByKey[`comment-${commentId}`] === true}
+          mobileMediaCarousel
           onCreateComment={createComment}
           onCopyArticleLink={copyCurrentArticleLink}
           onDeleteArticle={requestDeleteArticle}
