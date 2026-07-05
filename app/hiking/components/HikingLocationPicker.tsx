@@ -289,9 +289,6 @@ export function HikingLocationPicker({
               type="button"
             >
               <span className="block min-w-0 truncate text-left">{result.label}</span>
-              <span className="mt-0.5 hidden text-left font-mono text-xs text-[var(--subtext0)] sm:block">
-                {formatCoordinate(result.latitude)}, {formatCoordinate(result.longitude)}
-              </span>
             </button>
           ))}
         </div>
