@@ -5,19 +5,17 @@ import { useState, useTransition, type Dispatch, type SetStateAction } from 'rea
 import { toast } from 'sonner';
 
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
-import {
-  deleteUploadedArticleMedia,
-  uploadArticleMedia,
-  type UploadedArticleMedia,
-} from '@/app/article/utils/article-media-upload';
-import { $api, fetchClient } from '@/app/common/api/$api';
+import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
+import type { UploadedArticleMedia } from '@/app/article/utils/article-media-upload';
+import { $api } from '@/app/common/api/$api';
+import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import type { ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
 import type { HikingFormValues } from '@/app/hiking/components/hikingFormTypes';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
 import {
   getCommentCreateSingleFlightKey,
@@ -89,6 +87,7 @@ export function useFeedCrudActions({
 }: UseFeedCrudActionsInput) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { deleteUploadedArticleMedia, uploadArticleMedia } = useArticleMediaUploader();
   const createHikingMutation = $api.useMutation('post', '/api/hikings');
   const updateHikingMutation = $api.useMutation('patch', '/api/hikings/{hikingId}');
   const deleteHikingMutation = $api.useMutation('delete', '/api/hikings/{hikingId}');
@@ -164,6 +163,8 @@ export function useFeedCrudActions({
       loadingLabel?: string;
       onSettled?: () => void;
       onSuccess?: (result: T & { ok: true }) => Promise<void> | void;
+      getInvalidateQueryKeys?: (result: T & { ok: true }) => readonly QueryKey[];
+      invalidateQueryKeys?: readonly QueryKey[];
       refresh?: boolean;
       singleFlightKey?: string;
     },
@@ -182,9 +183,20 @@ export function useFeedCrudActions({
             }
 
             try {
-              await options.onSuccess?.(result as T & { ok: true });
+              const successResult = result as T & { ok: true };
+
+              await options.onSuccess?.(successResult);
               setError(options.errorKey, null);
-              void queryClient.invalidateQueries();
+              const invalidateQueryKeys =
+                options.getInvalidateQueryKeys?.(successResult) ?? options.invalidateQueryKeys;
+
+              if (invalidateQueryKeys) {
+                void Promise.all(
+                  invalidateQueryKeys.map((queryKey) =>
+                    queryClient.invalidateQueries({ queryKey }),
+                  ),
+                );
+              }
               if (options.refresh !== false) {
                 router.refresh();
               }
@@ -260,15 +272,12 @@ export function useFeedCrudActions({
       throw new Error('댓글을 갱신할 글을 찾을 수 없습니다.');
     }
 
-    const result = await fetchClient.GET('/api/articles/{articleId}/comments', {
-      params: { path: { articleId } },
-    });
-
-    if (!result.data) {
-      throw new Error('댓글을 불러오지 못했습니다.');
-    }
-
-    const comments = result.data.comments as unknown as readonly Comment[];
+    const result = await queryClient.fetchQuery(
+      $api.queryOptions('get', '/api/articles/{articleId}/comments', {
+        params: { path: { articleId } },
+      }),
+    );
+    const comments = result.comments as unknown as readonly Comment[];
 
     setCommentsByHikingId((currentComments) => {
       const hikingComments = currentComments[hikingId];
@@ -405,6 +414,7 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: 'hiking-new',
+        invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.notifications()],
         loadingLabel: '산행 저장 중',
         onSuccess: () => setActiveHikingForm(null),
         singleFlightKey: 'hiking-create',
@@ -423,6 +433,7 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `hiking-edit-${hikingId}`,
+        invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hikingId)],
         loadingLabel: '산행 저장 중',
         onSuccess: () => setActiveHikingForm(null),
         singleFlightKey: `hiking-update-${hikingId}`,
@@ -451,6 +462,7 @@ export function useFeedCrudActions({
               .then(() => ({ ok: true as const })),
           {
             errorKey: `hiking-${hiking.id}`,
+            invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hiking.id)],
             onSuccess: () => setConfirmState(null),
           },
         );
@@ -494,6 +506,11 @@ export function useFeedCrudActions({
       },
       {
         errorKey: `article-new-${hikingId}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.feed(),
+          apiQueryKeys.hikingArticles(hikingId),
+          apiQueryKeys.notifications(),
+        ],
         loadingLabel: '글 저장 중',
         onSuccess: () => setActiveArticleForm(null),
         singleFlightKey: `article-create-${hikingId}`,
@@ -544,6 +561,10 @@ export function useFeedCrudActions({
       },
       {
         errorKey: `article-edit-${articleId}`,
+        getInvalidateQueryKeys: (result) => [
+          apiQueryKeys.articleDetail(articleId),
+          apiQueryKeys.hikingArticles(result.snapshot.article.hikingId),
+        ],
         loadingLabel: '글 저장 중',
         onSuccess: (result) => {
           setArticlesByHikingId((currentArticles) => {
@@ -599,6 +620,11 @@ export function useFeedCrudActions({
               .then(() => ({ ok: true as const })),
           {
             errorKey: `article-${article.id}`,
+            invalidateQueryKeys: [
+              apiQueryKeys.articleDetail(article.id),
+              apiQueryKeys.feed(),
+              apiQueryKeys.hikingArticles(article.hikingId),
+            ],
             onSuccess: () => setConfirmState(null),
           },
         );
@@ -618,6 +644,10 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-new-${articleId}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.articleComments(articleId),
+          apiQueryKeys.notifications(),
+        ],
         onSuccess: async () => {
           await refreshArticleComments(articleId);
           setCommentCountDeltaState((currentState) => ({
@@ -658,6 +688,7 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-edit-${commentId}`,
+        invalidateQueryKeys: [apiQueryKeys.articleComments(articleId)],
         onSuccess: async () => {
           await refreshArticleComments(articleId);
           setEditingCommentId(null);
@@ -682,6 +713,7 @@ export function useFeedCrudActions({
               .then(() => ({ ok: true as const })),
           {
             errorKey: `comment-${comment.id}`,
+            invalidateQueryKeys: [apiQueryKeys.articleComments(comment.articleId)],
             onSuccess: async () => {
               await refreshArticleComments(comment.articleId);
               setConfirmState(null);
@@ -704,6 +736,7 @@ export function useFeedCrudActions({
 
   const toggleArticleLike = (articleId: ArticleId) => {
     const likePendingKey = `article-${articleId}` as LikePendingKey;
+    const hikingId = articleHikingIdByArticleId.get(articleId);
 
     setLikePending(likePendingKey, true);
     runAction(
@@ -715,6 +748,10 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `article-${articleId}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.articleDetail(articleId),
+          ...(hikingId ? [apiQueryKeys.hikingArticles(hikingId)] : []),
+        ],
         onSuccess: () => applyArticleLikeToggle(articleId),
         onSettled: () => setLikePending(likePendingKey, false),
         refresh: false,
@@ -742,6 +779,7 @@ export function useFeedCrudActions({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-${commentId}`,
+        invalidateQueryKeys: [apiQueryKeys.articleComments(articleId)],
         onSuccess: async () => {
           await refreshArticleComments(articleId);
         },

@@ -2,15 +2,17 @@
 
 import * as Popover from '@radix-ui/react-popover';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 
-import { $api, fetchClient } from '@/app/common/api/$api';
+import { $api } from '@/app/common/api/$api';
+import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import { inlineButtonClassName } from '@/app/common/components/styles';
 import type {
   NotificationListSnapshot,
   NotificationSummary,
 } from '@/core/notification/model/Notification';
+import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationPopoverProps = {
   notificationSnapshot?: NotificationListSnapshot;
@@ -81,27 +83,65 @@ export function NotificationPopover({
   notificationSnapshot = emptyNotificationSnapshot,
 }: NotificationPopoverProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const markNotificationReadMutation = $api.useMutation(
     'patch',
     '/api/notifications/{notificationId}/read',
   );
   const markAllNotificationsReadMutation = $api.useMutation('patch', '/api/notifications/read-all');
-  const [snapshot, setSnapshot] = useState(() => notificationSnapshot);
+  const notificationsQuery = $api.useInfiniteQuery(
+    'get',
+    '/api/notifications',
+    { params: { query: { limit: NOTIFICATION_PAGE_SIZE, offset: null } } },
+    {
+      getNextPageParam: (lastPage, allPages) =>
+        lastPage.hasMoreNotifications
+          ? allPages.reduce((count, page) => count + page.notifications.length, 0)
+          : undefined,
+      initialData: {
+        pageParams: [0],
+        pages: [
+          {
+            ...notificationSnapshot,
+            notifications: [...notificationSnapshot.notifications],
+          },
+        ],
+      },
+      initialPageParam: 0,
+      pageParamName: 'offset',
+    },
+  );
+  const [readNotificationIds, setReadNotificationIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [allReadAt, setAllReadAt] = useState<NotificationSummary['readAt'] | null>(null);
   const [isPending, startTransition] = useTransition();
-  const { hasMoreNotifications, hasUnreadNotifications, notifications } = snapshot;
+  const notificationPages = useMemo(
+    () => (notificationsQuery.data?.pages ?? []) as unknown as readonly NotificationListSnapshot[],
+    [notificationsQuery.data?.pages],
+  );
+  const lastPage = notificationPages.at(-1) ?? emptyNotificationSnapshot;
+  const hasMoreNotifications = lastPage.hasMoreNotifications;
+  const hasUnreadNotifications = allReadAt ? false : lastPage.hasUnreadNotifications;
+  const notifications = useMemo(
+    () =>
+      notificationPages.flatMap((page) =>
+        page.notifications.map((notification) => {
+          const readAt =
+            notification.readAt ??
+            allReadAt ??
+            (readNotificationIds.has(notification.id)
+              ? (new Date().toISOString() as NotificationSummary['readAt'])
+              : null);
 
-  const markLoadedNotificationRead = (notificationId: string) => {
-    setSnapshot((current) => ({
-      ...current,
-      notifications: current.notifications.map((notification) =>
-        notification.id === notificationId
-          ? {
-              ...notification,
-              readAt: new Date().toISOString() as NotificationSummary['readAt'],
-            }
-          : notification,
+          return { ...notification, readAt } satisfies NotificationSummary;
+        }),
       ),
-    }));
+    [allReadAt, notificationPages, readNotificationIds],
+  );
+
+  const invalidateNotifications = () => {
+    void queryClient.invalidateQueries({ queryKey: apiQueryKeys.notifications() });
   };
 
   const readNotification = (notification: NotificationSummary) => {
@@ -110,7 +150,8 @@ export function NotificationPopover({
         params: { path: { notificationId: notification.id } },
       });
 
-      markLoadedNotificationRead(notification.id);
+      setReadNotificationIds((current) => new Set(current).add(notification.id));
+      invalidateNotifications();
       router.push(getNotificationHref(notification));
       router.refresh();
     });
@@ -120,37 +161,15 @@ export function NotificationPopover({
     startTransition(async () => {
       await markAllNotificationsReadMutation.mutateAsync({});
 
-      setSnapshot((current) => ({
-        ...current,
-        hasUnreadNotifications: false,
-        notifications: current.notifications.map((notification) => ({
-          ...notification,
-          readAt:
-            notification.readAt ?? (new Date().toISOString() as NotificationSummary['readAt']),
-        })),
-      }));
+      setAllReadAt(new Date().toISOString() as NotificationSummary['readAt']);
+      invalidateNotifications();
       router.refresh();
     });
   };
 
   const loadMoreNotifications = () => {
     startTransition(async () => {
-      const { data } = await fetchClient.GET('/api/notifications', {
-        params: { query: { limit: NOTIFICATION_PAGE_SIZE, offset: notifications.length } },
-      });
-
-      if (!data) {
-        throw new Error('알림을 불러오지 못했습니다.');
-      }
-
-      setSnapshot((current) => ({
-        hasMoreNotifications: data.hasMoreNotifications,
-        hasUnreadNotifications: data.hasUnreadNotifications,
-        notifications: [
-          ...current.notifications,
-          ...(data.notifications as unknown as readonly NotificationSummary[]),
-        ],
-      }));
+      await notificationsQuery.fetchNextPage();
     });
   };
 
@@ -184,7 +203,9 @@ export function NotificationPopover({
             <span className="font-mono text-sm text-[var(--foreground0)]">notifications</span>
             <button
               className={`${inlineButtonClassName} !min-h-[1.5rem] !px-2 !py-0.5 !text-xs`}
-              disabled={isPending || !hasUnreadNotifications}
+              disabled={
+                isPending || markAllNotificationsReadMutation.isPending || !hasUnreadNotifications
+              }
               onClick={readAllNotifications}
               type="button"
             >
@@ -202,7 +223,7 @@ export function NotificationPopover({
                       className={`${notificationItemClassName} ${
                         unread ? 'shadow-[inset_0.25rem_0_0_var(--red)]' : 'opacity-75'
                       }`}
-                      disabled={isPending}
+                      disabled={isPending || markNotificationReadMutation.isPending}
                       key={notification.id}
                       onClick={() => readNotification(notification)}
                       type="button"
@@ -226,7 +247,7 @@ export function NotificationPopover({
                 {hasMoreNotifications ? (
                   <button
                     className={`${inlineButtonClassName} !min-h-[2rem] w-full shrink-0 !px-3 !py-1 text-sm`}
-                    disabled={isPending}
+                    disabled={isPending || notificationsQuery.isFetchingNextPage}
                     onClick={loadMoreNotifications}
                     type="button"
                   >

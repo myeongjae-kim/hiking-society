@@ -3,7 +3,7 @@
 import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { fetchClient } from '@/app/common/api/$api';
+import { $api } from '@/app/common/api/$api';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { fieldClassName } from '@/app/common/components/styles';
 import { Map, MapMarker, MarkerContent, useMap, type MapViewport } from '@/components/ui/map';
@@ -104,9 +104,37 @@ export function HikingLocationPicker({
     zoom: selectedCoordinate ? 12 : 8,
   });
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<GeocodingResult[]>([]);
-  const [status, setStatus] = useState('주소를 검색하거나 지도에서 한 지점을 선택하세요.');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const trimmedQuery = query.trim();
+  const geocodingQuery = $api.useQuery(
+    'get',
+    '/api/geocoding/search',
+    { params: { query: { q: searchTerm } } },
+    { enabled: searchTerm.length >= 2 && trimmedQuery.length >= 2 },
+  );
+  const results =
+    trimmedQuery.length >= 2 && searchTerm.length >= 2 && searchTerm === trimmedQuery
+      ? ((geocodingQuery.data?.results ?? []) as GeocodingResult[])
+      : [];
+  const isSearching = geocodingQuery.isFetching;
+  const status =
+    trimmedQuery.length === 0
+      ? '주소를 검색하거나 지도에서 한 지점을 선택하세요.'
+      : trimmedQuery.length < 2
+        ? '주소는 두 글자 이상 입력하세요.'
+        : geocodingQuery.isFetching
+          ? '주소 검색 중...'
+          : geocodingQuery.error
+            ? geocodingQuery.error instanceof Error
+              ? geocodingQuery.error.message
+              : '주소 검색에 실패했습니다.'
+            : searchTerm !== trimmedQuery
+              ? '주소 검색 중...'
+              : results.length > 0
+                ? `${results.length}개 결과를 찾았습니다.`
+                : searchTerm.length >= 2
+                  ? '검색 결과가 없습니다.'
+                  : '주소 검색 중...';
 
   const selectCoordinate = useCallback(
     (coordinate: { latitude: number; longitude: number }) => {
@@ -146,55 +174,16 @@ export function HikingLocationPicker({
 
   const handleQueryChange = (value: string) => {
     setQuery(value);
-
-    const trimmedValue = value.trim();
-
-    if (trimmedValue.length === 0) {
-      setResults([]);
-      setStatus('주소를 검색하거나 지도에서 한 지점을 선택하세요.');
-      setIsSearching(false);
-      return;
-    }
-
-    if (trimmedValue.length < 2) {
-      setResults([]);
-      setStatus('주소는 두 글자 이상 입력하세요.');
-      setIsSearching(false);
-    }
   };
 
   const searchAddress = useCallback((rawQuery: string) => {
     const trimmedQuery = rawQuery.trim();
 
     if (trimmedQuery.length < 2) {
-      setStatus(
-        trimmedQuery.length === 0
-          ? '주소를 검색하거나 지도에서 한 지점을 선택하세요.'
-          : '주소는 두 글자 이상 입력하세요.',
-      );
       return;
     }
 
-    setIsSearching(true);
-    setStatus('주소 검색 중...');
-    fetchClient
-      .GET('/api/geocoding/search', {
-        params: { query: { q: trimmedQuery } },
-      })
-      .then(({ data }) => {
-        const nextResults = data?.results ?? [];
-        setResults(nextResults);
-        setStatus(
-          nextResults.length > 0
-            ? `${nextResults.length}개 결과를 찾았습니다.`
-            : '검색 결과가 없습니다.',
-        );
-      })
-      .catch((error: unknown) => {
-        setResults([]);
-        setStatus(error instanceof Error ? error.message : '주소 검색에 실패했습니다.');
-      })
-      .finally(() => setIsSearching(false));
+    setSearchTerm(trimmedQuery);
   }, []);
 
   const handleQueryKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -207,53 +196,18 @@ export function HikingLocationPicker({
   };
 
   useEffect(() => {
-    const trimmedQuery = query.trim();
-
     if (trimmedQuery.length < 2) {
       return;
     }
 
-    let ignore = false;
     const timeoutId = window.setTimeout(() => {
-      setIsSearching(true);
-      setStatus('주소 검색 중...');
-      fetchClient
-        .GET('/api/geocoding/search', {
-          params: { query: { q: trimmedQuery } },
-        })
-        .then(({ data }) => {
-          if (ignore) {
-            return;
-          }
-
-          const nextResults = data?.results ?? [];
-          setResults(nextResults);
-          setStatus(
-            nextResults.length > 0
-              ? `${nextResults.length}개 결과를 찾았습니다.`
-              : '검색 결과가 없습니다.',
-          );
-        })
-        .catch((error: unknown) => {
-          if (ignore) {
-            return;
-          }
-
-          setResults([]);
-          setStatus(error instanceof Error ? error.message : '주소 검색에 실패했습니다.');
-        })
-        .finally(() => {
-          if (!ignore) {
-            setIsSearching(false);
-          }
-        });
+      setSearchTerm(trimmedQuery);
     }, 350);
 
     return () => {
-      ignore = true;
       window.clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [trimmedQuery]);
 
   return (
     <div className="grid gap-3">

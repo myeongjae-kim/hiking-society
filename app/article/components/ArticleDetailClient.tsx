@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
-import { $api, fetchClient } from '@/app/common/api/$api';
+import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
+import { $api } from '@/app/common/api/$api';
+import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
@@ -18,7 +20,7 @@ import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArticleFormDialog } from './ArticleFormDialog';
 import type { ArticleFormValues } from './articleFormTypes';
@@ -36,50 +38,10 @@ type ArticleDetailClientProps = {
 
 type LikePendingKey = `article-${ArticleId}` | `comment-${CommentId}`;
 
-type UploadedArticleMedia = {
-  byteSize: number;
-  contentType: string;
-  durationMs: number | null;
-  height: number | null;
-  mediaType: 'image' | 'video';
-  objectKey: string;
-  order: number;
-  originalMetadata: Record<string, unknown> | null;
-  thumbnailUrl: string | null;
-  url: string;
-  width: number | null;
-};
-
-type ArticleMediaUploadTargetInput = {
-  byteSize: number;
-  contentType: string;
-  fileName: string;
-  mediaType: 'image' | 'video';
-  thumbnail?: {
-    byteSize: number;
-    contentType: string;
-    fileName: string;
-  };
-};
-
 const getCommentCreateSingleFlightKey = (articleId: ArticleId, parentCommentId: CommentId | null) =>
   `comment-create-${articleId}-${parentCommentId ?? 'root'}`;
 
 const getCommentUpdateSingleFlightKey = (commentId: CommentId) => `comment-update-${commentId}`;
-
-async function uploadDirectToS3(file: File, uploadUrl: string) {
-  const response = await fetch(uploadUrl, {
-    body: file,
-    headers: {
-      'Content-Type': file.type,
-    },
-    method: 'PUT',
-  });
-
-  if (!response.ok) {
-    throw new Error('S3 업로드에 실패했습니다.');
-  }
-}
 
 async function copyTextToClipboard(text: string) {
   if (navigator.clipboard?.writeText) {
@@ -107,29 +69,6 @@ async function copyTextToClipboard(text: string) {
   }
 }
 
-async function runWithConcurrency<T>(
-  items: readonly T[],
-  concurrency: number,
-  worker: (item: T, index: number) => Promise<void>,
-) {
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, items.length);
-
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (nextIndex < items.length) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-        const item = items[currentIndex];
-
-        if (item !== undefined) {
-          await worker(item, currentIndex);
-        }
-      }
-    }),
-  );
-}
-
 export function ArticleDetailClient({
   article,
   comments,
@@ -141,6 +80,7 @@ export function ArticleDetailClient({
 }: ArticleDetailClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { deleteUploadedArticleMedia, uploadArticleMedia } = useArticleMediaUploader();
   const updateArticleMutation = $api.useMutation('patch', '/api/articles/{articleId}');
   const deleteArticleMutation = $api.useMutation('delete', '/api/articles/{articleId}');
   const createCommentMutation = $api.useMutation('post', '/api/articles/{articleId}/comments');
@@ -198,6 +138,7 @@ export function ArticleDetailClient({
     options: {
       errorKey: string;
       loadingLabel?: string;
+      invalidateQueryKeys?: readonly QueryKey[];
       onSettled?: () => void;
       onSuccess?: () => void;
       refresh?: boolean;
@@ -219,7 +160,13 @@ export function ArticleDetailClient({
 
             options.onSuccess?.();
             setError(options.errorKey, null);
-            void queryClient.invalidateQueries();
+            if (options.invalidateQueryKeys) {
+              void Promise.all(
+                options.invalidateQueryKeys.map((queryKey) =>
+                  queryClient.invalidateQueries({ queryKey }),
+                ),
+              );
+            }
             if (options.refresh !== false) {
               router.refresh();
             }
@@ -258,88 +205,8 @@ export function ArticleDetailClient({
     });
   };
 
-  const uploadArticleMedia = async (values: ArticleFormValues) => {
-    const newMedia = values.media.filter((media) => media.file);
-    const uploadedObjectKeys: string[] = [];
-
-    if (newMedia.length === 0) {
-      return { uploadedMedia: [] as UploadedArticleMedia[], uploadedObjectKeys };
-    }
-
-    setLoadingLabel('업로드 URL 준비 중');
-
-    const targetInput: ArticleMediaUploadTargetInput[] = newMedia.map((media) => ({
-      byteSize: media.file?.size ?? 0,
-      contentType: media.file?.type ?? '',
-      fileName: media.file?.name ?? media.fileName,
-      mediaType: media.mediaType,
-      thumbnail: media.thumbnailFile
-        ? {
-            byteSize: media.thumbnailFile.size,
-            contentType: media.thumbnailFile.type,
-            fileName: media.thumbnailFile.name,
-          }
-        : undefined,
-    }));
-    const { data: targetResult } = await fetchClient.POST('/api/article-media/upload-targets', {
-      body: targetInput,
-    });
-
-    if (!targetResult) {
-      throw new Error('업로드 URL을 만들지 못했습니다.');
-    }
-
-    const uploadedMedia = new Array<UploadedArticleMedia>(newMedia.length);
-    let uploadedCount = 0;
-
-    try {
-      await runWithConcurrency(newMedia, 4, async (media, index) => {
-        const target = targetResult.targets[index];
-
-        if (!target || !media.file) {
-          throw new Error('업로드 대상을 만들지 못했습니다.');
-        }
-
-        await uploadDirectToS3(media.file, target.uploadUrl);
-        uploadedObjectKeys.push(target.objectKey);
-
-        if (media.thumbnailFile && target.thumbnail) {
-          await uploadDirectToS3(media.thumbnailFile, target.thumbnail.uploadUrl);
-          uploadedObjectKeys.push(target.thumbnail.objectKey);
-        }
-
-        uploadedMedia[index] = {
-          byteSize: media.file.size,
-          contentType: media.file.type,
-          durationMs: media.durationMs ?? null,
-          height: media.height ?? null,
-          mediaType: media.mediaType,
-          objectKey: target.objectKey,
-          order: media.order,
-          originalMetadata: media.originalMetadata ?? null,
-          thumbnailUrl: target.thumbnail?.url ?? null,
-          url: target.url,
-          width: media.width ?? null,
-        };
-        uploadedCount += 1;
-        setLoadingLabel(`S3 업로드 중 ${uploadedCount}/${newMedia.length}`);
-      });
-    } catch (error) {
-      if (uploadedObjectKeys.length > 0) {
-        setLoadingLabel('업로드 파일 정리 중');
-        await fetchClient.DELETE('/api/article-media/uploads', {
-          body: { objectKeys: uploadedObjectKeys },
-        });
-      }
-
-      throw error;
-    }
-
-    return { uploadedMedia, uploadedObjectKeys };
-  };
-
   const createArticleFormData = async (values: ArticleFormValues) => {
-    const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values);
+    const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values, setLoadingLabel);
     const existingMedia = values.media
       .filter((media) => !media.file)
       .map((media) => ({
@@ -385,9 +252,7 @@ export function ArticleDetailClient({
         } catch (error) {
           if (uploadedObjectKeys.length > 0) {
             setLoadingLabel('업로드 파일 정리 중');
-            await fetchClient.DELETE('/api/article-media/uploads', {
-              body: { objectKeys: uploadedObjectKeys },
-            });
+            await deleteUploadedArticleMedia(uploadedObjectKeys);
           }
 
           return {
@@ -398,6 +263,10 @@ export function ArticleDetailClient({
       },
       {
         errorKey: `article-edit-${article.id}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.articleDetail(article.id),
+          apiQueryKeys.hikingArticles(article.hikingId),
+        ],
         loadingLabel: '글 저장 중',
         onSuccess: () => setEditingArticle(false),
         singleFlightKey: articleUpdateSingleFlightKey,
@@ -419,6 +288,11 @@ export function ArticleDetailClient({
               .then(() => ({ ok: true as const })),
           {
             errorKey: `article-${article.id}`,
+            invalidateQueryKeys: [
+              apiQueryKeys.articleDetail(article.id),
+              apiQueryKeys.feed(),
+              apiQueryKeys.hikingArticles(article.hikingId),
+            ],
             onSuccess: () => {
               setConfirmState(null);
               router.push('/feed');
@@ -441,6 +315,10 @@ export function ArticleDetailClient({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-new-${articleId}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.articleComments(articleId),
+          apiQueryKeys.notifications(),
+        ],
         onSuccess: () => {
           if (parentCommentId === null) {
             setCommentFormResetKey((currentKey) => currentKey + 1);
@@ -464,6 +342,7 @@ export function ArticleDetailClient({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-edit-${commentId}`,
+        invalidateQueryKeys: [apiQueryKeys.articleComments(article.id)],
         onSuccess: () => setEditingCommentId(null),
         singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
       },
@@ -484,6 +363,7 @@ export function ArticleDetailClient({
               .then(() => ({ ok: true as const })),
           {
             errorKey: `comment-${comment.id}`,
+            invalidateQueryKeys: [apiQueryKeys.articleComments(comment.articleId)],
             onSuccess: () => setConfirmState(null),
           },
         );
@@ -505,6 +385,10 @@ export function ArticleDetailClient({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `article-${articleId}`,
+        invalidateQueryKeys: [
+          apiQueryKeys.articleDetail(articleId),
+          apiQueryKeys.hikingArticles(article.hikingId),
+        ],
         onSuccess: () => {
           setArticleLikeOverride({
             articleId,
@@ -534,7 +418,9 @@ export function ArticleDetailClient({
           .then(() => ({ ok: true as const })),
       {
         errorKey: `comment-${commentId}`,
+        invalidateQueryKeys: [apiQueryKeys.articleComments(article.id)],
         onSettled: () => setLikePending(likePendingKey, false),
+        refresh: false,
       },
     );
   };

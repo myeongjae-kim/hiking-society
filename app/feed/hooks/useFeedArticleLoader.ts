@@ -1,9 +1,10 @@
 'use client';
 
-import { fetchClient } from '@/app/common/api/$api';
+import { $api } from '@/app/common/api/$api';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getCommentsByArticleId, getFeedGroups } from '../utils/feed-crud-utils';
@@ -24,6 +25,7 @@ export function useFeedArticleLoader({
   hikings,
   selectedHikingId,
 }: UseFeedArticleLoaderInput) {
+  const queryClient = useQueryClient();
   const hikingSectionElementsRef = useRef<Map<string, HTMLElement>>(new Map());
   const loadingHikingIdsRef = useRef<Set<string>>(new Set());
   const scrolledHikingIdRef = useRef<HikingId | null>(null);
@@ -104,15 +106,13 @@ export function useFeedArticleLoader({
         [hikingId]: { status: hasPreviousArticles ? 'refreshing' : 'loading' },
       }));
 
-      void fetchClient
-        .GET('/api/feed/hikings/{hikingId}/articles', {
-          params: { path: { hikingId } },
-        })
-        .then(({ data }) => {
-          if (!data) {
-            throw new Error('글을 불러오지 못했습니다.');
-          }
-
+      void queryClient
+        .fetchQuery(
+          $api.queryOptions('get', '/api/feed/hikings/{hikingId}/articles', {
+            params: { path: { hikingId } },
+          }),
+        )
+        .then((data) => {
           const articles = data.articles as unknown as readonly Article[];
           const comments = data.comments as unknown as readonly Comment[];
 
@@ -142,7 +142,7 @@ export function useFeedArticleLoader({
           loadingHikingIdsRef.current.delete(hikingId);
         });
     },
-    [articlesByHikingId, getHikingArticleCount],
+    [articlesByHikingId, getHikingArticleCount, queryClient],
   );
 
   const registerHikingSection = useCallback((hikingId: HikingId, element: HTMLElement | null) => {

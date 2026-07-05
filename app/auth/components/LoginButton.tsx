@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
-import { fetchClient } from '@/app/common/api/$api';
+import { $api } from '@/app/common/api/$api';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ type LoginButtonProps = {
 
 export const LoginButton = ({ redirectTo = '/feed' }: LoginButtonProps) => {
   const [isPending, setIsPending] = useState(false);
+  const loginMutation = $api.useMutation('post', '/api/auth/google/login');
   const login = useGoogleLogin({
     flow: 'auth-code',
     onSuccess: (tokenResponse) => {
@@ -25,8 +26,8 @@ export const LoginButton = ({ redirectTo = '/feed' }: LoginButtonProps) => {
       }
 
       setIsPending(true);
-      fetchClient
-        .POST('/api/auth/google/login', { body: { code } })
+      loginMutation
+        .mutateAsync({ body: { code } })
         .then(() => {
           window.location.href = redirectTo;
         })

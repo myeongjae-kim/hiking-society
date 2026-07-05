@@ -4,7 +4,8 @@ import * as Dialog from '@radix-ui/react-dialog';
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { $api, fetchClient } from '@/app/common/api/$api';
+import { $api } from '@/app/common/api/$api';
+import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { dialogOverlayClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,9 +36,16 @@ const maxProfileImageSourceBytes = 12 * 1024 * 1024;
 const profileImageMaxWidth = 640;
 const profileSaveCooldownMs = 800;
 const webpQuality = 85;
+const profileInvalidateQueryKeys = [apiQueryKeys.feed(), apiQueryKeys.notifications()];
 
 function getProfileInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || '?';
+}
+
+function invalidateProfileRelatedQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  void Promise.all(
+    profileInvalidateQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  );
 }
 
 async function uploadDirectToS3(file: File, uploadUrl: string) {
@@ -156,7 +164,7 @@ function TextProfileEditDialog({
     mutation
       .then(() => {
         setOpen(false);
-        void queryClient.invalidateQueries();
+        invalidateProfileRelatedQueries(queryClient);
         router.refresh();
       })
       .catch((error: unknown) => {
@@ -239,6 +247,14 @@ export function ProfileImageEditDialog({
   const queryClient = useQueryClient();
   const router = useRouter();
   const updateProfileImageMutation = $api.useMutation('patch', '/api/profile/image');
+  const createProfileImageUploadTargetMutation = $api.useMutation(
+    'post',
+    '/api/profile-image/upload-target',
+  );
+  const deleteProfileImageUploadsMutation = $api.useMutation(
+    'delete',
+    '/api/profile-image/uploads',
+  );
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitLockedRef = useRef(false);
@@ -325,7 +341,7 @@ export function ProfileImageEditDialog({
           throw new Error('새 프로필 이미지를 선택해주세요.');
         }
 
-        const { data: targetResult } = await fetchClient.POST('/api/profile-image/upload-target', {
+        const targetResult = await createProfileImageUploadTargetMutation.mutateAsync({
           body: {
             byteSize: profileImageFile.size,
             contentType: profileImageFile.type as 'image/webp',
@@ -360,11 +376,11 @@ export function ProfileImageEditDialog({
       });
       setState({ ok: true });
       setOpen(false);
-      void queryClient.invalidateQueries();
+      invalidateProfileRelatedQueries(queryClient);
       router.refresh();
     } catch (error) {
       if (uploadedObjectKeys.length > 0) {
-        await fetchClient.DELETE('/api/profile-image/uploads', {
+        await deleteProfileImageUploadsMutation.mutateAsync({
           body: { objectKeys: uploadedObjectKeys },
         });
       }

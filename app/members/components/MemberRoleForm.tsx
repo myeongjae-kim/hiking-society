@@ -1,6 +1,7 @@
 'use client';
 
 import { $api } from '@/app/common/api/$api';
+import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -19,7 +20,7 @@ export function MemberRoleForm({ children, userId }: MemberRoleFormProps) {
   const updateRoleMutation = $api.useMutation('patch', '/api/members/{userId}/role', {
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: $api.queryOptions('get', '/api/members').queryKey,
+        queryKey: apiQueryKeys.members(),
       });
       router.refresh();
     },
