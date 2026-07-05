@@ -754,6 +754,18 @@ export function MediaViewer({
     setSwipeOffset(nextOffset);
   }, []);
 
+  const syncInlineCarouselToMedia = useCallback(
+    (index: number) => {
+      if (!inlineCarousel) {
+        return;
+      }
+
+      setInlineSwipeTrack(null);
+      setActiveInlineIndex(index);
+    },
+    [inlineCarousel],
+  );
+
   const resetMediaDoubleTap = useCallback(() => {
     mediaDoubleTapRef.current = null;
   }, []);
@@ -858,9 +870,10 @@ export function MediaViewer({
 
       resetMediaGesture();
       setSelectedIndex(selectedMediaIndex);
+      syncInlineCarouselToMedia(selectedMediaIndex);
       setOpen(true);
     },
-    [media, resetMediaGesture],
+    [media, resetMediaGesture, syncInlineCarouselToMedia],
   );
 
   const handleInlineTriggerClick = useCallback(
@@ -905,14 +918,20 @@ export function MediaViewer({
   );
 
   const showPreviousMedia = useCallback(() => {
+    const nextIndex = getWrappedIndex(selectedIndex - 1, media.length);
+
     resetMediaGesture();
-    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex - 1, media.length));
-  }, [media.length, resetMediaGesture]);
+    setSelectedIndex(nextIndex);
+    syncInlineCarouselToMedia(nextIndex);
+  }, [media.length, resetMediaGesture, selectedIndex, syncInlineCarouselToMedia]);
 
   const showNextMedia = useCallback(() => {
+    const nextIndex = getWrappedIndex(selectedIndex + 1, media.length);
+
     resetMediaGesture();
-    setSelectedIndex((currentIndex) => getWrappedIndex(currentIndex + 1, media.length));
-  }, [media.length, resetMediaGesture]);
+    setSelectedIndex(nextIndex);
+    syncInlineCarouselToMedia(nextIndex);
+  }, [media.length, resetMediaGesture, selectedIndex, syncInlineCarouselToMedia]);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
