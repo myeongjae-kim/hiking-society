@@ -2,21 +2,20 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
-import { useActionState, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { $api, fetchClient } from '@/app/common/api/$api';
 import { dialogOverlayClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
-import {
-  cleanupProfileImageUploads,
-  prepareProfileImageUpload,
-  updateDisplayName,
-  updateEmail,
-  updateProfileImage,
-  type ProfileActionState,
-} from '../actions';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+
+type ProfileActionState = {
+  error?: string;
+  ok: boolean;
+};
 
 type TextProfileEditDialogProps = {
-  action: (prevState: ProfileActionState, formData: FormData) => Promise<ProfileActionState>;
   defaultValue: string;
   fieldLabel: string;
   fieldName: string;
@@ -96,7 +95,6 @@ function ProfileDialogShell({
 }
 
 function TextProfileEditDialog({
-  action,
   defaultValue,
   fieldLabel,
   fieldName,
@@ -104,10 +102,15 @@ function TextProfileEditDialog({
   maxLength,
   title,
 }: TextProfileEditDialogProps) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const displayNameMutation = $api.useMutation('patch', '/api/profile/display-name');
+  const emailMutation = $api.useMutation('patch', '/api/profile/email');
   const [open, setOpen] = useState(false);
   const submitLockedRef = useRef(false);
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [cooldownPending, setCooldownPending] = useState(false);
+  const [state, setState] = useState<ProfileActionState>(initialState);
 
   const releaseAfterCooldown = useCallback(() => {
     if (cooldownTimerRef.current) {
@@ -121,23 +124,7 @@ function TextProfileEditDialog({
     }, profileSaveCooldownMs);
   }, []);
 
-  const actionWithClose = useCallback(
-    async (prevState: ProfileActionState, formData: FormData) => {
-      try {
-        const result = await action(prevState, formData);
-
-        if (result.ok) {
-          setOpen(false);
-        }
-
-        return result;
-      } finally {
-        releaseAfterCooldown();
-      }
-    },
-    [action, releaseAfterCooldown],
-  );
-  const [state, formAction, pending] = useActionState(actionWithClose, initialState);
+  const pending = displayNameMutation.isPending || emailMutation.isPending;
   const submitting = pending || cooldownPending;
 
   useEffect(() => {
@@ -154,13 +141,36 @@ function TextProfileEditDialog({
       return;
     }
 
+    event.preventDefault();
     submitLockedRef.current = true;
     setCooldownPending(true);
+    setState(initialState);
+
+    const formData = new FormData(event.currentTarget);
+    const value = String(formData.get(fieldName) ?? '');
+    const mutation =
+      fieldName === 'displayName'
+        ? displayNameMutation.mutateAsync({ body: { displayName: value } })
+        : emailMutation.mutateAsync({ body: { email: value } });
+
+    mutation
+      .then(() => {
+        setOpen(false);
+        void queryClient.invalidateQueries();
+        router.refresh();
+      })
+      .catch((error: unknown) => {
+        setState({
+          error: error instanceof Error ? error.message : '프로필을 저장하지 못했습니다.',
+          ok: false,
+        });
+      })
+      .finally(releaseAfterCooldown);
   };
 
   return (
     <ProfileDialogShell open={open} setOpen={setOpen} title={title}>
-      <form action={formAction} className="grid gap-4" onSubmit={handleSubmit}>
+      <form className="grid gap-4" onSubmit={handleSubmit}>
         <label className="grid min-w-0 gap-1.5 text-sm text-[var(--subtext0)]">
           <span>{fieldLabel}</span>
           <input
@@ -198,7 +208,6 @@ function TextProfileEditDialog({
 export function DisplayNameEditDialog({ displayName }: { displayName: string }) {
   return (
     <TextProfileEditDialog
-      action={updateDisplayName}
       defaultValue={displayName}
       fieldLabel="이름"
       fieldName="displayName"
@@ -212,7 +221,6 @@ export function DisplayNameEditDialog({ displayName }: { displayName: string }) 
 export function EmailEditDialog({ email }: { email: string }) {
   return (
     <TextProfileEditDialog
-      action={updateEmail}
       defaultValue={email}
       fieldLabel="이메일"
       fieldName="email"
@@ -228,6 +236,9 @@ export function ProfileImageEditDialog({
   profileImageUrl,
   trigger,
 }: ProfileImageEditDialogProps) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const updateProfileImageMutation = $api.useMutation('patch', '/api/profile/image');
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitLockedRef = useRef(false);
@@ -314,14 +325,16 @@ export function ProfileImageEditDialog({
           throw new Error('새 프로필 이미지를 선택해주세요.');
         }
 
-        const targetResult = await prepareProfileImageUpload({
-          byteSize: profileImageFile.size,
-          contentType: profileImageFile.type,
-          fileName: profileImageFile.name,
+        const { data: targetResult } = await fetchClient.POST('/api/profile-image/upload-target', {
+          body: {
+            byteSize: profileImageFile.size,
+            contentType: profileImageFile.type as 'image/webp',
+            fileName: profileImageFile.name,
+          },
         });
 
-        if (!targetResult.ok) {
-          throw new Error(targetResult.error ?? '업로드 URL을 만들지 못했습니다.');
+        if (!targetResult) {
+          throw new Error('업로드 URL을 만들지 못했습니다.');
         }
 
         await uploadDirectToS3(profileImageFile, targetResult.uploadUrl);
@@ -337,20 +350,23 @@ export function ProfileImageEditDialog({
         );
       }
 
-      const result = await updateProfileImage(initialState, formData);
-
-      if (!result.ok && uploadedObjectKeys.length > 0) {
-        await cleanupProfileImageUploads(uploadedObjectKeys);
-      }
-
-      setState(result);
-
-      if (result.ok) {
-        setOpen(false);
-      }
+      await updateProfileImageMutation.mutateAsync({
+        body: {
+          profileImage: formData.get('profileImage')
+            ? JSON.parse(String(formData.get('profileImage')))
+            : undefined,
+          removeProfileImage,
+        },
+      });
+      setState({ ok: true });
+      setOpen(false);
+      void queryClient.invalidateQueries();
+      router.refresh();
     } catch (error) {
       if (uploadedObjectKeys.length > 0) {
-        await cleanupProfileImageUploads(uploadedObjectKeys);
+        await fetchClient.DELETE('/api/profile-image/uploads', {
+          body: { objectKeys: uploadedObjectKeys },
+        });
       }
 
       setState({

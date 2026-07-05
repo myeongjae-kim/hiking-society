@@ -1,19 +1,31 @@
 'use client';
 
+import { $api } from '@/app/common/api/$api';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 type MemberRoleFormProps = {
-  action: (formData: FormData) => void | Promise<void>;
   children: ReactNode;
+  userId: number;
 };
 
 const cooldownMs = 800;
 
-export function MemberRoleForm({ action, children }: MemberRoleFormProps) {
+export function MemberRoleForm({ children, userId }: MemberRoleFormProps) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const updateRoleMutation = $api.useMutation('patch', '/api/members/{userId}/role', {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['get', '/api/members'] });
+      router.refresh();
+    },
+  });
   const lockedRef = useRef(false);
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pending, setPending] = useState(false);
+  const [cooldownPending, setCooldownPending] = useState(false);
+  const pending = updateRoleMutation.isPending || cooldownPending;
 
   useEffect(() => {
     return () => {
@@ -31,7 +43,7 @@ export function MemberRoleForm({ action, children }: MemberRoleFormProps) {
     cooldownTimerRef.current = setTimeout(() => {
       cooldownTimerRef.current = null;
       lockedRef.current = false;
-      setPending(false);
+      setCooldownPending(false);
     }, cooldownMs);
   };
 
@@ -41,10 +53,19 @@ export function MemberRoleForm({ action, children }: MemberRoleFormProps) {
     }
 
     lockedRef.current = true;
-    setPending(true);
+    setCooldownPending(true);
 
     try {
-      await action(formData);
+      const role = formData.get('role');
+
+      if (role !== 'associate' && role !== 'member' && role !== 'admin') {
+        throw new Error('Invalid role.');
+      }
+
+      await updateRoleMutation.mutateAsync({
+        body: { role },
+        params: { path: { userId: String(userId) } },
+      });
     } finally {
       releaseAfterCooldown();
     }

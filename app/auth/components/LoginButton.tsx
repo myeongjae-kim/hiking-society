@@ -1,10 +1,10 @@
 'use client';
 
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
+import { fetchClient } from '@/app/common/api/$api';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { loginWithGoogleCode } from '../actions/fetchPayloadFromGoogle';
 
 type LoginButtonProps = {
   redirectTo?: string;
@@ -15,15 +15,22 @@ export const LoginButton = ({ redirectTo = '/feed' }: LoginButtonProps) => {
   const login = useGoogleLogin({
     flow: 'auth-code',
     onSuccess: (tokenResponse) => {
+      const code = tokenResponse.code;
+
+      if (!code) {
+        toast.error('Google authorization code를 받지 못했습니다.', {
+          richColors: true,
+        });
+        return;
+      }
+
       setIsPending(true);
-      loginWithGoogleCode(tokenResponse.code)
+      fetchClient
+        .POST('/api/auth/google/login', { body: { code } })
         .then(() => {
           window.location.href = redirectTo;
         })
-        .catch((error: unknown) => {
-          toast.error(error instanceof Error ? error.message : 'Login Failed.', {
-            richColors: true,
-          });
+        .catch(() => {
           setIsPending(false);
         });
     },

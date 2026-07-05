@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { ArticleFormDialog } from '@/app/article/components/ArticleFormDialog';
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
 import { ArticlePanel } from '@/app/article/components/ArticlePanel';
+import { $api, fetchClient } from '@/app/common/api/$api';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
@@ -24,24 +25,7 @@ import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
-import {
-  cleanupArticleMediaUploads,
-  createArticle as createArticleAction,
-  createComment as createCommentAction,
-  createHiking as createHikingAction,
-  deleteArticle as deleteArticleAction,
-  deleteComment as deleteCommentAction,
-  deleteHiking as deleteHikingAction,
-  loadArticleComments as loadArticleCommentsAction,
-  loadHikingArticles as loadHikingArticlesAction,
-  prepareArticleMediaUploads,
-  toggleArticleLike as toggleArticleLikeAction,
-  toggleCommentLike as toggleCommentLikeAction,
-  updateArticle as updateArticleAction,
-  updateComment as updateCommentAction,
-  updateHiking as updateHikingAction,
-  type ArticleMediaUploadTargetInput,
-} from '../actions';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   getArticleComments,
@@ -87,6 +71,18 @@ type UploadedArticleMedia = {
   thumbnailUrl: string | null;
   url: string;
   width: number | null;
+};
+
+type ArticleMediaUploadTargetInput = {
+  byteSize: number;
+  contentType: string;
+  fileName: string;
+  mediaType: 'image' | 'video';
+  thumbnail?: {
+    byteSize: number;
+    contentType: string;
+    fileName: string;
+  };
 };
 
 const getCommentCreateSingleFlightKey = (articleId: ArticleId, parentCommentId: CommentId | null) =>
@@ -146,6 +142,18 @@ export function FeedCrudClient({
   selectedHikingId,
 }: FeedCrudClientProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const createHikingMutation = $api.useMutation('post', '/api/hikings');
+  const updateHikingMutation = $api.useMutation('patch', '/api/hikings/{hikingId}');
+  const deleteHikingMutation = $api.useMutation('delete', '/api/hikings/{hikingId}');
+  const createArticleMutation = $api.useMutation('post', '/api/articles');
+  const updateArticleMutation = $api.useMutation('patch', '/api/articles/{articleId}');
+  const deleteArticleMutation = $api.useMutation('delete', '/api/articles/{articleId}');
+  const toggleArticleLikeMutation = $api.useMutation('post', '/api/articles/{articleId}/like');
+  const createCommentMutation = $api.useMutation('post', '/api/articles/{articleId}/comments');
+  const updateCommentMutation = $api.useMutation('patch', '/api/comments/{commentId}');
+  const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
+  const toggleCommentLikeMutation = $api.useMutation('post', '/api/comments/{commentId}/like');
   const hikingSectionElementsRef = useRef<Map<string, HTMLElement>>(new Map());
   const loadingHikingIdsRef = useRef<Set<string>>(new Set());
   const scrolledHikingIdRef = useRef<HikingId | null>(null);
@@ -306,26 +314,25 @@ export function FeedCrudClient({
         [hikingId]: { status: hasPreviousArticles ? 'refreshing' : 'loading' },
       }));
 
-      void loadHikingArticlesAction(hikingId)
-        .then((result) => {
-          if (!result.ok) {
-            setHikingArticleLoadStateById((currentStates) => ({
-              ...currentStates,
-              [hikingId]: {
-                error: result.error ?? '게시글을 불러오지 못했습니다.',
-                status: 'error',
-              },
-            }));
-            return;
+      void fetchClient
+        .GET('/api/feed/hikings/{hikingId}/articles', {
+          params: { path: { hikingId } },
+        })
+        .then(({ data }) => {
+          if (!data) {
+            throw new Error('게시글을 불러오지 못했습니다.');
           }
+
+          const articles = data.articles as unknown as readonly Article[];
+          const comments = data.comments as unknown as readonly Comment[];
 
           setArticlesByHikingId((currentArticles) => ({
             ...currentArticles,
-            [hikingId]: result.articles,
+            [hikingId]: articles,
           }));
           setCommentsByHikingId((currentComments) => ({
             ...currentComments,
-            [hikingId]: result.comments,
+            [hikingId]: comments,
           }));
           setHikingArticleLoadStateById((currentStates) => ({
             ...currentStates,
@@ -520,11 +527,15 @@ export function FeedCrudClient({
       throw new Error('댓글을 갱신할 게시글을 찾을 수 없습니다.');
     }
 
-    const result = await loadArticleCommentsAction(articleId);
+    const result = await fetchClient.GET('/api/articles/{articleId}/comments', {
+      params: { path: { articleId } },
+    });
 
-    if (!result.ok) {
-      throw new Error(result.error ?? '댓글을 불러오지 못했습니다.');
+    if (!result.data) {
+      throw new Error('댓글을 불러오지 못했습니다.');
     }
+
+    const comments = result.data.comments as unknown as readonly Comment[];
 
     setCommentsByHikingId((currentComments) => {
       const hikingComments = currentComments[hikingId];
@@ -537,7 +548,7 @@ export function FeedCrudClient({
         ...currentComments,
         [hikingId]: [
           ...hikingComments.filter((comment) => comment.articleId !== articleId),
-          ...result.comments,
+          ...comments,
         ],
       };
     });
@@ -653,6 +664,7 @@ export function FeedCrudClient({
             try {
               await options.onSuccess?.(result as T & { ok: true });
               setError(options.errorKey, null);
+              void queryClient.invalidateQueries();
               if (options.refresh !== false) {
                 router.refresh();
               }
@@ -721,14 +733,19 @@ export function FeedCrudClient({
     setActiveHikingForm(null);
   };
 
-  const createHikingFormData = (values: HikingFormValues) => {
-    const formData = new FormData();
-
-    for (const [key, value] of Object.entries(values)) {
-      formData.set(key, value);
-    }
-
-    return formData;
+  const createHikingBody = (values: HikingFormValues) => {
+    return {
+      altitude: values.altitude.trim() ? Number(values.altitude) : null,
+      completedTime: values.completedTime,
+      hikingDate: values.hikingDate,
+      latitude: Number(values.latitude),
+      longitude: Number(values.longitude),
+      mountainName: values.mountainName,
+      participantsCsv: values.participantsCsv,
+      restaurantAddress: values.restaurantAddress,
+      startedTime: values.startedTime,
+      timezone: values.timezone,
+    };
   };
 
   const uploadArticleMedia = async (values: ArticleFormValues) => {
@@ -754,10 +771,12 @@ export function FeedCrudClient({
           }
         : undefined,
     }));
-    const targetResult = await prepareArticleMediaUploads(targetInput);
+    const { data: targetResult } = await fetchClient.POST('/api/article-media/upload-targets', {
+      body: targetInput,
+    });
 
-    if (!targetResult.ok) {
-      throw new Error(targetResult.error ?? '업로드 URL을 만들지 못했습니다.');
+    if (!targetResult) {
+      throw new Error('업로드 URL을 만들지 못했습니다.');
     }
 
     const uploadedMedia = new Array<UploadedArticleMedia>(newMedia.length);
@@ -798,7 +817,9 @@ export function FeedCrudClient({
     } catch (error) {
       if (uploadedObjectKeys.length > 0) {
         setLoadingLabel('업로드 파일 정리 중');
-        await cleanupArticleMediaUploads(uploadedObjectKeys);
+        await fetchClient.DELETE('/api/article-media/uploads', {
+          body: { objectKeys: uploadedObjectKeys },
+        });
       }
 
       throw error;
@@ -811,7 +832,24 @@ export function FeedCrudClient({
     values: ArticleFormValues,
     identifiers: { articleId?: ArticleId; hikingId?: HikingId },
   ) => {
-    const formData = new FormData();
+    const body = {
+      existingMedia: [] as {
+        byteSize?: number;
+        contentType?: string;
+        durationMs?: number | null;
+        height?: number | null;
+        mediaType: 'image' | 'video';
+        metadata?: Record<string, string | null | undefined> | null;
+        objectKey?: string;
+        order: number;
+        thumbnailUrl?: string | null;
+        url: string;
+        width?: number | null;
+      }[],
+      uploadedMedia: [] as UploadedArticleMedia[],
+      body: values.body,
+      ...identifiers,
+    };
     const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values);
     const existingMedia = values.media
       .filter((media) => !media.file)
@@ -829,40 +867,40 @@ export function FeedCrudClient({
         width: media.width,
       }));
 
-    if (identifiers.articleId) {
-      formData.set('articleId', identifiers.articleId);
-    }
-
-    if (identifiers.hikingId) {
-      formData.set('hikingId', identifiers.hikingId);
-    }
-
-    formData.set('body', values.body);
-    formData.set('existingMedia', JSON.stringify(existingMedia));
-    formData.set('uploadedMedia', JSON.stringify(uploadedMedia));
-
-    return { formData, uploadedObjectKeys };
+    return { body: { ...body, existingMedia, uploadedMedia }, uploadedObjectKeys };
   };
 
   const createHiking = (values: HikingFormValues) => {
-    runAction(() => createHikingAction(createHikingFormData(values)), {
-      errorKey: 'hiking-new',
-      loadingLabel: '산행 저장 중',
-      onSuccess: () => setActiveHikingForm(null),
-      singleFlightKey: 'hiking-create',
-    });
+    runAction(
+      () =>
+        createHikingMutation
+          .mutateAsync({ body: createHikingBody(values) })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: 'hiking-new',
+        loadingLabel: '산행 저장 중',
+        onSuccess: () => setActiveHikingForm(null),
+        singleFlightKey: 'hiking-create',
+      },
+    );
   };
 
   const updateHiking = (hikingId: HikingId, values: HikingFormValues) => {
-    const formData = createHikingFormData(values);
-    formData.set('hikingId', hikingId);
-
-    runAction(() => updateHikingAction(formData), {
-      errorKey: `hiking-edit-${hikingId}`,
-      loadingLabel: '산행 저장 중',
-      onSuccess: () => setActiveHikingForm(null),
-      singleFlightKey: `hiking-update-${hikingId}`,
-    });
+    runAction(
+      () =>
+        updateHikingMutation
+          .mutateAsync({
+            body: createHikingBody(values),
+            params: { path: { hikingId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `hiking-edit-${hikingId}`,
+        loadingLabel: '산행 저장 중',
+        onSuccess: () => setActiveHikingForm(null),
+        singleFlightKey: `hiking-update-${hikingId}`,
+      },
+    );
   };
 
   const requestDeleteHiking = (hiking: Hiking) => {
@@ -877,12 +915,18 @@ export function FeedCrudClient({
       body: `${hiking.mountainName} 산행 기록을 삭제합니다.`,
       confirmLabel: '삭제',
       onConfirm: () => {
-        const formData = new FormData();
-        formData.set('hikingId', hiking.id);
-        runAction(() => deleteHikingAction(formData), {
-          errorKey: `hiking-${hiking.id}`,
-          onSuccess: () => setConfirmState(null),
-        });
+        runAction(
+          () =>
+            deleteHikingMutation
+              .mutateAsync({
+                params: { path: { hikingId: hiking.id } },
+              })
+              .then(() => ({ ok: true as const })),
+          {
+            errorKey: `hiking-${hiking.id}`,
+            onSuccess: () => setConfirmState(null),
+          },
+        );
       },
       title: '산행 삭제',
     });
@@ -896,21 +940,27 @@ export function FeedCrudClient({
 
     runAction(
       async () => {
+        let uploadedObjectKeys: string[] = [];
         try {
-          const { formData, uploadedObjectKeys } = await createArticleFormData(values, {
+          const articleFormData = await createArticleFormData(values, {
             hikingId,
           });
+          uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
           setLoadingLabel('게시글 저장 중');
-          const result = await createArticleAction(formData);
+          await createArticleMutation.mutateAsync({
+            body: { ...articleFormData.body, hikingId },
+          });
 
-          if (!result.ok && uploadedObjectKeys.length > 0) {
+          return { ok: true as const };
+        } catch (error) {
+          if (uploadedObjectKeys.length > 0) {
             setLoadingLabel('업로드 파일 정리 중');
-            await cleanupArticleMediaUploads(uploadedObjectKeys);
+            await fetchClient.DELETE('/api/article-media/uploads', {
+              body: { objectKeys: uploadedObjectKeys },
+            });
           }
 
-          return result;
-        } catch (error) {
           return {
             error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
             ok: false,
@@ -934,21 +984,35 @@ export function FeedCrudClient({
 
     runAction(
       async () => {
+        let uploadedObjectKeys: string[] = [];
         try {
-          const { formData, uploadedObjectKeys } = await createArticleFormData(values, {
+          const articleFormData = await createArticleFormData(values, {
             articleId,
           });
+          uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
           setLoadingLabel('게시글 저장 중');
-          const result = await updateArticleAction(formData);
+          const result = await updateArticleMutation.mutateAsync({
+            body: articleFormData.body,
+            params: { path: { articleId } },
+          });
 
-          if (!result.ok && uploadedObjectKeys.length > 0) {
-            setLoadingLabel('업로드 파일 정리 중');
-            await cleanupArticleMediaUploads(uploadedObjectKeys);
+          if (!result) {
+            throw new Error('게시글을 저장하지 못했습니다.');
           }
 
-          return result;
+          return {
+            ok: true as const,
+            snapshot: result as unknown as { article: Article; comments: readonly Comment[] },
+          };
         } catch (error) {
+          if (uploadedObjectKeys.length > 0) {
+            setLoadingLabel('업로드 파일 정리 중');
+            await fetchClient.DELETE('/api/article-media/uploads', {
+              body: { objectKeys: uploadedObjectKeys },
+            });
+          }
+
           return {
             error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
             ok: false,
@@ -1003,47 +1067,54 @@ export function FeedCrudClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        const formData = new FormData();
-        formData.set('articleId', article.id);
-        runAction(() => deleteArticleAction(formData), {
-          errorKey: `article-${article.id}`,
-          onSuccess: () => setConfirmState(null),
-        });
+        runAction(
+          () =>
+            deleteArticleMutation
+              .mutateAsync({
+                params: { path: { articleId: article.id } },
+              })
+              .then(() => ({ ok: true as const })),
+          {
+            errorKey: `article-${article.id}`,
+            onSuccess: () => setConfirmState(null),
+          },
+        );
       },
       title: '게시글 삭제',
     });
   };
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    const formData = new FormData();
-    formData.set('articleId', articleId);
-    formData.set('body', body);
-
-    if (parentCommentId) {
-      formData.set('parentCommentId', parentCommentId);
-    }
-
-    runAction(() => createCommentAction(formData), {
-      errorKey: `comment-new-${articleId}`,
-      onSuccess: async () => {
-        await refreshArticleComments(articleId);
-        setCommentCountDeltaState((currentState) => ({
-          baseCommentCount: commentCount,
-          delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
-        }));
-
-        if (parentCommentId === null) {
-          setCommentFormResetKeyByArticleId((currentKeys) => ({
-            ...currentKeys,
-            [articleId]: (currentKeys[articleId] ?? 0) + 1,
+    runAction(
+      () =>
+        createCommentMutation
+          .mutateAsync({
+            body: { body, parentCommentId },
+            params: { path: { articleId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-new-${articleId}`,
+        onSuccess: async () => {
+          await refreshArticleComments(articleId);
+          setCommentCountDeltaState((currentState) => ({
+            baseCommentCount: commentCount,
+            delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
           }));
-        }
 
-        setReplyingCommentId(null);
+          if (parentCommentId === null) {
+            setCommentFormResetKeyByArticleId((currentKeys) => ({
+              ...currentKeys,
+              [articleId]: (currentKeys[articleId] ?? 0) + 1,
+            }));
+          }
+
+          setReplyingCommentId(null);
+        },
+        refresh: false,
+        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
       },
-      refresh: false,
-      singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
-    });
+    );
   };
 
   const updateComment = (commentId: CommentId, body: string) => {
@@ -1054,20 +1125,24 @@ export function FeedCrudClient({
       return;
     }
 
-    const formData = new FormData();
-    formData.set('articleId', articleId);
-    formData.set('commentId', commentId);
-    formData.set('body', body);
-
-    runAction(() => updateCommentAction(formData), {
-      errorKey: `comment-edit-${commentId}`,
-      onSuccess: async () => {
-        await refreshArticleComments(articleId);
-        setEditingCommentId(null);
+    runAction(
+      () =>
+        updateCommentMutation
+          .mutateAsync({
+            body: { body },
+            params: { path: { commentId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-edit-${commentId}`,
+        onSuccess: async () => {
+          await refreshArticleComments(articleId);
+          setEditingCommentId(null);
+        },
+        refresh: false,
+        singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
       },
-      refresh: false,
-      singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
-    });
+    );
   };
 
   const requestDeleteComment = (comment: Comment) => {
@@ -1075,25 +1150,30 @@ export function FeedCrudClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        const formData = new FormData();
-        formData.set('articleId', comment.articleId);
-        formData.set('commentId', comment.id);
-        runAction(() => deleteCommentAction(formData), {
-          errorKey: `comment-${comment.id}`,
-          onSuccess: async () => {
-            await refreshArticleComments(comment.articleId);
-            setConfirmState(null);
+        runAction(
+          () =>
+            deleteCommentMutation
+              .mutateAsync({
+                params: { path: { commentId: comment.id } },
+              })
+              .then(() => ({ ok: true as const })),
+          {
+            errorKey: `comment-${comment.id}`,
+            onSuccess: async () => {
+              await refreshArticleComments(comment.articleId);
+              setConfirmState(null);
 
-            if (comment.deletedAt === null) {
-              setCommentCountDeltaState((currentState) => ({
-                baseCommentCount: commentCount,
-                delta:
-                  (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
-              }));
-            }
+              if (comment.deletedAt === null) {
+                setCommentCountDeltaState((currentState) => ({
+                  baseCommentCount: commentCount,
+                  delta:
+                    (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
+                }));
+              }
+            },
+            refresh: false,
           },
-          refresh: false,
-        });
+        );
       },
       title: '댓글 삭제',
     });
@@ -1101,16 +1181,22 @@ export function FeedCrudClient({
 
   const toggleArticleLike = (articleId: ArticleId) => {
     const likePendingKey = `article-${articleId}` as LikePendingKey;
-    const formData = new FormData();
-    formData.set('articleId', articleId);
 
     setLikePending(likePendingKey, true);
-    runAction(() => toggleArticleLikeAction(formData), {
-      errorKey: `article-${articleId}`,
-      onSuccess: () => applyArticleLikeToggle(articleId),
-      onSettled: () => setLikePending(likePendingKey, false),
-      refresh: false,
-    });
+    runAction(
+      () =>
+        toggleArticleLikeMutation
+          .mutateAsync({
+            params: { path: { articleId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `article-${articleId}`,
+        onSuccess: () => applyArticleLikeToggle(articleId),
+        onSettled: () => setLikePending(likePendingKey, false),
+        refresh: false,
+      },
+    );
   };
 
   const toggleCommentLike = (commentId: CommentId) => {
@@ -1122,19 +1208,24 @@ export function FeedCrudClient({
     }
 
     const likePendingKey = `comment-${commentId}` as LikePendingKey;
-    const formData = new FormData();
-    formData.set('articleId', articleId);
-    formData.set('commentId', commentId);
 
     setLikePending(likePendingKey, true);
-    runAction(() => toggleCommentLikeAction(formData), {
-      errorKey: `comment-${commentId}`,
-      onSuccess: async () => {
-        await refreshArticleComments(articleId);
+    runAction(
+      () =>
+        toggleCommentLikeMutation
+          .mutateAsync({
+            params: { path: { commentId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-${commentId}`,
+        onSuccess: async () => {
+          await refreshArticleComments(articleId);
+        },
+        onSettled: () => setLikePending(likePendingKey, false),
+        refresh: false,
       },
-      onSettled: () => setLikePending(likePendingKey, false),
-      refresh: false,
-    });
+    );
   };
 
   return (

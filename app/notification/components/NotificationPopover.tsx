@@ -1,16 +1,12 @@
 'use client';
 
 import * as Popover from '@radix-ui/react-popover';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
+import { $api, fetchClient } from '@/app/common/api/$api';
 import { DateTimeLabel } from '@/app/common/components/DateTimeLabel';
 import { inlineButtonClassName } from '@/app/common/components/styles';
-import {
-  listNotificationsPage,
-  markAllNotificationsRead,
-  markNotificationRead,
-} from '@/app/notification/actions';
 import type {
   NotificationListSnapshot,
   NotificationSummary,
@@ -85,28 +81,14 @@ export function NotificationPopover({
   notificationSnapshot = emptyNotificationSnapshot,
 }: NotificationPopoverProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const markNotificationReadMutation = $api.useMutation(
+    'patch',
+    '/api/notifications/{notificationId}/read',
+  );
+  const markAllNotificationsReadMutation = $api.useMutation('patch', '/api/notifications/read-all');
   const [snapshot, setSnapshot] = useState(() => notificationSnapshot);
   const [isPending, startTransition] = useTransition();
   const { hasMoreNotifications, hasUnreadNotifications, notifications } = snapshot;
-
-  const makeFormData = (notificationId?: string) => {
-    const formData = new FormData();
-    formData.set('currentPath', pathname);
-
-    if (notificationId) {
-      formData.set('notificationId', notificationId);
-    }
-
-    return formData;
-  };
-
-  const makePageFormData = () => {
-    const formData = new FormData();
-    formData.set('limit', String(NOTIFICATION_PAGE_SIZE));
-    formData.set('offset', String(notifications.length));
-    return formData;
-  };
 
   const markLoadedNotificationRead = (notificationId: string) => {
     setSnapshot((current) => ({
@@ -124,11 +106,9 @@ export function NotificationPopover({
 
   const readNotification = (notification: NotificationSummary) => {
     startTransition(async () => {
-      const result = await markNotificationRead(makeFormData(notification.id));
-
-      if (!result.ok) {
-        return;
-      }
+      await markNotificationReadMutation.mutateAsync({
+        params: { path: { notificationId: notification.id } },
+      });
 
       markLoadedNotificationRead(notification.id);
       router.push(getNotificationHref(notification));
@@ -138,11 +118,7 @@ export function NotificationPopover({
 
   const readAllNotifications = () => {
     startTransition(async () => {
-      const result = await markAllNotificationsRead(makeFormData());
-
-      if (!result.ok) {
-        return;
-      }
+      await markAllNotificationsReadMutation.mutateAsync({});
 
       setSnapshot((current) => ({
         ...current,
@@ -159,16 +135,21 @@ export function NotificationPopover({
 
   const loadMoreNotifications = () => {
     startTransition(async () => {
-      const result = await listNotificationsPage(makePageFormData());
+      const { data } = await fetchClient.GET('/api/notifications', {
+        params: { query: { limit: NOTIFICATION_PAGE_SIZE, offset: notifications.length } },
+      });
 
-      if (!result.ok) {
-        return;
+      if (!data) {
+        throw new Error('알림을 불러오지 못했습니다.');
       }
 
       setSnapshot((current) => ({
-        hasMoreNotifications: result.snapshot.hasMoreNotifications,
-        hasUnreadNotifications: result.snapshot.hasUnreadNotifications,
-        notifications: [...current.notifications, ...result.snapshot.notifications],
+        hasMoreNotifications: data.hasMoreNotifications,
+        hasUnreadNotifications: data.hasUnreadNotifications,
+        notifications: [
+          ...current.notifications,
+          ...(data.notifications as unknown as readonly NotificationSummary[]),
+        ],
       }));
     });
   };

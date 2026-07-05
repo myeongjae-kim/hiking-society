@@ -7,7 +7,7 @@ import { canManageMembers } from '@/core/auth/model/roles';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
-import { logout } from '../auth/actions/logout';
+import { LogoutButton } from '../auth/components/LogoutButton';
 import {
   DisplayNameEditDialog,
   EmailEditDialog,
@@ -113,11 +113,7 @@ export default async function MyPage() {
           <Row label="최근 로그인" value={formatDate(user.lastLoginAt)} />
         </dl>
 
-        <form action={logout}>
-          <button size-="small" variant-="foreground2" type="submit">
-            로그아웃
-          </button>
-        </form>
+        <LogoutButton />
       </section>
     </main>
   );

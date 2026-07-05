@@ -3,30 +3,20 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
+import { $api, fetchClient } from '@/app/common/api/$api';
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { boxBorderClassName } from '@/app/common/components/styles';
 import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
-import {
-  cleanupArticleMediaUploads,
-  createComment as createCommentAction,
-  deleteArticle as deleteArticleAction,
-  deleteComment as deleteCommentAction,
-  prepareArticleMediaUploads,
-  toggleArticleLike as toggleArticleLikeAction,
-  toggleCommentLike as toggleCommentLikeAction,
-  updateArticle as updateArticleAction,
-  updateComment as updateCommentAction,
-  type ArticleMediaUploadTargetInput,
-} from '@/app/feed/actions';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { getAuthorName } from '@/app/feed/utils/feed-crud-utils';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArticleFormDialog } from './ArticleFormDialog';
 import type { ArticleFormValues } from './articleFormTypes';
 import { ArticlePanel } from './ArticlePanel';
@@ -54,6 +44,18 @@ type UploadedArticleMedia = {
   thumbnailUrl: string | null;
   url: string;
   width: number | null;
+};
+
+type ArticleMediaUploadTargetInput = {
+  byteSize: number;
+  contentType: string;
+  fileName: string;
+  mediaType: 'image' | 'video';
+  thumbnail?: {
+    byteSize: number;
+    contentType: string;
+    fileName: string;
+  };
 };
 
 const getCommentCreateSingleFlightKey = (articleId: ArticleId, parentCommentId: CommentId | null) =>
@@ -107,6 +109,14 @@ export function ArticleDetailClient({
   notificationSnapshot,
 }: ArticleDetailClientProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const updateArticleMutation = $api.useMutation('patch', '/api/articles/{articleId}');
+  const deleteArticleMutation = $api.useMutation('delete', '/api/articles/{articleId}');
+  const createCommentMutation = $api.useMutation('post', '/api/articles/{articleId}/comments');
+  const updateCommentMutation = $api.useMutation('patch', '/api/comments/{commentId}');
+  const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
+  const toggleArticleLikeMutation = $api.useMutation('post', '/api/articles/{articleId}/like');
+  const toggleCommentLikeMutation = $api.useMutation('post', '/api/comments/{commentId}/like');
   const singleFlightAction = useSingleFlightAction();
   const [isPending, startTransition] = useTransition();
   const [editingArticle, setEditingArticle] = useState(false);
@@ -176,6 +186,7 @@ export function ArticleDetailClient({
 
             options.onSuccess?.();
             setError(options.errorKey, null);
+            void queryClient.invalidateQueries();
             if (options.refresh !== false) {
               router.refresh();
             }
@@ -237,10 +248,12 @@ export function ArticleDetailClient({
           }
         : undefined,
     }));
-    const targetResult = await prepareArticleMediaUploads(targetInput);
+    const { data: targetResult } = await fetchClient.POST('/api/article-media/upload-targets', {
+      body: targetInput,
+    });
 
-    if (!targetResult.ok) {
-      throw new Error(targetResult.error ?? '업로드 URL을 만들지 못했습니다.');
+    if (!targetResult) {
+      throw new Error('업로드 URL을 만들지 못했습니다.');
     }
 
     const uploadedMedia = new Array<UploadedArticleMedia>(newMedia.length);
@@ -281,7 +294,9 @@ export function ArticleDetailClient({
     } catch (error) {
       if (uploadedObjectKeys.length > 0) {
         setLoadingLabel('업로드 파일 정리 중');
-        await cleanupArticleMediaUploads(uploadedObjectKeys);
+        await fetchClient.DELETE('/api/article-media/uploads', {
+          body: { objectKeys: uploadedObjectKeys },
+        });
       }
 
       throw error;
@@ -291,7 +306,6 @@ export function ArticleDetailClient({
   };
 
   const createArticleFormData = async (values: ArticleFormValues) => {
-    const formData = new FormData();
     const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values);
     const existingMedia = values.media
       .filter((media) => !media.file)
@@ -309,12 +323,10 @@ export function ArticleDetailClient({
         width: media.width,
       }));
 
-    formData.set('articleId', article.id);
-    formData.set('body', values.body);
-    formData.set('existingMedia', JSON.stringify(existingMedia));
-    formData.set('uploadedMedia', JSON.stringify(uploadedMedia));
-
-    return { formData, uploadedObjectKeys };
+    return {
+      body: { body: values.body, existingMedia, uploadedMedia },
+      uploadedObjectKeys,
+    };
   };
 
   const updateArticle = (values: ArticleFormValues) => {
@@ -325,19 +337,26 @@ export function ArticleDetailClient({
 
     runAction(
       async () => {
+        let uploadedObjectKeys: string[] = [];
         try {
-          const { formData, uploadedObjectKeys } = await createArticleFormData(values);
+          const articleFormData = await createArticleFormData(values);
+          uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
           setLoadingLabel('게시글 저장 중');
-          const result = await updateArticleAction(formData);
+          await updateArticleMutation.mutateAsync({
+            body: articleFormData.body,
+            params: { path: { articleId: article.id } },
+          });
 
-          if (!result.ok && uploadedObjectKeys.length > 0) {
+          return { ok: true as const };
+        } catch (error) {
+          if (uploadedObjectKeys.length > 0) {
             setLoadingLabel('업로드 파일 정리 중');
-            await cleanupArticleMediaUploads(uploadedObjectKeys);
+            await fetchClient.DELETE('/api/article-media/uploads', {
+              body: { objectKeys: uploadedObjectKeys },
+            });
           }
 
-          return result;
-        } catch (error) {
           return {
             error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
             ok: false,
@@ -358,53 +377,64 @@ export function ArticleDetailClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        const formData = new FormData();
-        formData.set('articleId', article.id);
-        runAction(() => deleteArticleAction(formData), {
-          errorKey: `article-${article.id}`,
-          onSuccess: () => {
-            setConfirmState(null);
-            router.push('/feed');
+        runAction(
+          () =>
+            deleteArticleMutation
+              .mutateAsync({
+                params: { path: { articleId: article.id } },
+              })
+              .then(() => ({ ok: true as const })),
+          {
+            errorKey: `article-${article.id}`,
+            onSuccess: () => {
+              setConfirmState(null);
+              router.push('/feed');
+            },
           },
-        });
+        );
       },
       title: '게시글 삭제',
     });
   };
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    const formData = new FormData();
-    formData.set('articleId', articleId);
-    formData.set('body', body);
+    runAction(
+      () =>
+        createCommentMutation
+          .mutateAsync({
+            body: { body, parentCommentId },
+            params: { path: { articleId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-new-${articleId}`,
+        onSuccess: () => {
+          if (parentCommentId === null) {
+            setCommentFormResetKey((currentKey) => currentKey + 1);
+          }
 
-    if (parentCommentId) {
-      formData.set('parentCommentId', parentCommentId);
-    }
-
-    runAction(() => createCommentAction(formData), {
-      errorKey: `comment-new-${articleId}`,
-      onSuccess: () => {
-        if (parentCommentId === null) {
-          setCommentFormResetKey((currentKey) => currentKey + 1);
-        }
-
-        setReplyingCommentId(null);
+          setReplyingCommentId(null);
+        },
+        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
       },
-      singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
-    });
+    );
   };
 
   const updateComment = (commentId: CommentId, body: string) => {
-    const formData = new FormData();
-    formData.set('articleId', article.id);
-    formData.set('commentId', commentId);
-    formData.set('body', body);
-
-    runAction(() => updateCommentAction(formData), {
-      errorKey: `comment-edit-${commentId}`,
-      onSuccess: () => setEditingCommentId(null),
-      singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
-    });
+    runAction(
+      () =>
+        updateCommentMutation
+          .mutateAsync({
+            body: { body },
+            params: { path: { commentId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-edit-${commentId}`,
+        onSuccess: () => setEditingCommentId(null),
+        singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
+      },
+    );
   };
 
   const requestDeleteComment = (comment: Comment) => {
@@ -412,13 +442,18 @@ export function ArticleDetailClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        const formData = new FormData();
-        formData.set('articleId', article.id);
-        formData.set('commentId', comment.id);
-        runAction(() => deleteCommentAction(formData), {
-          errorKey: `comment-${comment.id}`,
-          onSuccess: () => setConfirmState(null),
-        });
+        runAction(
+          () =>
+            deleteCommentMutation
+              .mutateAsync({
+                params: { path: { commentId: comment.id } },
+              })
+              .then(() => ({ ok: true as const })),
+          {
+            errorKey: `comment-${comment.id}`,
+            onSuccess: () => setConfirmState(null),
+          },
+        );
       },
       title: '댓글 삭제',
     });
@@ -426,38 +461,49 @@ export function ArticleDetailClient({
 
   const toggleArticleLike = (articleId: ArticleId) => {
     const likePendingKey = `article-${articleId}` as LikePendingKey;
-    const formData = new FormData();
-    formData.set('articleId', articleId);
 
     setLikePending(likePendingKey, true);
-    runAction(() => toggleArticleLikeAction(formData), {
-      errorKey: `article-${articleId}`,
-      onSuccess: () => {
-        setArticleLikeOverride({
-          articleId,
-          likedByCurrentUser: !displayedArticle.likedByCurrentUser,
-          likeCount: Math.max(
-            0,
-            displayedArticle.likeCount + (displayedArticle.likedByCurrentUser ? -1 : 1),
-          ),
-        });
+    runAction(
+      () =>
+        toggleArticleLikeMutation
+          .mutateAsync({
+            params: { path: { articleId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `article-${articleId}`,
+        onSuccess: () => {
+          setArticleLikeOverride({
+            articleId,
+            likedByCurrentUser: !displayedArticle.likedByCurrentUser,
+            likeCount: Math.max(
+              0,
+              displayedArticle.likeCount + (displayedArticle.likedByCurrentUser ? -1 : 1),
+            ),
+          });
+        },
+        onSettled: () => setLikePending(likePendingKey, false),
+        refresh: false,
       },
-      onSettled: () => setLikePending(likePendingKey, false),
-      refresh: false,
-    });
+    );
   };
 
   const toggleCommentLike = (commentId: CommentId) => {
     const likePendingKey = `comment-${commentId}` as LikePendingKey;
-    const formData = new FormData();
-    formData.set('articleId', article.id);
-    formData.set('commentId', commentId);
 
     setLikePending(likePendingKey, true);
-    runAction(() => toggleCommentLikeAction(formData), {
-      errorKey: `comment-${commentId}`,
-      onSettled: () => setLikePending(likePendingKey, false),
-    });
+    runAction(
+      () =>
+        toggleCommentLikeMutation
+          .mutateAsync({
+            params: { path: { commentId } },
+          })
+          .then(() => ({ ok: true as const })),
+      {
+        errorKey: `comment-${commentId}`,
+        onSettled: () => setLikePending(likePendingKey, false),
+      },
+    );
   };
 
   return (

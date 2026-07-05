@@ -69,6 +69,14 @@ export function ArticleFormDialog({
     },
     [onOpenChange, requestClose],
   );
+  const handleDirtyChange = useCallback(
+    (dirty: boolean) => setDirtyState({ dirty, formKey }),
+    [formKey],
+  );
+  const handleDiscardOpenChange = useCallback(
+    (nextOpen: boolean) => setDiscardConfirmState({ formKey, open: nextOpen }),
+    [formKey],
+  );
 
   return (
     <>
@@ -84,7 +92,7 @@ export function ArticleFormDialog({
                 hiking={hiking}
                 key={formKey}
                 onCancel={requestClose}
-                onDirtyChange={(dirty) => setDirtyState({ dirty, formKey })}
+                onDirtyChange={handleDirtyChange}
                 onSubmit={onSubmit}
                 submitting={submitting}
               />
@@ -92,10 +100,7 @@ export function ArticleFormDialog({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      <Dialog.Root
-        open={discardConfirmOpen}
-        onOpenChange={(nextOpen) => setDiscardConfirmState({ formKey, open: nextOpen })}
-      >
+      <Dialog.Root open={discardConfirmOpen} onOpenChange={handleDiscardOpenChange}>
         <Dialog.Portal>
           <Dialog.Overlay className={dialogOverlayClassName} />
           <Dialog.Content className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none">
