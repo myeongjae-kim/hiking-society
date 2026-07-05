@@ -1,44 +1,50 @@
 'use client';
 
 import { ArticleFormDialog } from '@/app/article/components/ArticleFormDialog';
-import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
-import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
+import { ConfirmDialog } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { HikingFormDialog } from '@/app/hiking/components/HikingFormDialog';
-import type { HikingFormValues } from '@/app/hiking/components/hikingFormTypes';
 import type { Article } from '@/core/article/domain';
-import type { Hiking, HikingId } from '@/core/hiking/domain';
+import type { Hiking } from '@/core/hiking/domain';
 
-import type { ActiveArticleForm, ActiveHikingForm } from '../utils/feedCrudTypes';
+import type {
+  FeedActionEnvironment,
+  FeedArticleStore,
+  FeedDialogState,
+} from '../hooks/feedActionTypes';
+import { useFeedArticleActions } from '../hooks/useFeedArticleActions';
+import { useFeedHikingDialogActions } from '../hooks/useFeedHikingDialogActions';
 
 type FeedDialogsProps = {
+  env: FeedActionEnvironment;
   entities: {
     activeArticle: Article | undefined;
     activeArticleHiking: Hiking | undefined;
     activeHiking: Hiking | undefined;
   };
-  state: {
-    activeArticleForm: ActiveArticleForm;
-    activeArticleSubmitting: boolean;
-    activeHikingForm: ActiveHikingForm;
-    activeHikingSubmitting: boolean;
-    confirmState: ConfirmState;
-    errorByKey: Record<string, string>;
-    loadingLabel: string | null;
-    loadingOverlayOpen: boolean;
-  };
-  actions: {
-    closeActiveArticleForm: () => void;
-    closeActiveHikingForm: () => void;
-    createArticle: (hikingId: HikingId, values: ArticleFormValues) => void;
-    createHiking: (values: HikingFormValues) => void;
-    onConfirmOpenChange: (open: boolean) => void;
-    updateArticle: (articleId: Article['id'], values: ArticleFormValues) => void;
-    updateHiking: (hikingId: HikingId, values: HikingFormValues) => void;
-  };
+  state: FeedDialogState;
+  store: Pick<FeedArticleStore, 'setArticlesByHikingId' | 'setCommentsByHikingId'>;
 };
 
-export function FeedDialogs({ actions, entities, state }: FeedDialogsProps) {
+export function FeedDialogs({ entities, env, state, store }: FeedDialogsProps) {
+  const actionDeps = {
+    invalidateQueryKeys: env.invalidateQueryKeys,
+    refreshRoute: env.refreshRoute,
+    runner: env.runner,
+    setConfirmState: env.setConfirmState,
+  };
+  const hikingActions = useFeedHikingDialogActions({
+    ...actionDeps,
+    activeHikingForm: state.activeHikingForm,
+    setActiveHikingForm: state.setActiveHikingForm,
+  });
+  const articleActions = useFeedArticleActions({
+    ...actionDeps,
+    activeArticleForm: state.activeArticleForm,
+    setActiveArticleForm: state.setActiveArticleForm,
+    setArticlesByHikingId: store.setArticlesByHikingId,
+    setCommentsByHikingId: store.setCommentsByHikingId,
+  });
   const activeHikingFormKey =
     state.activeHikingForm?.type === 'create'
       ? 'hiking-new'
@@ -62,57 +68,63 @@ export function FeedDialogs({ actions, entities, state }: FeedDialogsProps) {
 
   return (
     <>
-      <ConfirmDialog confirmState={state.confirmState} onOpenChange={actions.onConfirmOpenChange} />
+      <ConfirmDialog
+        confirmState={env.confirmState}
+        onOpenChange={(open) => !open && env.setConfirmState(null)}
+      />
       <HikingFormDialog
-        error={activeHikingFormKey ? state.errorByKey[activeHikingFormKey] : undefined}
+        error={activeHikingFormKey ? env.runner.errorByKey[activeHikingFormKey] : undefined}
         formKey={activeHikingFormKey ?? 'hiking-form'}
         hiking={entities.activeHiking}
-        onCancel={actions.closeActiveHikingForm}
+        onCancel={hikingActions.closeActiveHikingForm}
         onOpenChange={(open) => {
           if (!open) {
-            actions.closeActiveHikingForm();
+            hikingActions.closeActiveHikingForm();
           }
         }}
         onSubmit={(values) => {
           if (state.activeHikingForm?.type === 'create') {
-            actions.createHiking(values);
+            hikingActions.createHiking(values);
             return;
           }
 
           if (state.activeHikingForm?.type === 'edit') {
-            actions.updateHiking(state.activeHikingForm.hikingId, values);
+            hikingActions.updateHiking(state.activeHikingForm.hikingId, values);
           }
         }}
         open={hikingFormDialogOpen}
-        submitting={state.activeHikingSubmitting}
+        submitting={hikingActions.activeHikingSubmitting}
         title={activeHikingFormTitle}
       />
       <ArticleFormDialog
         article={entities.activeArticle}
-        error={activeArticleFormKey ? state.errorByKey[activeArticleFormKey] : undefined}
+        error={activeArticleFormKey ? env.runner.errorByKey[activeArticleFormKey] : undefined}
         formKey={activeArticleFormKey ?? 'article-form'}
         hiking={entities.activeArticleHiking}
-        onCancel={actions.closeActiveArticleForm}
+        onCancel={articleActions.closeActiveArticleForm}
         onOpenChange={(open) => {
           if (!open) {
-            actions.closeActiveArticleForm();
+            articleActions.closeActiveArticleForm();
           }
         }}
         onSubmit={(values) => {
           if (state.activeArticleForm?.type === 'create') {
-            actions.createArticle(state.activeArticleForm.hikingId, values);
+            articleActions.createArticle(state.activeArticleForm.hikingId, values);
             return;
           }
 
           if (state.activeArticleForm?.type === 'edit') {
-            actions.updateArticle(state.activeArticleForm.articleId, values);
+            articleActions.updateArticle(state.activeArticleForm.articleId, values);
           }
         }}
         open={articleFormDialogOpen}
-        submitting={state.activeArticleSubmitting}
+        submitting={articleActions.activeArticleSubmitting}
         title={activeArticleFormTitle}
       />
-      <LoadingOverlay label={state.loadingLabel ?? undefined} open={state.loadingOverlayOpen} />
+      <LoadingOverlay
+        label={env.runner.loadingLabel ?? undefined}
+        open={env.runner.isPending && env.runner.loadingLabel !== null}
+      />
     </>
   );
 }

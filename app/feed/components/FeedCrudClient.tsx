@@ -1,17 +1,29 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
+
+import type { ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { gridStackClassName } from '@/app/common/components/styles';
+import { useMutationRunner } from '@/app/common/hooks/useMutationRunner';
 import { FeedFooter } from '@/app/feed/components/FeedFooter';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { StatusPanel } from '@/app/feed/components/StatusPanel';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
+import type { CommentId } from '@/core/comment/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
-import { useMemo } from 'react';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
 import { useFeedArticleLoader } from '../hooks/useFeedArticleLoader';
-import { useFeedCrudActions } from '../hooks/useFeedCrudActions';
+import type {
+  FeedActionEnvironment,
+  FeedArticleStore,
+  FeedDialogState,
+  FeedSectionState,
+} from '../hooks/feedActionTypes';
 import { getAuthorName } from '../utils/feed-crud-utils';
+import type { ActiveArticleForm, ActiveHikingForm } from '../utils/feedCrudTypes';
 import { FeedDialogs } from './FeedDialogs';
 import { FeedHikingSection } from './FeedHikingSection';
 import { FeedIntroPanel } from './FeedIntroPanel';
@@ -40,24 +52,75 @@ export function FeedCrudClient({
   notificationSnapshot,
   selectedHikingId,
 }: FeedCrudClientProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const runner = useMutationRunner();
+  const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
+  const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
+  const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
+  const [commentCountDeltaState, setCommentCountDeltaState] = useState({
+    baseCommentCount: commentCount,
+    delta: 0,
+  });
   const currentAuthorName = useMemo(() => getAuthorName(currentUser), [currentUser]);
   const articleLoader = useFeedArticleLoader({
     hikingArticleCounts,
     hikings: initialHikings,
     selectedHikingId,
   });
-  const actions = useFeedCrudActions({
+
+  const invalidateQueryKeys = useCallback(
+    (queryKeys: readonly QueryKey[]) => {
+      void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+    },
+    [queryClient],
+  );
+  const refreshRoute = useCallback(() => router.refresh(), [router]);
+  const adjustVisibleCommentCount = useCallback(
+    (delta: number) => {
+      setCommentCountDeltaState((currentState) => ({
+        baseCommentCount: commentCount,
+        delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + delta,
+      }));
+    },
+    [commentCount],
+  );
+  const commentCountDelta =
+    commentCountDeltaState.baseCommentCount === commentCount ? commentCountDeltaState.delta : 0;
+  const visibleCommentCount = Math.max(0, commentCount + commentCountDelta);
+  const env: FeedActionEnvironment = {
+    confirmState,
+    invalidateQueryKeys,
+    refreshRoute,
+    runner,
+    setConfirmState,
+  };
+  const articleStore: FeedArticleStore = {
     articleHikingIdByArticleId: articleLoader.articleHikingIdByArticleId,
     commentArticleIdByCommentId: articleLoader.commentArticleIdByCommentId,
-    commentCount,
     getHikingArticleCount: articleLoader.getHikingArticleCount,
-    selectedHikingId,
+    refreshArticleComments: articleLoader.refreshArticleComments,
     setArticlesByHikingId: articleLoader.setArticlesByHikingId,
     setCommentsByHikingId: articleLoader.setCommentsByHikingId,
-  });
-
-  const activeHikingForm = actions.dialogState.activeHikingForm;
-  const activeArticleForm = actions.dialogState.activeArticleForm;
+  };
+  const sectionState: FeedSectionState = {
+    adjustVisibleCommentCount,
+    editingCommentId,
+    replyingCommentId,
+    selectedHikingId,
+    setActiveArticleForm,
+    setActiveHikingForm,
+    setEditingCommentId,
+    setReplyingCommentId,
+  };
+  const dialogState: FeedDialogState = {
+    activeArticleForm,
+    activeHikingForm,
+    setActiveArticleForm,
+    setActiveHikingForm,
+  };
   const activeHiking =
     activeHikingForm?.type === 'edit'
       ? initialHikings.find((hiking) => hiking.id === activeHikingForm.hikingId)
@@ -84,13 +147,11 @@ export function FeedCrudClient({
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 px-1.5 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
         <section className={gridStackClassName} aria-label="산행 글 피드">
-          <FeedIntroPanel
-            onCreateHiking={() => actions.sectionActions.setActiveHikingForm({ type: 'create' })}
-          />
+          <FeedIntroPanel onCreateHiking={() => setActiveHikingForm({ type: 'create' })} />
           {articleLoader.groups.map((group, groupIndex) => (
             <FeedHikingSection
-              actions={actions.sectionActions}
               currentUserId={currentUser.id}
+              env={env}
               group={group}
               groupIndex={groupIndex}
               key={`${group.hiking.id}-${groupIndex}`}
@@ -102,14 +163,15 @@ export function FeedCrudClient({
                 loadStateByHikingId: articleLoader.hikingArticleLoadStateById,
                 registerHikingSection: articleLoader.registerHikingSection,
               }}
-              state={actions.sectionState}
+              state={sectionState}
+              store={articleStore}
             />
           ))}
         </section>
 
         <StatusPanel
           articleCount={articleCount}
-          commentCount={actions.statusState.visibleCommentCount}
+          commentCount={visibleCommentCount}
           currentAuthorName={currentAuthorName}
           groupCount={articleLoader.groups.length}
           hikingCount={initialHikings.length}
@@ -117,16 +179,17 @@ export function FeedCrudClient({
       </div>
       <FeedFooter
         articleCount={articleCount}
-        commentCount={actions.statusState.visibleCommentCount}
+        commentCount={visibleCommentCount}
         hikingCount={initialHikings.length}
       />
       <FeedDialogs
-        actions={{
-          ...actions.dialogActions,
-          onConfirmOpenChange: (open) => !open && actions.dialogActions.setConfirmState(null),
-        }}
+        env={env}
         entities={{ activeArticle, activeArticleHiking, activeHiking }}
-        state={actions.dialogState}
+        state={dialogState}
+        store={{
+          setArticlesByHikingId: articleLoader.setArticlesByHikingId,
+          setCommentsByHikingId: articleLoader.setCommentsByHikingId,
+        }}
       />
     </main>
   );

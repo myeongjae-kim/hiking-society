@@ -4,15 +4,26 @@ import { ArticlePanel } from '@/app/article/components/ArticlePanel';
 import { gridStackClassName } from '@/app/common/components/styles';
 import { HikingHeader } from '@/app/hiking/components/HikingHeader';
 import type { Article, ArticleId } from '@/core/article/domain';
-import type { Comment, CommentId } from '@/core/comment/domain';
-import type { Hiking, HikingId } from '@/core/hiking/domain';
+import type { Comment } from '@/core/comment/domain';
+import type { HikingId } from '@/core/hiking/domain';
 
+import type {
+  FeedActionEnvironment,
+  FeedArticleStore,
+  FeedSectionState,
+} from '../hooks/feedActionTypes';
+import { useFeedArticleSectionActions } from '../hooks/useFeedArticleSectionActions';
+import { useFeedCommentActions } from '../hooks/useFeedCommentActions';
+import { useFeedHikingActions } from '../hooks/useFeedHikingActions';
+import { useFeedLikeActions } from '../hooks/useFeedLikeActions';
+import { useFeedLinkActions } from '../hooks/useFeedLinkActions';
 import { getArticleComments, type FeedGroup } from '../utils/feed-crud-utils';
 import { hasRecordKey, type HikingArticleLoadState } from '../utils/feedCrudTypes';
 import { FeedArticleLoadStateView, FeedEmptyArticlesView } from './FeedArticleLoadStateView';
 
 type FeedHikingSectionProps = {
   currentUserId: number;
+  env: FeedActionEnvironment;
   group: FeedGroup;
   groupIndex: number;
   loader: {
@@ -23,44 +34,56 @@ type FeedHikingSectionProps = {
     loadStateByHikingId: Record<string, HikingArticleLoadState>;
     registerHikingSection: (hikingId: HikingId, element: HTMLElement | null) => void;
   };
-  state: {
-    commentFormResetKeyByArticleId: Record<string, number>;
-    editingCommentId: CommentId | null;
-    errorByKey: Record<string, string>;
-    highlightedHikingId: HikingId | null;
-    isCommentCreateSubmitting: (articleId: ArticleId, parentCommentId: CommentId | null) => boolean;
-    isCommentEditSubmitting: (commentId: CommentId) => boolean;
-    isCommentLikePending: (commentId: CommentId) => boolean;
-    pendingLikeByKey: Record<string, boolean>;
-    replyingCommentId: CommentId | null;
-  };
-  actions: {
-    copyArticleLink: (article: Article) => void;
-    copyHikingLink: (hiking: Hiking) => void;
-    createComment: (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => void;
-    requestDeleteArticle: (article: Article) => void;
-    requestDeleteComment: (comment: Comment) => void;
-    requestDeleteHiking: (hiking: Hiking) => void;
-    setActiveArticleForm: (
-      form: { articleId: ArticleId; type: 'edit' } | { hikingId: HikingId; type: 'create' },
-    ) => void;
-    setActiveHikingForm: (form: { hikingId: HikingId; type: 'edit' } | { type: 'create' }) => void;
-    setEditingCommentId: (commentId: CommentId | null) => void;
-    setReplyingCommentId: (commentId: CommentId | null) => void;
-    toggleArticleLike: (articleId: ArticleId) => void;
-    toggleCommentLike: (commentId: CommentId) => void;
-    updateComment: (commentId: CommentId, body: string) => void;
-  };
+  state: FeedSectionState;
+  store: FeedArticleStore;
 };
 
 export function FeedHikingSection({
-  actions,
   currentUserId,
+  env,
   group,
   groupIndex,
   loader,
   state,
+  store,
 }: FeedHikingSectionProps) {
+  const actionDeps = {
+    invalidateQueryKeys: env.invalidateQueryKeys,
+    refreshRoute: env.refreshRoute,
+    runner: env.runner,
+    setConfirmState: env.setConfirmState,
+  };
+  const hikingActions = useFeedHikingActions({
+    ...actionDeps,
+    getHikingArticleCount: store.getHikingArticleCount,
+    setActiveHikingForm: state.setActiveHikingForm,
+  });
+  const articleActions = useFeedArticleSectionActions({
+    ...actionDeps,
+    setActiveArticleForm: state.setActiveArticleForm,
+  });
+  const commentActions = useFeedCommentActions({
+    ...actionDeps,
+    adjustVisibleCommentCount: state.adjustVisibleCommentCount,
+    commentArticleIdByCommentId: store.commentArticleIdByCommentId,
+    editingCommentId: state.editingCommentId,
+    refreshArticleComments: store.refreshArticleComments,
+    replyingCommentId: state.replyingCommentId,
+    setEditingCommentId: state.setEditingCommentId,
+    setReplyingCommentId: state.setReplyingCommentId,
+  });
+  const likeActions = useFeedLikeActions({
+    articleHikingIdByArticleId: store.articleHikingIdByArticleId,
+    commentArticleIdByCommentId: store.commentArticleIdByCommentId,
+    invalidateQueryKeys: env.invalidateQueryKeys,
+    refreshArticleComments: store.refreshArticleComments,
+    runner: env.runner,
+    setArticlesByHikingId: store.setArticlesByHikingId,
+  });
+  const linkActions = useFeedLinkActions({
+    selectedHikingId: state.selectedHikingId,
+    setError: env.runner.setError,
+  });
   const groupArticleCount = loader.getHikingArticleCount(group.hiking.id);
   const hasLoadedHikingArticles = hasRecordKey(loader.articlesByHikingId, group.hiking.id);
   const groupLoadState =
@@ -72,7 +95,7 @@ export function FeedHikingSection({
   return (
     <section
       className={`${gridStackClassName} focus:outline-none ${
-        state.highlightedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
+        linkActions.highlightedHikingId === group.hiking.id ? 'shadow-[0_0_0_2px_var(--blue)]' : ''
       }`}
       data-hiking-id={group.hiking.id}
       id={`hiking-section-${group.hiking.id}`}
@@ -83,14 +106,16 @@ export function FeedHikingSection({
     >
       <HikingHeader
         canManageHiking={group.hiking.authorUserId === currentUserId}
-        error={state.errorByKey[`hiking-${group.hiking.id}`]}
+        error={env.runner.errorByKey[`hiking-${group.hiking.id}`]}
         hiking={group.hiking}
         onAddArticle={() =>
-          actions.setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
+          articleActions.setActiveArticleForm({ hikingId: group.hiking.id, type: 'create' })
         }
-        onCopyLink={() => actions.copyHikingLink(group.hiking)}
-        onDelete={() => actions.requestDeleteHiking(group.hiking)}
-        onEdit={() => actions.setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })}
+        onCopyLink={() => linkActions.copyHikingLink(group.hiking)}
+        onDelete={() => hikingActions.requestDeleteHiking(group.hiking)}
+        onEdit={() =>
+          hikingActions.setActiveHikingForm({ hikingId: group.hiking.id, type: 'edit' })
+        }
       />
       <div className={gridStackClassName}>
         <FeedArticleLoadStateView
@@ -106,31 +131,31 @@ export function FeedHikingSection({
               <ArticlePanel
                 article={article}
                 articleDetailHref={`/article/${article.id}`}
-                articleLikePending={state.pendingLikeByKey[`article-${article.id}`] === true}
+                articleLikePending={likeActions.pendingLikeByKey[`article-${article.id}`] === true}
                 canEdit={article.authorUserId === currentUserId}
                 comments={getArticleComments(loader.commentsByArticleId, article.id)}
-                commentFormResetKey={state.commentFormResetKeyByArticleId[article.id] ?? 0}
+                commentFormResetKey={commentActions.commentFormResetKeyByArticleId[article.id] ?? 0}
                 currentUserId={currentUserId}
-                editingCommentId={state.editingCommentId}
-                errorByKey={state.errorByKey}
-                isCommentCreateSubmitting={state.isCommentCreateSubmitting}
-                isCommentEditSubmitting={state.isCommentEditSubmitting}
-                isCommentLikePending={state.isCommentLikePending}
+                editingCommentId={commentActions.editingCommentId}
+                errorByKey={env.runner.errorByKey}
+                isCommentCreateSubmitting={commentActions.isCommentCreateSubmitting}
+                isCommentEditSubmitting={commentActions.isCommentEditSubmitting}
+                isCommentLikePending={likeActions.isCommentLikePending}
                 key={article.id}
                 mobileMediaCarousel
-                onCreateComment={actions.createComment}
-                onCopyArticleLink={() => actions.copyArticleLink(article)}
-                onDeleteArticle={() => actions.requestDeleteArticle(article)}
-                onDeleteComment={actions.requestDeleteComment}
+                onCreateComment={commentActions.createComment}
+                onCopyArticleLink={() => linkActions.copyArticleLink(article)}
+                onDeleteArticle={() => articleActions.requestDeleteArticle(article)}
+                onDeleteComment={commentActions.requestDeleteComment}
                 onEditArticle={() =>
-                  actions.setActiveArticleForm({ articleId: article.id, type: 'edit' })
+                  articleActions.setActiveArticleForm({ articleId: article.id, type: 'edit' })
                 }
-                onEditComment={actions.setEditingCommentId}
-                onReplyComment={actions.setReplyingCommentId}
-                onSubmitCommentEdit={actions.updateComment}
-                onToggleArticleLike={actions.toggleArticleLike}
-                onToggleCommentLike={actions.toggleCommentLike}
-                replyingCommentId={state.replyingCommentId}
+                onEditComment={commentActions.setEditingCommentId}
+                onReplyComment={commentActions.setReplyingCommentId}
+                onSubmitCommentEdit={commentActions.updateComment}
+                onToggleArticleLike={likeActions.toggleArticleLike}
+                onToggleCommentLike={likeActions.toggleCommentLike}
+                replyingCommentId={commentActions.replyingCommentId}
               />
             ))
           ) : (

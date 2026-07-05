@@ -14,34 +14,33 @@ import {
 import type { FeedActionDeps } from './feedActionTypes';
 
 type UseFeedCommentActionsInput = FeedActionDeps & {
+  adjustVisibleCommentCount: (delta: number) => void;
   commentArticleIdByCommentId: Map<CommentId, ArticleId>;
-  commentCount: number;
+  editingCommentId: CommentId | null;
   refreshArticleComments: (articleId: ArticleId) => Promise<boolean>;
+  replyingCommentId: CommentId | null;
+  setEditingCommentId: (commentId: CommentId | null) => void;
+  setReplyingCommentId: (commentId: CommentId | null) => void;
 };
 
 export function useFeedCommentActions({
+  adjustVisibleCommentCount,
   commentArticleIdByCommentId,
-  commentCount,
+  editingCommentId,
   invalidateQueryKeys,
   refreshArticleComments,
+  replyingCommentId,
   runner,
+  setEditingCommentId,
   setConfirmState,
+  setReplyingCommentId,
 }: UseFeedCommentActionsInput) {
   const createCommentMutation = $api.useMutation('post', '/api/articles/{articleId}/comments');
   const updateCommentMutation = $api.useMutation('patch', '/api/comments/{commentId}');
   const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
-  const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
   const [commentFormResetKeyByArticleId, setCommentFormResetKeyByArticleId] = useState<
     Record<string, number>
   >({});
-  const [commentCountDeltaState, setCommentCountDeltaState] = useState({
-    baseCommentCount: commentCount,
-    delta: 0,
-  });
-  const commentCountDelta =
-    commentCountDeltaState.baseCommentCount === commentCount ? commentCountDeltaState.delta : 0;
-  const visibleCommentCount = Math.max(0, commentCount + commentCountDelta);
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
     runner.runMutation(
@@ -55,10 +54,7 @@ export function useFeedCommentActions({
           params: { path: { articleId } },
         });
         await refreshArticleComments(articleId);
-        setCommentCountDeltaState((currentState) => ({
-          baseCommentCount: commentCount,
-          delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
-        }));
+        adjustVisibleCommentCount(1);
 
         if (parentCommentId === null) {
           setCommentFormResetKeyByArticleId((currentKeys) => ({
@@ -118,11 +114,7 @@ export function useFeedCommentActions({
             setConfirmState(null);
 
             if (comment.deletedAt === null) {
-              setCommentCountDeltaState((currentState) => ({
-                baseCommentCount: commentCount,
-                delta:
-                  (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
-              }));
+              adjustVisibleCommentCount(-1);
             }
 
             invalidateQueryKeys([apiQueryKeys.articleComments(comment.articleId)]);
@@ -146,6 +138,5 @@ export function useFeedCommentActions({
     setEditingCommentId,
     setReplyingCommentId,
     updateComment,
-    visibleCommentCount,
   };
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
 import { $api } from '@/app/common/api/$api';
@@ -101,6 +101,9 @@ export function ArticleDetailClient({
     likeCount: number;
     likedByCurrentUser: boolean;
   } | null>(null);
+  const [commentLikeOverrides, setCommentLikeOverrides] = useState<
+    Record<string, { likeCount: number; likedByCurrentUser: boolean }>
+  >({});
   const currentAuthorName = getAuthorName(currentUser);
   const displayedArticle =
     articleLikeOverride?.articleId === article.id
@@ -110,6 +113,15 @@ export function ArticleDetailClient({
           likedByCurrentUser: articleLikeOverride.likedByCurrentUser,
         }
       : article;
+  const displayedComments = useMemo(
+    () =>
+      comments.map((comment) => {
+        const override = commentLikeOverrides[comment.id];
+
+        return override ? { ...comment, ...override } : comment;
+      }),
+    [commentLikeOverrides, comments],
+  );
   const articleUpdateSingleFlightKey = `article-update-${article.id}`;
   const articleUpdateSubmitting =
     isRunning(articleUpdateSingleFlightKey) || (isPending && loadingLabel !== null);
@@ -337,6 +349,26 @@ export function ArticleDetailClient({
         await toggleCommentLikeMutation.mutateAsync({
           params: { path: { commentId } },
         });
+        setCommentLikeOverrides((currentOverrides) => {
+          const currentComment = displayedComments.find((comment) => comment.id === commentId);
+
+          if (!currentComment) {
+            return currentOverrides;
+          }
+
+          const likedByCurrentUser = !currentComment.likedByCurrentUser;
+
+          return {
+            ...currentOverrides,
+            [commentId]: {
+              likedByCurrentUser,
+              likeCount: Math.max(
+                0,
+                currentComment.likeCount + (currentComment.likedByCurrentUser ? -1 : 1),
+              ),
+            },
+          };
+        });
         invalidateQueryKeys([apiQueryKeys.articleComments(article.id)]);
       },
     );
@@ -452,7 +484,7 @@ export function ArticleDetailClient({
           article={displayedArticle}
           articleLikePending={pendingLikeByKey[`article-${displayedArticle.id}`] === true}
           canEdit={displayedArticle.authorUserId === currentUser.id}
-          comments={comments}
+          comments={displayedComments}
           commentFormResetKey={commentFormResetKey}
           currentUserId={currentUser.id}
           editingCommentId={editingCommentId}

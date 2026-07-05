@@ -145,6 +145,42 @@ export function useFeedArticleLoader({
     [articlesByHikingId, getHikingArticleCount, queryClient],
   );
 
+  const refreshArticleComments = useCallback(
+    async (articleId: ArticleId) => {
+      const hikingId = articleHikingIdByArticleId.get(articleId);
+
+      if (!hikingId) {
+        throw new Error('댓글을 갱신할 글을 찾을 수 없습니다.');
+      }
+
+      const result = await queryClient.fetchQuery(
+        $api.queryOptions('get', '/api/articles/{articleId}/comments', {
+          params: { path: { articleId } },
+        }),
+      );
+      const comments = result.comments as unknown as readonly Comment[];
+
+      setCommentsByHikingId((currentComments) => {
+        const hikingComments = currentComments[hikingId];
+
+        if (!hikingComments) {
+          return currentComments;
+        }
+
+        return {
+          ...currentComments,
+          [hikingId]: [
+            ...hikingComments.filter((comment) => comment.articleId !== articleId),
+            ...comments,
+          ],
+        };
+      });
+
+      return true;
+    },
+    [articleHikingIdByArticleId, queryClient],
+  );
+
   const registerHikingSection = useCallback((hikingId: HikingId, element: HTMLElement | null) => {
     if (!element) {
       hikingSectionElementsRef.current.delete(hikingId);
@@ -309,6 +345,7 @@ export function useFeedArticleLoader({
     loadedArticles,
     loadedComments,
     registerHikingSection,
+    refreshArticleComments,
     setArticlesByHikingId,
     setCommentsByHikingId,
   };

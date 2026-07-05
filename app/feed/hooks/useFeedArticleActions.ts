@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
 import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
@@ -15,7 +15,9 @@ import type { ActiveArticleForm } from '../utils/feedCrudTypes';
 import type { FeedActionDeps } from './feedActionTypes';
 
 type UseFeedArticleActionsInput = FeedActionDeps & {
+  activeArticleForm: ActiveArticleForm;
   setArticlesByHikingId: Dispatch<SetStateAction<Record<string, readonly Article[]>>>;
+  setActiveArticleForm: (form: ActiveArticleForm) => void;
   setCommentsByHikingId: Dispatch<SetStateAction<Record<string, readonly Comment[]>>>;
 };
 
@@ -23,15 +25,14 @@ export function useFeedArticleActions({
   invalidateQueryKeys,
   refreshRoute,
   runner,
+  activeArticleForm,
   setArticlesByHikingId,
+  setActiveArticleForm,
   setCommentsByHikingId,
-  setConfirmState,
 }: UseFeedArticleActionsInput) {
   const { deleteUploadedArticleMedia, uploadArticleMedia } = useArticleMediaUploader();
   const createArticleMutation = $api.useMutation('post', '/api/articles');
   const updateArticleMutation = $api.useMutation('patch', '/api/articles/{articleId}');
-  const deleteArticleMutation = $api.useMutation('delete', '/api/articles/{articleId}');
-  const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
   const activeArticleSingleFlightKey =
     activeArticleForm?.type === 'create'
       ? `article-create-${activeArticleForm.hikingId}`
@@ -221,40 +222,10 @@ export function useFeedArticleActions({
     );
   };
 
-  const requestDeleteArticle = (article: Article) => {
-    setConfirmState({
-      body: '정말 삭제할까요?',
-      confirmLabel: '삭제',
-      onConfirm: () => {
-        runner.runMutation(
-          {
-            errorKey: `article-${article.id}`,
-          },
-          async () => {
-            await deleteArticleMutation.mutateAsync({
-              params: { path: { articleId: article.id } },
-            });
-            setConfirmState(null);
-            invalidateQueryKeys([
-              apiQueryKeys.articleDetail(article.id),
-              apiQueryKeys.feed(),
-              apiQueryKeys.hikingArticles(article.hikingId),
-            ]);
-            refreshRoute();
-          },
-        );
-      },
-      title: '글 삭제',
-    });
-  };
-
   return {
-    activeArticleForm,
     activeArticleSubmitting,
     closeActiveArticleForm,
     createArticle,
-    requestDeleteArticle,
-    setActiveArticleForm,
     updateArticle,
   };
 }

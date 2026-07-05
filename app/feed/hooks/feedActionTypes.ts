@@ -6,14 +6,19 @@ import type { Hiking, HikingId } from '@/core/hiking/domain';
 import type { QueryKey } from '@tanstack/react-query';
 import type { Dispatch, SetStateAction } from 'react';
 
+import type { ActiveArticleForm, ActiveHikingForm } from '../utils/feedCrudTypes';
+
 export type FeedMutationRunner = ReturnType<typeof useMutationRunner>;
 
-export type FeedActionDeps = {
+export type FeedActionEnvironment = {
+  confirmState: ConfirmState;
   invalidateQueryKeys: (queryKeys: readonly QueryKey[]) => void;
   refreshRoute: () => void;
   runner: FeedMutationRunner;
   setConfirmState: Dispatch<SetStateAction<ConfirmState>>;
 };
+
+export type FeedActionDeps = Omit<FeedActionEnvironment, 'confirmState'>;
 
 export type FeedArticleStore = {
   articleHikingIdByArticleId: Map<ArticleId, HikingId>;
@@ -22,6 +27,24 @@ export type FeedArticleStore = {
   refreshArticleComments: (articleId: ArticleId) => Promise<boolean>;
   setArticlesByHikingId: Dispatch<SetStateAction<Record<string, readonly Article[]>>>;
   setCommentsByHikingId: Dispatch<SetStateAction<Record<string, readonly Comment[]>>>;
+};
+
+export type FeedSectionState = {
+  adjustVisibleCommentCount: (delta: number) => void;
+  editingCommentId: CommentId | null;
+  replyingCommentId: CommentId | null;
+  selectedHikingId: HikingId | null;
+  setActiveArticleForm: Dispatch<SetStateAction<ActiveArticleForm>>;
+  setActiveHikingForm: Dispatch<SetStateAction<ActiveHikingForm>>;
+  setEditingCommentId: Dispatch<SetStateAction<CommentId | null>>;
+  setReplyingCommentId: Dispatch<SetStateAction<CommentId | null>>;
+};
+
+export type FeedDialogState = {
+  activeArticleForm: ActiveArticleForm;
+  activeHikingForm: ActiveHikingForm;
+  setActiveArticleForm: Dispatch<SetStateAction<ActiveArticleForm>>;
+  setActiveHikingForm: Dispatch<SetStateAction<ActiveHikingForm>>;
 };
 
 export type FeedLinkActions = {
