@@ -36,7 +36,7 @@ import {
   notificationTable,
   userTable,
 } from '@/lib/db/schema';
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 
 function toNumericId(id: string) {
   const numericId = Number(id);
@@ -731,7 +731,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
       const recipients = await tx
         .select({ id: userTable.id })
         .from(userTable)
-        .where(isNull(userTable.deletedAt));
+        .where(and(isNull(userTable.deletedAt), ne(userTable.id, input.authorUserId)));
 
       if (recipients.length > 0) {
         const contentExcerpt = createNotificationContentExcerpt(input.body);
