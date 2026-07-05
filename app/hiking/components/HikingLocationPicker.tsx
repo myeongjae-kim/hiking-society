@@ -2,12 +2,11 @@
 
 import type { KeyboardEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { MapPin } from 'lucide-react';
 
-import { ActionButton } from '@/app/common/components/ActionButton';
-import { Map, MapMarker, MarkerContent, type MapViewport } from '@/app/common/components/Map';
-import { fieldClassName } from '@/app/common/components/styles';
 import { fetchClient } from '@/app/common/api/$api';
+import { ActionButton } from '@/app/common/components/ActionButton';
+import { fieldClassName } from '@/app/common/components/styles';
+import { Map, MapMarker, MarkerContent, useMap, type MapViewport } from '@/components/ui/map';
 
 const defaultCoordinate = {
   latitude: 37.5665,
@@ -57,6 +56,35 @@ function formatCoordinate(value: number) {
   return value.toFixed(6);
 }
 
+function MapClickHandler({
+  onClick,
+}: {
+  onClick: (coordinate: { latitude: number; longitude: number }) => void;
+}) {
+  const { map } = useMap();
+
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+
+    const handleClick = (event: { lngLat: { lat: number; lng: number } }) => {
+      onClick({
+        latitude: event.lngLat.lat,
+        longitude: event.lngLat.lng,
+      });
+    };
+
+    map.on('click', handleClick);
+
+    return () => {
+      map.off('click', handleClick);
+    };
+  }, [map, onClick]);
+
+  return null;
+}
+
 export function HikingLocationPicker({
   latitude,
   longitude,
@@ -103,11 +131,7 @@ export function HikingLocationPicker({
   );
 
   const handleMapClick = useCallback(
-    (event: { lngLat: { lat: number; lng: number } }) =>
-      moveToCoordinate({
-        latitude: event.lngLat.lat,
-        longitude: event.lngLat.lng,
-      }),
+    (coordinate: { latitude: number; longitude: number }) => moveToCoordinate(coordinate),
     [moveToCoordinate],
   );
 
@@ -276,22 +300,18 @@ export function HikingLocationPicker({
         <Map
           center={[initialCoordinate.longitude, initialCoordinate.latitude]}
           className="h-full"
-          onClick={handleMapClick}
           onViewportChange={setViewport}
           viewport={viewport}
           zoom={viewport.zoom}
         >
+          <MapClickHandler onClick={handleMapClick} />
           <MapMarker
             draggable={!submitting}
             latitude={markerCoordinate.latitude}
             longitude={markerCoordinate.longitude}
             onDragEnd={handleMarkerDragEnd}
           >
-            <MarkerContent>
-              <div className="cursor-move text-[var(--red)] drop-shadow-[0_1px_1px_var(--background0)]">
-                <MapPin aria-hidden="true" fill="currentColor" size={30} strokeWidth={1.5} />
-              </div>
-            </MarkerContent>
+            <MarkerContent className="cursor-move" />
           </MapMarker>
         </Map>
         <div className="pointer-events-none absolute top-2 left-2 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background1)_86%,transparent)] px-2 py-1 font-mono text-xs text-[var(--foreground1)]">
