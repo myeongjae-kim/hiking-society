@@ -25,7 +25,7 @@ const emptyNotificationSnapshot: NotificationListSnapshot = {
 const NOTIFICATION_PAGE_SIZE = 20;
 
 const notificationItemClassName =
-  'grid !h-auto !min-h-0 w-full min-w-0 appearance-none grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-2 border border-[var(--overlay0)] !bg-[var(--background1)] !bg-none px-3 py-2 text-left font-normal leading-normal !text-[var(--foreground0)] !no-underline hover:!bg-[var(--surface1)] hover:!no-underline focus:font-normal focus:!no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] active:!no-underline disabled:cursor-wait';
+  'grid !h-auto !min-h-[4.75rem] w-full min-w-0 shrink-0 appearance-none grid-cols-[1.75rem_minmax(0,1fr)] items-start gap-2 border border-[var(--overlay0)] !bg-[var(--background1)] !bg-none px-3 py-2 text-left font-normal leading-normal !text-[var(--foreground0)] !no-underline hover:!bg-[var(--surface1)] hover:!no-underline focus:font-normal focus:!no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] active:!no-underline disabled:cursor-wait';
 
 function getInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || '?';
@@ -191,7 +191,7 @@ export function NotificationPopover({
               모두 확인
             </button>
           </div>
-          <div className="grid max-h-[min(28rem,calc(100svh-8rem))] gap-1 overflow-y-auto">
+          <div className="flex max-h-[min(28rem,calc(100svh-8rem))] flex-col gap-1 overflow-y-auto">
             {notifications.length > 0 ? (
               <>
                 {notifications.map((notification) => {
@@ -225,7 +225,7 @@ export function NotificationPopover({
                 })}
                 {hasMoreNotifications ? (
                   <button
-                    className={`${inlineButtonClassName} !min-h-[2rem] w-full !px-3 !py-1 text-sm`}
+                    className={`${inlineButtonClassName} !min-h-[2rem] w-full shrink-0 !px-3 !py-1 text-sm`}
                     disabled={isPending}
                     onClick={loadMoreNotifications}
                     type="button"
