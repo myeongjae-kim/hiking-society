@@ -333,7 +333,7 @@ export function HikingForm({
             </div>
           ) : null}
         </div>
-        <FieldLabel label="고도(m)">
+        <FieldLabel label="고도 (m, 생략 가능)">
           <input
             className={fieldClassName}
             inputMode="decimal"
