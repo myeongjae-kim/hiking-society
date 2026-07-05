@@ -1,6 +1,10 @@
+import { CookieConfig } from '@/core/auth/config/CookieConfig';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { authMiddleware } from './config/auth';
 import { globalErrorHandler } from './config/globalErrorHandler';
+import AuthProfileController from './controllers/AuthProfileController';
+import FeedArticleController from './controllers/FeedArticleController';
+import NotificationMemberController from './controllers/NotificationMemberController';
 
 export const serverApp = new OpenAPIHono().basePath('/api');
 
@@ -10,7 +14,7 @@ serverApp.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toI
 
 serverApp.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
   in: 'cookie',
-  name: 'hiking_access_token',
+  name: new CookieConfig().accessTokenCookieName,
   type: 'apiKey',
 });
 
@@ -42,3 +46,7 @@ if (process.env.NODE_ENV !== 'production') {
 </html>`),
   );
 }
+
+[AuthProfileController, FeedArticleController, NotificationMemberController].forEach((controller) =>
+  serverApp.route('/', controller),
+);

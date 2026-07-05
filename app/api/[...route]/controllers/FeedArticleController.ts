@@ -7,7 +7,6 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { revalidatePath } from 'next/cache';
 import { apiErrorSchema } from '../config/ApiError';
 import { Controller } from '../config/Controller';
-import { requireApiRole } from '../config/auth';
 import {
   badRequest,
   notFound,
@@ -18,6 +17,7 @@ import {
   toHikingValues,
   toNumericId,
 } from '../config/apiUtils';
+import { requireApiRole } from '../config/auth';
 import {
   articleBodySchema,
   articleDetailResponseSchema,
