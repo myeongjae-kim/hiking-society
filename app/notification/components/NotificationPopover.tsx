@@ -153,7 +153,6 @@ export function NotificationPopover({
       setReadNotificationIds((current) => new Set(current).add(notification.id));
       invalidateNotifications();
       router.push(getNotificationHref(notification));
-      router.refresh();
     });
   };
 
@@ -163,7 +162,6 @@ export function NotificationPopover({
 
       setAllReadAt(new Date().toISOString() as NotificationSummary['readAt']);
       invalidateNotifications();
-      router.refresh();
     });
   };
 

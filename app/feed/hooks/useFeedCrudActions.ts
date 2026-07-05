@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type Dispatch, type SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { toast } from 'sonner';
 
 import type { ArticleFormValues } from '@/app/article/components/articleFormTypes';
@@ -10,7 +10,7 @@ import type { UploadedArticleMedia } from '@/app/article/utils/article-media-upl
 import { $api } from '@/app/common/api/$api';
 import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import type { ConfirmState } from '@/app/common/components/ConfirmDialog';
-import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
+import { useMutationRunner } from '@/app/common/hooks/useMutationRunner';
 import type { HikingFormValues } from '@/app/hiking/components/hikingFormTypes';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { Comment, CommentId } from '@/core/comment/domain';
@@ -99,8 +99,8 @@ export function useFeedCrudActions({
   const updateCommentMutation = $api.useMutation('patch', '/api/comments/{commentId}');
   const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
   const toggleCommentLikeMutation = $api.useMutation('post', '/api/comments/{commentId}/like');
-  const singleFlightAction = useSingleFlightAction();
-  const [isPending, startTransition] = useTransition();
+  const { errorByKey, isPending, isRunning, loadingLabel, runMutation, setError, setLoadingLabel } =
+    useMutationRunner();
   const [activeHikingForm, setActiveHikingForm] = useState<ActiveHikingForm>(null);
   const [activeArticleForm, setActiveArticleForm] = useState<ActiveArticleForm>(null);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
@@ -108,10 +108,8 @@ export function useFeedCrudActions({
   const [commentFormResetKeyByArticleId, setCommentFormResetKeyByArticleId] = useState<
     Record<string, number>
   >({});
-  const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [highlightedHikingId, setHighlightedHikingId] = useState<HikingId | null>(selectedHikingId);
-  const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
   const [commentCountDeltaState, setCommentCountDeltaState] = useState({
     baseCommentCount: commentCount,
     delta: 0,
@@ -134,68 +132,14 @@ export function useFeedCrudActions({
         ? `article-update-${activeArticleForm.articleId}`
         : null;
   const activeHikingSubmitting =
-    (activeHikingSingleFlightKey !== null &&
-      singleFlightAction.isRunning(activeHikingSingleFlightKey)) ||
+    (activeHikingSingleFlightKey !== null && isRunning(activeHikingSingleFlightKey)) ||
     (isPending && loadingLabel !== null);
   const activeArticleSubmitting =
-    (activeArticleSingleFlightKey !== null &&
-      singleFlightAction.isRunning(activeArticleSingleFlightKey)) ||
+    (activeArticleSingleFlightKey !== null && isRunning(activeArticleSingleFlightKey)) ||
     (isPending && loadingLabel !== null);
-
-  const setError = (key: string, value: string | null) => {
-    setErrorByKey((currentErrors) => {
-      const nextErrors = { ...currentErrors };
-
-      if (value === null) {
-        delete nextErrors[key];
-      } else {
-        nextErrors[key] = value;
-      }
-
-      return nextErrors;
-    });
-  };
 
   const invalidateQueryKeys = (queryKeys: readonly QueryKey[]) => {
     void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-  };
-
-  const runMutation = (
-    options: {
-      errorKey: string;
-      loadingLabel?: string;
-      onSettled?: () => void;
-      singleFlightKey?: string;
-    },
-    mutation: () => Promise<void>,
-  ) => {
-    const execute = async () => {
-      setLoadingLabel(options.loadingLabel ?? null);
-
-      await new Promise<void>((resolve) => {
-        startTransition(async () => {
-          try {
-            await mutation();
-            setError(options.errorKey, null);
-          } catch (error) {
-            setError(
-              options.errorKey,
-              error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
-            );
-          } finally {
-            options.onSettled?.();
-            resolve();
-          }
-        });
-      });
-    };
-
-    if (options.singleFlightKey) {
-      void singleFlightAction.run(options.singleFlightKey, execute);
-      return;
-    }
-
-    void execute();
   };
 
   const setLikePending = (key: LikePendingKey, pending: boolean) => {
@@ -748,9 +692,9 @@ export function useFeedCrudActions({
     errorByKey,
     highlightedHikingId,
     isCommentCreateSubmitting: (articleId: ArticleId, parentCommentId: CommentId | null) =>
-      singleFlightAction.isRunning(getCommentCreateSingleFlightKey(articleId, parentCommentId)),
+      isRunning(getCommentCreateSingleFlightKey(articleId, parentCommentId)),
     isCommentEditSubmitting: (commentId: CommentId) =>
-      singleFlightAction.isRunning(getCommentUpdateSingleFlightKey(commentId)),
+      isRunning(getCommentUpdateSingleFlightKey(commentId)),
     isCommentLikePending: (commentId: CommentId) =>
       pendingLikeByKey[`comment-${commentId}`] === true,
     loadingLabel,

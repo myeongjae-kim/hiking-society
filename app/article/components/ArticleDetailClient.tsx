@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 
 import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';
 import { $api } from '@/app/common/api/$api';
@@ -11,7 +11,7 @@ import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
 import { inlineButtonClassName } from '@/app/common/components/styles';
-import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
+import { useMutationRunner } from '@/app/common/hooks/useMutationRunner';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { getAuthorName } from '@/app/feed/utils/feed-crud-utils';
 import { getHikingDisplay } from '@/app/hiking/components/hikingFormUtils';
@@ -88,15 +88,13 @@ export function ArticleDetailClient({
   const deleteCommentMutation = $api.useMutation('delete', '/api/comments/{commentId}');
   const toggleArticleLikeMutation = $api.useMutation('post', '/api/articles/{articleId}/like');
   const toggleCommentLikeMutation = $api.useMutation('post', '/api/comments/{commentId}/like');
-  const singleFlightAction = useSingleFlightAction();
-  const [isPending, startTransition] = useTransition();
+  const { errorByKey, isPending, isRunning, loadingLabel, runMutation, setError, setLoadingLabel } =
+    useMutationRunner();
   const [editingArticle, setEditingArticle] = useState(false);
   const [replyingCommentId, setReplyingCommentId] = useState<CommentId | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<CommentId | null>(null);
   const [commentFormResetKey, setCommentFormResetKey] = useState(0);
-  const [errorByKey, setErrorByKey] = useState<Record<string, string>>({});
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
-  const [loadingLabel, setLoadingLabel] = useState<string | null>(null);
   const [pendingLikeByKey, setPendingLikeByKey] = useState<Record<string, boolean>>({});
   const [articleLikeOverride, setArticleLikeOverride] = useState<{
     articleId: ArticleId;
@@ -114,65 +112,12 @@ export function ArticleDetailClient({
       : article;
   const articleUpdateSingleFlightKey = `article-update-${article.id}`;
   const articleUpdateSubmitting =
-    singleFlightAction.isRunning(articleUpdateSingleFlightKey) ||
-    (isPending && loadingLabel !== null);
+    isRunning(articleUpdateSingleFlightKey) || (isPending && loadingLabel !== null);
   const hikingDisplay = getHikingDisplay(hiking);
   const hikingHref = `/feed?hikingId=${encodeURIComponent(hiking.id)}`;
 
-  const setError = (key: string, value: string | null) => {
-    setErrorByKey((currentErrors) => {
-      const nextErrors = { ...currentErrors };
-
-      if (value === null) {
-        delete nextErrors[key];
-      } else {
-        nextErrors[key] = value;
-      }
-
-      return nextErrors;
-    });
-  };
-
   const invalidateQueryKeys = (queryKeys: readonly QueryKey[]) => {
     void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-  };
-
-  const runMutation = (
-    options: {
-      errorKey: string;
-      loadingLabel?: string;
-      onSettled?: () => void;
-      singleFlightKey?: string;
-    },
-    mutation: () => Promise<void>,
-  ) => {
-    const execute = async () => {
-      setLoadingLabel(options.loadingLabel ?? null);
-
-      await new Promise<void>((resolve) => {
-        startTransition(async () => {
-          try {
-            await mutation();
-            setError(options.errorKey, null);
-          } catch (error) {
-            setError(
-              options.errorKey,
-              error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
-            );
-          } finally {
-            options.onSettled?.();
-            resolve();
-          }
-        });
-      });
-    };
-
-    if (options.singleFlightKey) {
-      void singleFlightAction.run(options.singleFlightKey, execute);
-      return;
-    }
-
-    void execute();
   };
 
   const setLikePending = (key: LikePendingKey, pending: boolean) => {
@@ -514,12 +459,10 @@ export function ArticleDetailClient({
           errorByKey={errorByKey}
           highlightedCommentId={highlightedCommentId}
           isCommentCreateSubmitting={(articleId, parentCommentId) =>
-            singleFlightAction.isRunning(
-              getCommentCreateSingleFlightKey(articleId, parentCommentId),
-            )
+            isRunning(getCommentCreateSingleFlightKey(articleId, parentCommentId))
           }
           isCommentEditSubmitting={(commentId) =>
-            singleFlightAction.isRunning(getCommentUpdateSingleFlightKey(commentId))
+            isRunning(getCommentUpdateSingleFlightKey(commentId))
           }
           isCommentLikePending={(commentId) => pendingLikeByKey[`comment-${commentId}`] === true}
           mobileMediaCarousel
