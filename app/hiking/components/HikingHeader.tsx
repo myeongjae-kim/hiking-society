@@ -33,7 +33,7 @@ export function HikingHeader({
 
   return (
     <>
-      <header className="sticky top-2 z-20 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1.5 shadow-[0_0.35rem_0_var(--background0)] sm:px-4 sm:py-3">
+      <header className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1.5 shadow-[0_0.35rem_0_var(--background0)] sm:px-4 sm:py-3">
         <h2
           className="m-0 flex min-w-0 items-center gap-2 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]"
           id={`hiking-${hiking.id}`}
@@ -63,7 +63,7 @@ export function HikingHeader({
             </svg>
           </button>
         </h2>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <span
             className="font-mono text-sm leading-none !text-[var(--yellow)] sm:text-base"
             is-="badge"
