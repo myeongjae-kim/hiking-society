@@ -156,18 +156,18 @@ export function useFeedCrudActions({
     });
   };
 
-  const runAction = <T extends { error?: string; ok: boolean }>(
-    action: () => Promise<T>,
+  const invalidateQueryKeys = (queryKeys: readonly QueryKey[]) => {
+    void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+  };
+
+  const runMutation = (
     options: {
       errorKey: string;
       loadingLabel?: string;
       onSettled?: () => void;
-      onSuccess?: (result: T & { ok: true }) => Promise<void> | void;
-      getInvalidateQueryKeys?: (result: T & { ok: true }) => readonly QueryKey[];
-      invalidateQueryKeys?: readonly QueryKey[];
-      refresh?: boolean;
       singleFlightKey?: string;
     },
+    mutation: () => Promise<void>,
   ) => {
     const execute = async () => {
       setLoadingLabel(options.loadingLabel ?? null);
@@ -175,37 +175,8 @@ export function useFeedCrudActions({
       await new Promise<void>((resolve) => {
         startTransition(async () => {
           try {
-            const result = await action();
-
-            if (!result.ok) {
-              setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
-              return;
-            }
-
-            try {
-              const successResult = result as T & { ok: true };
-
-              await options.onSuccess?.(successResult);
-              setError(options.errorKey, null);
-              const invalidateQueryKeys =
-                options.getInvalidateQueryKeys?.(successResult) ?? options.invalidateQueryKeys;
-
-              if (invalidateQueryKeys) {
-                void Promise.all(
-                  invalidateQueryKeys.map((queryKey) =>
-                    queryClient.invalidateQueries({ queryKey }),
-                  ),
-                );
-              }
-              if (options.refresh !== false) {
-                router.refresh();
-              }
-            } catch (error) {
-              setError(
-                options.errorKey,
-                error instanceof Error ? error.message : '요청을 처리하지 못했습니다.',
-              );
-            }
+            await mutation();
+            setError(options.errorKey, null);
           } catch (error) {
             setError(
               options.errorKey,
@@ -407,36 +378,36 @@ export function useFeedCrudActions({
   };
 
   const createHiking = (values: HikingFormValues) => {
-    runAction(
-      () =>
-        createHikingMutation
-          .mutateAsync({ body: createHikingBody(values) })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: 'hiking-new',
-        invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.notifications()],
         loadingLabel: '산행 저장 중',
-        onSuccess: () => setActiveHikingForm(null),
         singleFlightKey: 'hiking-create',
+      },
+      async () => {
+        await createHikingMutation.mutateAsync({ body: createHikingBody(values) });
+        setActiveHikingForm(null);
+        invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.notifications()]);
+        router.refresh();
       },
     );
   };
 
   const updateHiking = (hikingId: HikingId, values: HikingFormValues) => {
-    runAction(
-      () =>
-        updateHikingMutation
-          .mutateAsync({
-            body: createHikingBody(values),
-            params: { path: { hikingId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `hiking-edit-${hikingId}`,
-        invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hikingId)],
         loadingLabel: '산행 저장 중',
-        onSuccess: () => setActiveHikingForm(null),
         singleFlightKey: `hiking-update-${hikingId}`,
+      },
+      async () => {
+        await updateHikingMutation.mutateAsync({
+          body: createHikingBody(values),
+          params: { path: { hikingId } },
+        });
+        setActiveHikingForm(null);
+        invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hikingId)]);
+        router.refresh();
       },
     );
   };
@@ -453,17 +424,17 @@ export function useFeedCrudActions({
       body: `${hiking.mountainName} 산행 기록을 삭제합니다.`,
       confirmLabel: '삭제',
       onConfirm: () => {
-        runAction(
-          () =>
-            deleteHikingMutation
-              .mutateAsync({
-                params: { path: { hikingId: hiking.id } },
-              })
-              .then(() => ({ ok: true as const })),
+        runMutation(
           {
             errorKey: `hiking-${hiking.id}`,
-            invalidateQueryKeys: [apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hiking.id)],
-            onSuccess: () => setConfirmState(null),
+          },
+          async () => {
+            await deleteHikingMutation.mutateAsync({
+              params: { path: { hikingId: hiking.id } },
+            });
+            setConfirmState(null);
+            invalidateQueryKeys([apiQueryKeys.feed(), apiQueryKeys.hikingArticles(hiking.id)]);
+            router.refresh();
           },
         );
       },
@@ -477,7 +448,12 @@ export function useFeedCrudActions({
       return;
     }
 
-    runAction(
+    runMutation(
+      {
+        errorKey: `article-new-${hikingId}`,
+        loadingLabel: '글 저장 중',
+        singleFlightKey: `article-create-${hikingId}`,
+      },
       async () => {
         let uploadedObjectKeys: string[] = [];
         try {
@@ -491,29 +467,21 @@ export function useFeedCrudActions({
             body: { ...articleFormData.body, hikingId },
           });
 
-          return { ok: true as const };
+          setActiveArticleForm(null);
+          invalidateQueryKeys([
+            apiQueryKeys.feed(),
+            apiQueryKeys.hikingArticles(hikingId),
+            apiQueryKeys.notifications(),
+          ]);
+          router.refresh();
         } catch (error) {
           if (uploadedObjectKeys.length > 0) {
             setLoadingLabel('업로드 파일 정리 중');
             await deleteUploadedArticleMedia(uploadedObjectKeys);
           }
 
-          return {
-            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
-            ok: false,
-          };
+          throw new Error(error instanceof Error ? error.message : '글을 저장하지 못했습니다.');
         }
-      },
-      {
-        errorKey: `article-new-${hikingId}`,
-        invalidateQueryKeys: [
-          apiQueryKeys.feed(),
-          apiQueryKeys.hikingArticles(hikingId),
-          apiQueryKeys.notifications(),
-        ],
-        loadingLabel: '글 저장 중',
-        onSuccess: () => setActiveArticleForm(null),
-        singleFlightKey: `article-create-${hikingId}`,
       },
     );
   };
@@ -524,7 +492,12 @@ export function useFeedCrudActions({
       return;
     }
 
-    runAction(
+    runMutation(
+      {
+        errorKey: `article-edit-${articleId}`,
+        loadingLabel: '글 저장 중',
+        singleFlightKey: `article-update-${articleId}`,
+      },
       async () => {
         let uploadedObjectKeys: string[] = [];
         try {
@@ -543,32 +516,10 @@ export function useFeedCrudActions({
             throw new Error('글을 저장하지 못했습니다.');
           }
 
-          return {
-            ok: true as const,
-            snapshot: result as unknown as { article: Article; comments: readonly Comment[] },
-          };
-        } catch (error) {
-          if (uploadedObjectKeys.length > 0) {
-            setLoadingLabel('업로드 파일 정리 중');
-            await deleteUploadedArticleMedia(uploadedObjectKeys);
-          }
+          const snapshot = result as unknown as { article: Article; comments: readonly Comment[] };
 
-          return {
-            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
-            ok: false,
-          };
-        }
-      },
-      {
-        errorKey: `article-edit-${articleId}`,
-        getInvalidateQueryKeys: (result) => [
-          apiQueryKeys.articleDetail(articleId),
-          apiQueryKeys.hikingArticles(result.snapshot.article.hikingId),
-        ],
-        loadingLabel: '글 저장 중',
-        onSuccess: (result) => {
           setArticlesByHikingId((currentArticles) => {
-            const hikingArticles = currentArticles[result.snapshot.article.hikingId];
+            const hikingArticles = currentArticles[snapshot.article.hikingId];
 
             if (!hikingArticles) {
               return currentArticles;
@@ -576,13 +527,13 @@ export function useFeedCrudActions({
 
             return {
               ...currentArticles,
-              [result.snapshot.article.hikingId]: hikingArticles.map((article) =>
-                article.id === result.snapshot.article.id ? result.snapshot.article : article,
+              [snapshot.article.hikingId]: hikingArticles.map((article) =>
+                article.id === snapshot.article.id ? snapshot.article : article,
               ),
             };
           });
           setCommentsByHikingId((currentComments) => {
-            const hikingComments = currentComments[result.snapshot.article.hikingId];
+            const hikingComments = currentComments[snapshot.article.hikingId];
 
             if (!hikingComments) {
               return currentComments;
@@ -590,18 +541,25 @@ export function useFeedCrudActions({
 
             return {
               ...currentComments,
-              [result.snapshot.article.hikingId]: [
-                ...hikingComments.filter(
-                  (comment) => comment.articleId !== result.snapshot.article.id,
-                ),
-                ...result.snapshot.comments,
+              [snapshot.article.hikingId]: [
+                ...hikingComments.filter((comment) => comment.articleId !== snapshot.article.id),
+                ...snapshot.comments,
               ],
             };
           });
           setActiveArticleForm(null);
-        },
-        refresh: false,
-        singleFlightKey: `article-update-${articleId}`,
+          invalidateQueryKeys([
+            apiQueryKeys.articleDetail(articleId),
+            apiQueryKeys.hikingArticles(snapshot.article.hikingId),
+          ]);
+        } catch (error) {
+          if (uploadedObjectKeys.length > 0) {
+            setLoadingLabel('업로드 파일 정리 중');
+            await deleteUploadedArticleMedia(uploadedObjectKeys);
+          }
+
+          throw new Error(error instanceof Error ? error.message : '글을 저장하지 못했습니다.');
+        }
       },
     );
   };
@@ -611,21 +569,21 @@ export function useFeedCrudActions({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        runAction(
-          () =>
-            deleteArticleMutation
-              .mutateAsync({
-                params: { path: { articleId: article.id } },
-              })
-              .then(() => ({ ok: true as const })),
+        runMutation(
           {
             errorKey: `article-${article.id}`,
-            invalidateQueryKeys: [
+          },
+          async () => {
+            await deleteArticleMutation.mutateAsync({
+              params: { path: { articleId: article.id } },
+            });
+            setConfirmState(null);
+            invalidateQueryKeys([
               apiQueryKeys.articleDetail(article.id),
               apiQueryKeys.feed(),
               apiQueryKeys.hikingArticles(article.hikingId),
-            ],
-            onSuccess: () => setConfirmState(null),
+            ]);
+            router.refresh();
           },
         );
       },
@@ -634,38 +592,34 @@ export function useFeedCrudActions({
   };
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    runAction(
-      () =>
-        createCommentMutation
-          .mutateAsync({
-            body: { body, parentCommentId },
-            params: { path: { articleId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-new-${articleId}`,
-        invalidateQueryKeys: [
+        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
+      },
+      async () => {
+        await createCommentMutation.mutateAsync({
+          body: { body, parentCommentId },
+          params: { path: { articleId } },
+        });
+        await refreshArticleComments(articleId);
+        setCommentCountDeltaState((currentState) => ({
+          baseCommentCount: commentCount,
+          delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
+        }));
+
+        if (parentCommentId === null) {
+          setCommentFormResetKeyByArticleId((currentKeys) => ({
+            ...currentKeys,
+            [articleId]: (currentKeys[articleId] ?? 0) + 1,
+          }));
+        }
+
+        setReplyingCommentId(null);
+        invalidateQueryKeys([
           apiQueryKeys.articleComments(articleId),
           apiQueryKeys.notifications(),
-        ],
-        onSuccess: async () => {
-          await refreshArticleComments(articleId);
-          setCommentCountDeltaState((currentState) => ({
-            baseCommentCount: commentCount,
-            delta: (currentState.baseCommentCount === commentCount ? currentState.delta : 0) + 1,
-          }));
-
-          if (parentCommentId === null) {
-            setCommentFormResetKeyByArticleId((currentKeys) => ({
-              ...currentKeys,
-              [articleId]: (currentKeys[articleId] ?? 0) + 1,
-            }));
-          }
-
-          setReplyingCommentId(null);
-        },
-        refresh: false,
-        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
+        ]);
       },
     );
   };
@@ -678,23 +632,19 @@ export function useFeedCrudActions({
       return;
     }
 
-    runAction(
-      () =>
-        updateCommentMutation
-          .mutateAsync({
-            body: { body },
-            params: { path: { commentId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-edit-${commentId}`,
-        invalidateQueryKeys: [apiQueryKeys.articleComments(articleId)],
-        onSuccess: async () => {
-          await refreshArticleComments(articleId);
-          setEditingCommentId(null);
-        },
-        refresh: false,
         singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
+      },
+      async () => {
+        await updateCommentMutation.mutateAsync({
+          body: { body },
+          params: { path: { commentId } },
+        });
+        await refreshArticleComments(articleId);
+        setEditingCommentId(null);
+        invalidateQueryKeys([apiQueryKeys.articleComments(articleId)]);
       },
     );
   };
@@ -704,29 +654,26 @@ export function useFeedCrudActions({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        runAction(
-          () =>
-            deleteCommentMutation
-              .mutateAsync({
-                params: { path: { commentId: comment.id } },
-              })
-              .then(() => ({ ok: true as const })),
+        runMutation(
           {
             errorKey: `comment-${comment.id}`,
-            invalidateQueryKeys: [apiQueryKeys.articleComments(comment.articleId)],
-            onSuccess: async () => {
-              await refreshArticleComments(comment.articleId);
-              setConfirmState(null);
+          },
+          async () => {
+            await deleteCommentMutation.mutateAsync({
+              params: { path: { commentId: comment.id } },
+            });
+            await refreshArticleComments(comment.articleId);
+            setConfirmState(null);
 
-              if (comment.deletedAt === null) {
-                setCommentCountDeltaState((currentState) => ({
-                  baseCommentCount: commentCount,
-                  delta:
-                    (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
-                }));
-              }
-            },
-            refresh: false,
+            if (comment.deletedAt === null) {
+              setCommentCountDeltaState((currentState) => ({
+                baseCommentCount: commentCount,
+                delta:
+                  (currentState.baseCommentCount === commentCount ? currentState.delta : 0) - 1,
+              }));
+            }
+
+            invalidateQueryKeys([apiQueryKeys.articleComments(comment.articleId)]);
           },
         );
       },
@@ -739,22 +686,20 @@ export function useFeedCrudActions({
     const hikingId = articleHikingIdByArticleId.get(articleId);
 
     setLikePending(likePendingKey, true);
-    runAction(
-      () =>
-        toggleArticleLikeMutation
-          .mutateAsync({
-            params: { path: { articleId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `article-${articleId}`,
-        invalidateQueryKeys: [
+        onSettled: () => setLikePending(likePendingKey, false),
+      },
+      async () => {
+        await toggleArticleLikeMutation.mutateAsync({
+          params: { path: { articleId } },
+        });
+        applyArticleLikeToggle(articleId);
+        invalidateQueryKeys([
           apiQueryKeys.articleDetail(articleId),
           ...(hikingId ? [apiQueryKeys.hikingArticles(hikingId)] : []),
-        ],
-        onSuccess: () => applyArticleLikeToggle(articleId),
-        onSettled: () => setLikePending(likePendingKey, false),
-        refresh: false,
+        ]);
       },
     );
   };
@@ -770,21 +715,17 @@ export function useFeedCrudActions({
     const likePendingKey = `comment-${commentId}` as LikePendingKey;
 
     setLikePending(likePendingKey, true);
-    runAction(
-      () =>
-        toggleCommentLikeMutation
-          .mutateAsync({
-            params: { path: { commentId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-${commentId}`,
-        invalidateQueryKeys: [apiQueryKeys.articleComments(articleId)],
-        onSuccess: async () => {
-          await refreshArticleComments(articleId);
-        },
         onSettled: () => setLikePending(likePendingKey, false),
-        refresh: false,
+      },
+      async () => {
+        await toggleCommentLikeMutation.mutateAsync({
+          params: { path: { commentId } },
+        });
+        await refreshArticleComments(articleId);
+        invalidateQueryKeys([apiQueryKeys.articleComments(articleId)]);
       },
     );
   };

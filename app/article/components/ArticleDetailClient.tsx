@@ -133,17 +133,18 @@ export function ArticleDetailClient({
     });
   };
 
-  const runAction = (
-    action: () => Promise<{ error?: string; ok: boolean }>,
+  const invalidateQueryKeys = (queryKeys: readonly QueryKey[]) => {
+    void Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+  };
+
+  const runMutation = (
     options: {
       errorKey: string;
       loadingLabel?: string;
-      invalidateQueryKeys?: readonly QueryKey[];
       onSettled?: () => void;
-      onSuccess?: () => void;
-      refresh?: boolean;
       singleFlightKey?: string;
     },
+    mutation: () => Promise<void>,
   ) => {
     const execute = async () => {
       setLoadingLabel(options.loadingLabel ?? null);
@@ -151,25 +152,8 @@ export function ArticleDetailClient({
       await new Promise<void>((resolve) => {
         startTransition(async () => {
           try {
-            const result = await action();
-
-            if (!result.ok) {
-              setError(options.errorKey, result.error ?? '요청을 처리하지 못했습니다.');
-              return;
-            }
-
-            options.onSuccess?.();
+            await mutation();
             setError(options.errorKey, null);
-            if (options.invalidateQueryKeys) {
-              void Promise.all(
-                options.invalidateQueryKeys.map((queryKey) =>
-                  queryClient.invalidateQueries({ queryKey }),
-                ),
-              );
-            }
-            if (options.refresh !== false) {
-              router.refresh();
-            }
           } catch (error) {
             setError(
               options.errorKey,
@@ -235,7 +219,12 @@ export function ArticleDetailClient({
       return;
     }
 
-    runAction(
+    runMutation(
+      {
+        errorKey: `article-edit-${article.id}`,
+        loadingLabel: '글 저장 중',
+        singleFlightKey: articleUpdateSingleFlightKey,
+      },
       async () => {
         let uploadedObjectKeys: string[] = [];
         try {
@@ -248,28 +237,20 @@ export function ArticleDetailClient({
             params: { path: { articleId: article.id } },
           });
 
-          return { ok: true as const };
+          setEditingArticle(false);
+          invalidateQueryKeys([
+            apiQueryKeys.articleDetail(article.id),
+            apiQueryKeys.hikingArticles(article.hikingId),
+          ]);
+          router.refresh();
         } catch (error) {
           if (uploadedObjectKeys.length > 0) {
             setLoadingLabel('업로드 파일 정리 중');
             await deleteUploadedArticleMedia(uploadedObjectKeys);
           }
 
-          return {
-            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
-            ok: false,
-          };
+          throw new Error(error instanceof Error ? error.message : '글을 저장하지 못했습니다.');
         }
-      },
-      {
-        errorKey: `article-edit-${article.id}`,
-        invalidateQueryKeys: [
-          apiQueryKeys.articleDetail(article.id),
-          apiQueryKeys.hikingArticles(article.hikingId),
-        ],
-        loadingLabel: '글 저장 중',
-        onSuccess: () => setEditingArticle(false),
-        singleFlightKey: articleUpdateSingleFlightKey,
       },
     );
   };
@@ -279,24 +260,22 @@ export function ArticleDetailClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        runAction(
-          () =>
-            deleteArticleMutation
-              .mutateAsync({
-                params: { path: { articleId: article.id } },
-              })
-              .then(() => ({ ok: true as const })),
+        runMutation(
           {
             errorKey: `article-${article.id}`,
-            invalidateQueryKeys: [
+          },
+          async () => {
+            await deleteArticleMutation.mutateAsync({
+              params: { path: { articleId: article.id } },
+            });
+            setConfirmState(null);
+            router.push('/feed');
+            invalidateQueryKeys([
               apiQueryKeys.articleDetail(article.id),
               apiQueryKeys.feed(),
               apiQueryKeys.hikingArticles(article.hikingId),
-            ],
-            onSuccess: () => {
-              setConfirmState(null);
-              router.push('/feed');
-            },
+            ]);
+            router.refresh();
           },
         );
       },
@@ -305,46 +284,45 @@ export function ArticleDetailClient({
   };
 
   const createComment = (articleId: ArticleId, body: string, parentCommentId: CommentId | null) => {
-    runAction(
-      () =>
-        createCommentMutation
-          .mutateAsync({
-            body: { body, parentCommentId },
-            params: { path: { articleId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-new-${articleId}`,
-        invalidateQueryKeys: [
+        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
+      },
+      async () => {
+        await createCommentMutation.mutateAsync({
+          body: { body, parentCommentId },
+          params: { path: { articleId } },
+        });
+
+        if (parentCommentId === null) {
+          setCommentFormResetKey((currentKey) => currentKey + 1);
+        }
+
+        setReplyingCommentId(null);
+        invalidateQueryKeys([
           apiQueryKeys.articleComments(articleId),
           apiQueryKeys.notifications(),
-        ],
-        onSuccess: () => {
-          if (parentCommentId === null) {
-            setCommentFormResetKey((currentKey) => currentKey + 1);
-          }
-
-          setReplyingCommentId(null);
-        },
-        singleFlightKey: getCommentCreateSingleFlightKey(articleId, parentCommentId),
+        ]);
+        router.refresh();
       },
     );
   };
 
   const updateComment = (commentId: CommentId, body: string) => {
-    runAction(
-      () =>
-        updateCommentMutation
-          .mutateAsync({
-            body: { body },
-            params: { path: { commentId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-edit-${commentId}`,
-        invalidateQueryKeys: [apiQueryKeys.articleComments(article.id)],
-        onSuccess: () => setEditingCommentId(null),
         singleFlightKey: getCommentUpdateSingleFlightKey(commentId),
+      },
+      async () => {
+        await updateCommentMutation.mutateAsync({
+          body: { body },
+          params: { path: { commentId } },
+        });
+        setEditingCommentId(null);
+        invalidateQueryKeys([apiQueryKeys.articleComments(article.id)]);
+        router.refresh();
       },
     );
   };
@@ -354,17 +332,17 @@ export function ArticleDetailClient({
       body: '정말 삭제할까요?',
       confirmLabel: '삭제',
       onConfirm: () => {
-        runAction(
-          () =>
-            deleteCommentMutation
-              .mutateAsync({
-                params: { path: { commentId: comment.id } },
-              })
-              .then(() => ({ ok: true as const })),
+        runMutation(
           {
             errorKey: `comment-${comment.id}`,
-            invalidateQueryKeys: [apiQueryKeys.articleComments(comment.articleId)],
-            onSuccess: () => setConfirmState(null),
+          },
+          async () => {
+            await deleteCommentMutation.mutateAsync({
+              params: { path: { commentId: comment.id } },
+            });
+            setConfirmState(null);
+            invalidateQueryKeys([apiQueryKeys.articleComments(comment.articleId)]);
+            router.refresh();
           },
         );
       },
@@ -376,31 +354,27 @@ export function ArticleDetailClient({
     const likePendingKey = `article-${articleId}` as LikePendingKey;
 
     setLikePending(likePendingKey, true);
-    runAction(
-      () =>
-        toggleArticleLikeMutation
-          .mutateAsync({
-            params: { path: { articleId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `article-${articleId}`,
-        invalidateQueryKeys: [
+        onSettled: () => setLikePending(likePendingKey, false),
+      },
+      async () => {
+        await toggleArticleLikeMutation.mutateAsync({
+          params: { path: { articleId } },
+        });
+        setArticleLikeOverride({
+          articleId,
+          likedByCurrentUser: !displayedArticle.likedByCurrentUser,
+          likeCount: Math.max(
+            0,
+            displayedArticle.likeCount + (displayedArticle.likedByCurrentUser ? -1 : 1),
+          ),
+        });
+        invalidateQueryKeys([
           apiQueryKeys.articleDetail(articleId),
           apiQueryKeys.hikingArticles(article.hikingId),
-        ],
-        onSuccess: () => {
-          setArticleLikeOverride({
-            articleId,
-            likedByCurrentUser: !displayedArticle.likedByCurrentUser,
-            likeCount: Math.max(
-              0,
-              displayedArticle.likeCount + (displayedArticle.likedByCurrentUser ? -1 : 1),
-            ),
-          });
-        },
-        onSettled: () => setLikePending(likePendingKey, false),
-        refresh: false,
+        ]);
       },
     );
   };
@@ -409,18 +383,16 @@ export function ArticleDetailClient({
     const likePendingKey = `comment-${commentId}` as LikePendingKey;
 
     setLikePending(likePendingKey, true);
-    runAction(
-      () =>
-        toggleCommentLikeMutation
-          .mutateAsync({
-            params: { path: { commentId } },
-          })
-          .then(() => ({ ok: true as const })),
+    runMutation(
       {
         errorKey: `comment-${commentId}`,
-        invalidateQueryKeys: [apiQueryKeys.articleComments(article.id)],
         onSettled: () => setLikePending(likePendingKey, false),
-        refresh: false,
+      },
+      async () => {
+        await toggleCommentLikeMutation.mutateAsync({
+          params: { path: { commentId } },
+        });
+        invalidateQueryKeys([apiQueryKeys.articleComments(article.id)]);
       },
     );
   };
