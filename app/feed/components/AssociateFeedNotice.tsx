@@ -28,7 +28,7 @@ export function AssociateFeedNotice({ user }: AssociateFeedNoticeProps) {
               환영합니다! 준회원은 아직 피드를 조회할 수 없어요.
             </h1>
             <p className="m-0 text-sm leading-[1.6] text-[var(--subtext0)]">
-              기존 멤버에게 연락해주세요. 가입 확인이 끝나면 이곳에서 산행 기록과 게시글을 볼 수
+              기존 멤버에게 연락해주세요. 가입 확인이 끝나면 이곳에서 산행 기록과 글을 볼 수
               있습니다.
             </p>
             <div className="flex flex-wrap gap-2">

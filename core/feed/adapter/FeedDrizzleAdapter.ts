@@ -654,7 +654,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
         .limit(1);
 
       if (article) {
-        throw new Error('게시글이 있는 산행은 삭제할 수 없습니다.');
+        throw new Error('글이 있는 산행은 삭제할 수 없습니다.');
       }
 
       await tx
@@ -688,7 +688,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
         .returning({ id: articleTable.id });
 
       if (!article) {
-        throw new Error('게시글을 저장하지 못했습니다.');
+        throw new Error('글을 저장하지 못했습니다.');
       }
 
       const insertedMedia = await tx
@@ -762,7 +762,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
         .returning({ id: articleTable.id });
 
       if (!updated) {
-        throw new Error('게시글을 수정할 권한이 없거나 게시글을 찾을 수 없습니다.');
+        throw new Error('글을 수정할 권한이 없거나 글을 찾을 수 없습니다.');
       }
 
       const existingMediaRows = await tx
@@ -855,7 +855,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
       .returning({ id: articleTable.id });
 
     if (!updated) {
-      throw new Error('게시글을 삭제할 권한이 없거나 게시글을 찾을 수 없습니다.');
+      throw new Error('글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.');
     }
   }
 
@@ -872,7 +872,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort, FeedCommandPort, Comme
         .limit(1);
 
       if (!article) {
-        throw new Error('댓글을 작성할 게시글을 찾을 수 없습니다.');
+        throw new Error('댓글을 작성할 글을 찾을 수 없습니다.');
       }
 
       let parent:

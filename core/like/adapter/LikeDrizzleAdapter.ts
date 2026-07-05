@@ -36,7 +36,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
         .limit(1);
 
       if (!article) {
-        throw new Error('좋아요할 게시글을 찾을 수 없습니다.');
+        throw new Error('좋아요할 글을 찾을 수 없습니다.');
       }
 
       const [existingLike] = await tx

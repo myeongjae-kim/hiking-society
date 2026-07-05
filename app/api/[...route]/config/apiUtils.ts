@@ -71,7 +71,7 @@ export function toArticleMedia(input: {
   );
 
   if (media.length === 0) {
-    throw badRequest('게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
+    throw badRequest('글은 사진이나 동영상 없이 저장할 수 없습니다.');
   }
 
   return media;
@@ -102,5 +102,5 @@ export function toHikingId(value: string | undefined) {
 }
 
 export function toArticleId(value: string | undefined) {
-  return toNumericId<ArticleId>(value, '게시글 id');
+  return toNumericId<ArticleId>(value, '글 id');
 }

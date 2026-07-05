@@ -119,10 +119,10 @@ export function ArticlePanel({
             <div className="flex flex-wrap gap-2">
               {onCopyArticleLink ? (
                 <button
-                  aria-label="게시글 링크 복사"
+                  aria-label="글 링크 복사"
                   className={`${inlineButtonClassName} aspect-square !min-h-[1.75rem] !min-w-[1.75rem] !px-1 !py-1`}
                   onClick={onCopyArticleLink}
-                  title="게시글 링크 복사"
+                  title="글 링크 복사"
                   type="button"
                 >
                   <svg
@@ -183,7 +183,7 @@ export function ArticlePanel({
             ariaPressed={article.likedByCurrentUser}
             disabled={articleLikePending}
             onClick={() => onToggleArticleLike(article.id)}
-            title={article.likedByCurrentUser ? '게시글 좋아요 취소' : '게시글 좋아요'}
+            title={article.likedByCurrentUser ? '글 좋아요 취소' : '글 좋아요'}
           >
             <span className="inline-flex items-center gap-2">
               <span className={article.likedByCurrentUser ? 'text-[var(--red)]' : undefined}>
@@ -197,7 +197,7 @@ export function ArticlePanel({
 
       <section
         className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5"
-        aria-label={`${article.authorName} 게시글 댓글`}
+        aria-label={`${article.authorName} 글 댓글`}
       >
         <Command>comments.list --count={getVisibleCommentCount(comments)}</Command>
         {visibleCommentThreads.map(({ comment, visibleReplies }) => (

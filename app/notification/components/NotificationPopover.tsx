@@ -63,15 +63,15 @@ function getNotificationHref(notification: NotificationSummary) {
 function getNotificationMessage(notification: NotificationSummary) {
   switch (notification.type) {
     case 'article_created':
-      return `${notification.actorName}님이 새 게시글을 등록했습니다.`;
+      return `${notification.actorName}님이 새 글을 등록했습니다.`;
     case 'article_comment':
-      return `${notification.actorName}님이 내 게시글에 댓글을 남겼습니다.`;
+      return `${notification.actorName}님이 내 글에 댓글을 남겼습니다.`;
     case 'article_reply':
-      return `${notification.actorName}님이 내 게시글의 댓글에 답글을 남겼습니다.`;
+      return `${notification.actorName}님이 내 글의 댓글에 답글을 남겼습니다.`;
     case 'comment_reply':
       return `${notification.actorName}님이 내 댓글에 답글을 남겼습니다.`;
     case 'article_like':
-      return `${notification.actorName}님이 내 게시글을 좋아합니다.`;
+      return `${notification.actorName}님이 내 글을 좋아합니다.`;
     case 'comment_like':
       return `${notification.actorName}님이 내 댓글을 좋아합니다.`;
   }

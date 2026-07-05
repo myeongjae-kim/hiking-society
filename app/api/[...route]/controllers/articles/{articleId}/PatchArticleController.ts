@@ -50,7 +50,7 @@ controller.openapi(
       .get({ articleId, currentUserId: user.id });
 
     if (!snapshot) {
-      throw notFound('게시글을 찾을 수 없습니다.');
+      throw notFound('글을 찾을 수 없습니다.');
     }
 
     return c.json(articleDetailResponseSchema.parse(snapshot), 200);

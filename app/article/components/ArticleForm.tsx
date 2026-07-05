@@ -395,7 +395,7 @@ export function ArticleForm({
 
                 return (
                   <li
-                    aria-label={`선택한 게시글 사진이나 동영상 ${media.order}번째`}
+                    aria-label={`선택한 글 사진이나 동영상 ${media.order}번째`}
                     className={`grid w-full min-w-0 cursor-grab overflow-hidden bg-[var(--background0)] transition-[background-color,border-color,opacity] active:cursor-grabbing sm:w-[16rem] ${
                       isDuplicate
                         ? 'border-2 border-[var(--peach)]'
@@ -417,13 +417,13 @@ export function ArticleForm({
                   >
                     <MediaViewer
                       articleId={article?.id ?? 'draft'}
-                      authorName="선택한 게시글"
+                      authorName="선택한 글"
                       initialIndex={media.order - 1}
                       media={values.media}
                       trigger={
                         <span className="relative block">
                           <img
-                            alt={`선택한 게시글 사진이나 동영상 ${media.order}`}
+                            alt={`선택한 글 사진이나 동영상 ${media.order}`}
                             className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
                             draggable={false}
                             src={media.thumbnailUrl ?? media.url}
@@ -437,7 +437,7 @@ export function ArticleForm({
                       }
                       triggerClassName="group block h-auto w-full appearance-none !border-0 !bg-transparent !bg-none p-0 text-left leading-none !shadow-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
                       viewerCommand="article.media.preview"
-                      viewerLabel="선택한 게시글 사진이나 동영상"
+                      viewerLabel="선택한 글 사진이나 동영상"
                     />
                     <div className="grid gap-2 px-3 py-2">
                       <span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">

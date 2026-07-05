@@ -255,7 +255,7 @@ export function FeedCrudClient({
       : activeArticleForm?.type === 'edit'
         ? `article-edit-${activeArticleForm.articleId}`
         : null;
-  const activeArticleFormTitle = activeArticleForm?.type === 'edit' ? '게시글 수정' : '게시글 작성';
+  const activeArticleFormTitle = activeArticleForm?.type === 'edit' ? '글 수정' : '글 작성';
   const articleFormDialogOpen =
     activeArticleForm?.type === 'create' ||
     (activeArticleForm?.type === 'edit' && activeArticle !== undefined);
@@ -320,7 +320,7 @@ export function FeedCrudClient({
         })
         .then(({ data }) => {
           if (!data) {
-            throw new Error('게시글을 불러오지 못했습니다.');
+            throw new Error('글을 불러오지 못했습니다.');
           }
 
           const articles = data.articles as unknown as readonly Article[];
@@ -343,7 +343,7 @@ export function FeedCrudClient({
           setHikingArticleLoadStateById((currentStates) => ({
             ...currentStates,
             [hikingId]: {
-              error: error instanceof Error ? error.message : '게시글을 불러오지 못했습니다.',
+              error: error instanceof Error ? error.message : '글을 불러오지 못했습니다.',
               status: 'error',
             },
           }));
@@ -524,7 +524,7 @@ export function FeedCrudClient({
     const hikingId = articleHikingIdByArticleId.get(articleId);
 
     if (!hikingId) {
-      throw new Error('댓글을 갱신할 게시글을 찾을 수 없습니다.');
+      throw new Error('댓글을 갱신할 글을 찾을 수 없습니다.');
     }
 
     const result = await fetchClient.GET('/api/articles/{articleId}/comments', {
@@ -560,7 +560,7 @@ export function FeedCrudClient({
     const hikingId = articleHikingIdByArticleId.get(articleId);
 
     if (!hikingId) {
-      throw new Error('좋아요를 갱신할 게시글을 찾을 수 없습니다.');
+      throw new Error('좋아요를 갱신할 글을 찾을 수 없습니다.');
     }
 
     setArticlesByHikingId((currentArticles) => {
@@ -640,7 +640,7 @@ export function FeedCrudClient({
     copyTextToClipboard(url.toString())
       .then(() => {
         setError(`article-${article.id}`, null);
-        toast.success('게시글 링크를 복사했습니다.', { position: 'bottom-center' });
+        toast.success('글 링크를 복사했습니다.', { position: 'bottom-center' });
       })
       .catch(() => {
         setError(`article-${article.id}`, '링크 복사에 실패했습니다.');
@@ -922,7 +922,7 @@ export function FeedCrudClient({
     const hasArticles = getHikingArticleCount(hiking.id) > 0;
 
     if (hasArticles) {
-      setError(`hiking-${hiking.id}`, '게시글이 있는 산행은 삭제할 수 없습니다.');
+      setError(`hiking-${hiking.id}`, '글이 있는 산행은 삭제할 수 없습니다.');
       return;
     }
 
@@ -949,7 +949,7 @@ export function FeedCrudClient({
 
   const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
     if (values.media.length === 0) {
-      setError(`article-new-${hikingId}`, '게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
+      setError(`article-new-${hikingId}`, '글은 사진이나 동영상 없이 저장할 수 없습니다.');
       return;
     }
 
@@ -962,7 +962,7 @@ export function FeedCrudClient({
           });
           uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
-          setLoadingLabel('게시글 저장 중');
+          setLoadingLabel('글 저장 중');
           await createArticleMutation.mutateAsync({
             body: { ...articleFormData.body, hikingId },
           });
@@ -977,14 +977,14 @@ export function FeedCrudClient({
           }
 
           return {
-            error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
+            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
             ok: false,
           };
         }
       },
       {
         errorKey: `article-new-${hikingId}`,
-        loadingLabel: '게시글 저장 중',
+        loadingLabel: '글 저장 중',
         onSuccess: () => setActiveArticleForm(null),
         singleFlightKey: `article-create-${hikingId}`,
       },
@@ -993,7 +993,7 @@ export function FeedCrudClient({
 
   const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
     if (values.media.length === 0) {
-      setError(`article-edit-${articleId}`, '게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
+      setError(`article-edit-${articleId}`, '글은 사진이나 동영상 없이 저장할 수 없습니다.');
       return;
     }
 
@@ -1006,14 +1006,14 @@ export function FeedCrudClient({
           });
           uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
-          setLoadingLabel('게시글 저장 중');
+          setLoadingLabel('글 저장 중');
           const result = await updateArticleMutation.mutateAsync({
             body: articleFormData.body,
             params: { path: { articleId } },
           });
 
           if (!result) {
-            throw new Error('게시글을 저장하지 못했습니다.');
+            throw new Error('글을 저장하지 못했습니다.');
           }
 
           return {
@@ -1029,14 +1029,14 @@ export function FeedCrudClient({
           }
 
           return {
-            error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
+            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
             ok: false,
           };
         }
       },
       {
         errorKey: `article-edit-${articleId}`,
-        loadingLabel: '게시글 저장 중',
+        loadingLabel: '글 저장 중',
         onSuccess: (result) => {
           setArticlesByHikingId((currentArticles) => {
             const hikingArticles = currentArticles[result.snapshot.article.hikingId];
@@ -1095,7 +1095,7 @@ export function FeedCrudClient({
           },
         );
       },
-      title: '게시글 삭제',
+      title: '글 삭제',
     });
   };
 
@@ -1136,7 +1136,7 @@ export function FeedCrudClient({
     const articleId = commentArticleIdByCommentId.get(commentId);
 
     if (!articleId) {
-      setError(`comment-edit-${commentId}`, '댓글을 갱신할 게시글을 찾을 수 없습니다.');
+      setError(`comment-edit-${commentId}`, '댓글을 갱신할 글을 찾을 수 없습니다.');
       return;
     }
 
@@ -1218,7 +1218,7 @@ export function FeedCrudClient({
     const articleId = commentArticleIdByCommentId.get(commentId);
 
     if (!articleId) {
-      setError(`comment-${commentId}`, '댓글을 갱신할 게시글을 찾을 수 없습니다.');
+      setError(`comment-${commentId}`, '댓글을 갱신할 글을 찾을 수 없습니다.');
       return;
     }
 
@@ -1253,7 +1253,7 @@ export function FeedCrudClient({
       />
 
       <div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 px-1.5 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
-        <section className={gridStackClassName} aria-label="산행 게시글 피드">
+        <section className={gridStackClassName} aria-label="산행 글 피드">
           <section
             className={`grid gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-4 ${boxBorderClassName}`}
             box-="round"
@@ -1308,7 +1308,7 @@ export function FeedCrudClient({
                         >
                           <Command>articles.refresh {group.hiking.id}</Command>
                           <span is-="spinner" variant-="dots" />
-                          <span>게시글을 갱신하는 중</span>
+                          <span>글을 갱신하는 중</span>
                         </div>
                       ) : null}
                       {groupLoadState.status === 'error' ? (
@@ -1374,7 +1374,7 @@ export function FeedCrudClient({
                         >
                           <Command>articles.empty {group.hiking.id}</Command>
                           <p className="m-0 text-[var(--subtext0)]">
-                            아직 이 산행에 게시글이 없습니다.
+                            아직 이 산행에 글이 없습니다.
                           </p>
                         </div>
                       )}
@@ -1402,15 +1402,13 @@ export function FeedCrudClient({
                       <Command>articles.lazy {group.hiking.id}</Command>
                       <p className="m-0 flex items-center gap-2 text-[var(--subtext0)]">
                         <span is-="spinner" variant-="dots" />
-                        <span>게시글 {groupArticleCount}개를 불러오는 중</span>
+                        <span>글 {groupArticleCount}개를 불러오는 중</span>
                       </p>
                     </div>
                   ) : (
                     <div className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`} box-="round">
                       <Command>articles.empty {group.hiking.id}</Command>
-                      <p className="m-0 text-[var(--subtext0)]">
-                        아직 이 산행에 게시글이 없습니다.
-                      </p>
+                      <p className="m-0 text-[var(--subtext0)]">아직 이 산행에 글이 없습니다.</p>
                     </div>
                   )}
                 </div>

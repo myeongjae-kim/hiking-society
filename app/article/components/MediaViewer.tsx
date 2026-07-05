@@ -1465,7 +1465,7 @@ export function MediaViewer({
         <>
           {inlineCarousel ? (
             <figure
-              aria-label={`${authorName}의 게시글 미디어`}
+              aria-label={`${authorName}의 글 미디어`}
               className="m-0 min-w-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--surface0)] sm:hidden"
             >
               <button
@@ -1521,7 +1521,7 @@ export function MediaViewer({
                 </div>
                 {hasMultipleMedia ? (
                   <div
-                    aria-label="게시글 미디어 위치"
+                    aria-label="글 미디어 위치"
                     className="flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1.5 overflow-hidden px-2 py-1"
                   >
                     {media.map((item, index) => (

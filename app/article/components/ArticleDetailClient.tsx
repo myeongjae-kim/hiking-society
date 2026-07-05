@@ -364,7 +364,7 @@ export function ArticleDetailClient({
 
   const updateArticle = (values: ArticleFormValues) => {
     if (values.media.length === 0) {
-      setError(`article-edit-${article.id}`, '게시글은 사진이나 동영상 없이 저장할 수 없습니다.');
+      setError(`article-edit-${article.id}`, '글은 사진이나 동영상 없이 저장할 수 없습니다.');
       return;
     }
 
@@ -375,7 +375,7 @@ export function ArticleDetailClient({
           const articleFormData = await createArticleFormData(values);
           uploadedObjectKeys = articleFormData.uploadedObjectKeys;
 
-          setLoadingLabel('게시글 저장 중');
+          setLoadingLabel('글 저장 중');
           await updateArticleMutation.mutateAsync({
             body: articleFormData.body,
             params: { path: { articleId: article.id } },
@@ -391,14 +391,14 @@ export function ArticleDetailClient({
           }
 
           return {
-            error: error instanceof Error ? error.message : '게시글을 저장하지 못했습니다.',
+            error: error instanceof Error ? error.message : '글을 저장하지 못했습니다.',
             ok: false,
           };
         }
       },
       {
         errorKey: `article-edit-${article.id}`,
-        loadingLabel: '게시글 저장 중',
+        loadingLabel: '글 저장 중',
         onSuccess: () => setEditingArticle(false),
         singleFlightKey: articleUpdateSingleFlightKey,
       },
@@ -426,7 +426,7 @@ export function ArticleDetailClient({
           },
         );
       },
-      title: '게시글 삭제',
+      title: '글 삭제',
     });
   };
 
@@ -543,7 +543,7 @@ export function ArticleDetailClient({
     copyTextToClipboard(window.location.href)
       .then(() => {
         setError(`article-${article.id}`, null);
-        toast.success('게시글 링크를 복사했습니다.', { position: 'bottom-center' });
+        toast.success('글 링크를 복사했습니다.', { position: 'bottom-center' });
       })
       .catch(() => {
         setError(`article-${article.id}`, '링크 복사에 실패했습니다.');
@@ -560,7 +560,7 @@ export function ArticleDetailClient({
         user={currentUser}
       />
       <div className="mx-auto grid w-[min(100%,62rem)] gap-4 px-1.5 py-4 sm:px-4 lg:p-5">
-        <section aria-label="게시글이 포함된 산행">
+        <section aria-label="글이 포함된 산행">
           <header className="flex flex-col gap-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1.5 shadow-[0_0.35rem_0_var(--background0)] sm:px-4 sm:py-3">
             <div className="grid min-w-0 gap-1">
               <Command>hiking.context {hiking.id}</Command>
@@ -699,7 +699,7 @@ export function ArticleDetailClient({
         onSubmit={updateArticle}
         open={editingArticle}
         submitting={articleUpdateSubmitting}
-        title="게시글 수정"
+        title="글 수정"
       />
       <LoadingOverlay label={loadingLabel ?? undefined} open={isPending && loadingLabel !== null} />
     </main>
