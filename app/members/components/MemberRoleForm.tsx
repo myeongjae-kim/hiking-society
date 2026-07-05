@@ -18,7 +18,9 @@ export function MemberRoleForm({ children, userId }: MemberRoleFormProps) {
   const router = useRouter();
   const updateRoleMutation = $api.useMutation('patch', '/api/members/{userId}/role', {
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['get', '/api/members'] });
+      void queryClient.invalidateQueries({
+        queryKey: $api.queryOptions('get', '/api/members').queryKey,
+      });
       router.refresh();
     },
   });
