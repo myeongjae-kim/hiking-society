@@ -1,20 +1,22 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { $api, fetchClient } from '@/app/common/api/$api';
-import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
 import { ConfirmDialog, type ConfirmState } from '@/app/common/components/ConfirmDialog';
 import { LoadingOverlay } from '@/app/common/components/LoadingOverlay';
-import { boxBorderClassName } from '@/app/common/components/styles';
+import { inlineButtonClassName } from '@/app/common/components/styles';
 import { useSingleFlightAction } from '@/app/common/hooks/useSingleFlightAction';
 import { FeedTopbar } from '@/app/feed/components/FeedTopbar';
 import { getAuthorName } from '@/app/feed/utils/feed-crud-utils';
+import { getHikingDisplay } from '@/app/hiking/components/hikingFormUtils';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
+import type { Hiking } from '@/core/hiking/domain';
 import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArticleFormDialog } from './ArticleFormDialog';
@@ -26,6 +28,7 @@ type ArticleDetailClientProps = {
   comments: readonly Comment[];
   currentTheme: string;
   currentUser: AuthenticatedUser;
+  hiking: Hiking;
   highlightedCommentId: CommentId | null;
   notificationSnapshot: NotificationListSnapshot;
 };
@@ -105,6 +108,7 @@ export function ArticleDetailClient({
   comments,
   currentTheme,
   currentUser,
+  hiking,
   highlightedCommentId,
   notificationSnapshot,
 }: ArticleDetailClientProps) {
@@ -145,6 +149,8 @@ export function ArticleDetailClient({
   const articleUpdateSubmitting =
     singleFlightAction.isRunning(articleUpdateSingleFlightKey) ||
     (isPending && loadingLabel !== null);
+  const hikingDisplay = getHikingDisplay(hiking);
+  const hikingHref = `/feed?hikingId=${encodeURIComponent(hiking.id)}`;
 
   const setError = (key: string, value: string | null) => {
     setErrorByKey((currentErrors) => {
@@ -515,12 +521,89 @@ export function ArticleDetailClient({
         user={currentUser}
       />
       <div className="mx-auto grid w-[min(100%,62rem)] gap-4 px-1.5 py-4 sm:px-4 lg:p-5">
-        <section
-          className={`flex flex-wrap items-center justify-between gap-3 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-4 ${boxBorderClassName}`}
-          box-="round"
-        >
-          <Command>article.detail {article.id}</Command>
-          <ActionButton onClick={() => router.push('/feed')}>피드로 이동</ActionButton>
+        <section aria-label="게시글이 포함된 산행">
+          <header className="flex flex-col gap-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-2 py-1.5 shadow-[0_0.35rem_0_var(--background0)] sm:px-4 sm:py-3">
+            <div className="grid min-w-0 gap-1">
+              <Command>hiking.context {hiking.id}</Command>
+            </div>
+
+            <div className="flex justify-between">
+              <h1 className="m-0 flex min-w-0 items-center gap-2 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]">
+                <span className="min-w-0">
+                  {hiking.order}. {hiking.mountainName}
+                </span>
+              </h1>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <span
+                  className="font-mono text-sm leading-none !text-[var(--yellow)] sm:text-base"
+                  is-="badge"
+                  variant-="background1"
+                >
+                  {hikingDisplay.dateLabel}
+                </span>
+                <Link className={inlineButtonClassName} href={hikingHref}>
+                  피드로 이동
+                </Link>
+              </div>
+            </div>
+          </header>
+          <div className="grid gap-2 border border-t-0 border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_68%,transparent)] px-3 py-2 sm:px-4">
+            <dl className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm leading-[1.35]">
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">날짜/시간</dt>
+                <dd className="m-0 min-w-0 text-[var(--foreground1)]">
+                  <span className="font-mono">{hikingDisplay.dateLabel}</span>
+                  <span className="px-1 text-[var(--subtext0)]">·</span>
+                  <span>{hikingDisplay.timeRangeLabel}</span>
+                  {hikingDisplay.durationLabel ? (
+                    <>
+                      <span className="px-1 text-[var(--subtext0)]">·</span>
+                      <span>{hikingDisplay.durationLabel}</span>
+                    </>
+                  ) : null}
+                  <span className="px-1 text-[var(--subtext0)]">·</span>
+                  <span className="font-mono text-xs text-[var(--subtext0)]">
+                    {hikingDisplay.timezoneLabel}
+                  </span>
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">참석자</dt>
+                <dd className="m-0 flex min-w-0 flex-wrap gap-1">
+                  {hikingDisplay.participants.length > 0 ? (
+                    hikingDisplay.participants.map((participant, participantIndex) => (
+                      <span
+                        className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-xs leading-[1.35] text-[var(--foreground0)]"
+                        key={`${participant}-${participantIndex}`}
+                      >
+                        {participant}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[var(--foreground1)]">참석자 미기록</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex min-w-0 items-baseline gap-1.5">
+                <dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">위치/고도</dt>
+                <dd className="m-0 min-w-0 font-mono text-[var(--foreground1)]">
+                  위도 {hikingDisplay.latitudeLabel}
+                  <span className="px-1 text-[var(--subtext0)]">·</span>
+                  경도 {hikingDisplay.longitudeLabel}
+                  <span className="px-1 text-[var(--subtext0)]">·</span>
+                  고도 {hikingDisplay.altitudeLabel}
+                </dd>
+              </div>
+              {hikingDisplay.restaurantLabel ? (
+                <div className="flex min-w-0 items-baseline gap-1.5">
+                  <dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">뒤풀이</dt>
+                  <dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground1)]">
+                    {hikingDisplay.restaurantLabel}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
         </section>
 
         <ArticlePanel

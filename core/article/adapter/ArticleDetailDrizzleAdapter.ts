@@ -7,7 +7,16 @@ import type {
 } from '@/core/article/domain';
 import type { ArticleDetailQueryPort } from '@/core/article/application/port/out/ArticleDetailQueryPort';
 import type { Comment, CommentId } from '@/core/comment/domain';
-import type { AuthorName, IsoDateTimeString } from '@/core/common/domain';
+import type {
+  Altitude,
+  AuthorName,
+  IsoDateString,
+  IsoDateTimeString,
+  Latitude,
+  Longitude,
+  Timezone,
+} from '@/core/common/domain';
+import type { Hiking, HikingId } from '@/core/hiking/domain';
 import { db } from '@/lib/db/drizzle';
 import {
   articleLikeTable,
@@ -16,9 +25,13 @@ import {
   articleTable,
   commentLikeTable,
   commentTable,
+  hikingTable,
   userTable,
 } from '@/lib/db/schema';
+import { alias } from 'drizzle-orm/pg-core';
 import { and, asc, eq, isNull } from 'drizzle-orm';
+
+const hikingAuthorTable = alias(userTable, 'hiking_author');
 
 function toNumericId(id: string) {
   const numericId = Number(id);
@@ -81,7 +94,24 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
             deletedAt: articleTable.deletedAt,
             displayName: userTable.displayName,
             email: userTable.email,
+            hikingAltitude: hikingTable.altitude,
+            hikingAuthorDisplayName: hikingAuthorTable.displayName,
+            hikingAuthorEmail: hikingAuthorTable.email,
+            hikingAuthorName: hikingAuthorTable.name,
+            hikingAuthorUserId: hikingTable.authorUserId,
+            hikingCompletedAt: hikingTable.completedAt,
+            hikingCreatedAt: hikingTable.createdAt,
+            hikingDate: hikingTable.hikingDate,
             hikingId: articleTable.hikingId,
+            hikingLatitude: hikingTable.latitude,
+            hikingLongitude: hikingTable.longitude,
+            hikingMountainName: hikingTable.mountainName,
+            hikingOrder: hikingTable.order,
+            hikingParticipantsCsv: hikingTable.participantsCsv,
+            hikingRestaurantAddress: hikingTable.restaurantAddress,
+            hikingStartedAt: hikingTable.startedAt,
+            hikingTimezone: hikingTable.timezone,
+            hikingUpdatedAt: hikingTable.updatedAt,
             id: articleTable.id,
             name: userTable.name,
             profileImageUrl: userTable.profileImageUrl,
@@ -89,10 +119,14 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
           })
           .from(articleTable)
           .innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+          .innerJoin(hikingTable, eq(hikingTable.id, articleTable.hikingId))
+          .innerJoin(hikingAuthorTable, eq(hikingAuthorTable.id, hikingTable.authorUserId))
           .where(
             and(
               eq(articleTable.id, articleId),
               isNull(articleTable.deletedAt),
+              isNull(hikingTable.deletedAt),
+              isNull(hikingAuthorTable.deletedAt),
               isNull(userTable.deletedAt),
             ),
           )
@@ -227,6 +261,29 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
       }
     }
 
+    const hiking: Hiking = {
+      authorName: toAuthorName({
+        displayName: row.hikingAuthorDisplayName,
+        email: row.hikingAuthorEmail,
+        name: row.hikingAuthorName,
+      }),
+      authorUserId: row.hikingAuthorUserId,
+      completedAt: row.hikingCompletedAt as IsoDateTimeString,
+      createdAt: row.hikingCreatedAt.toISOString() as IsoDateTimeString,
+      hikingDate: row.hikingDate as IsoDateString,
+      id: String(row.hikingId) as HikingId,
+      latitude: row.hikingLatitude as Latitude,
+      longitude: row.hikingLongitude as Longitude,
+      altitude: row.hikingAltitude as Altitude | null,
+      mountainName: row.hikingMountainName,
+      order: row.hikingOrder ?? 0,
+      participantsCsv: row.hikingParticipantsCsv,
+      restaurantAddress: row.hikingRestaurantAddress,
+      startedAt: row.hikingStartedAt as IsoDateTimeString,
+      timezone: row.hikingTimezone as Timezone,
+      updatedAt: row.hikingUpdatedAt.toISOString() as IsoDateTimeString,
+    };
+
     const article: Article = {
       authorName: toAuthorName(row),
       authorProfileImageUrl: row.profileImageUrl,
@@ -259,6 +316,6 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
       updatedAt: comment.updatedAt.toISOString() as IsoDateTimeString,
     })) as Comment[];
 
-    return { article, comments };
+    return { article, comments, hiking };
   }
 }

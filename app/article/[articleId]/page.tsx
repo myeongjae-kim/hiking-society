@@ -62,6 +62,7 @@ export default async function ArticleDetailPage({ params, searchParams }: Articl
       comments={snapshot.comments}
       currentTheme={getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value)}
       currentUser={user}
+      hiking={snapshot.hiking}
       highlightedCommentId={toCommentId(query.commentId)}
       notificationSnapshot={notificationSnapshot}
     />
