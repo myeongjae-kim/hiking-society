@@ -7,10 +7,75 @@ function normalizeMetadataValue(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
+function formatMetadataTime(
+  rawPeriodPrefix: string | undefined,
+  rawHour: string,
+  rawMinute: string,
+  rawSecond: string | undefined,
+  rawPeriodSuffix: string | undefined,
+) {
+  const hour = Number(rawHour);
+  const minute = Number(rawMinute);
+  const second = rawSecond ? Number(rawSecond) : null;
+
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour > 23 ||
+    minute > 59 ||
+    (second !== null && (!Number.isInteger(second) || second > 59))
+  ) {
+    return null;
+  }
+
+  const period = (rawPeriodPrefix ?? rawPeriodSuffix)?.toLowerCase();
+  let normalizedHour = hour;
+
+  if (period === 'pm' || period === '오후') {
+    normalizedHour = hour === 12 ? 12 : hour + 12;
+  } else if (period === 'am' || period === '오전') {
+    normalizedHour = hour === 12 ? 0 : hour;
+  }
+
+  if (normalizedHour > 23) {
+    return null;
+  }
+
+  return [
+    String(normalizedHour).padStart(2, '0'),
+    String(minute).padStart(2, '0'),
+    second === null ? null : String(second).padStart(2, '0'),
+  ]
+    .filter((part): part is string => part !== null)
+    .join(':');
+}
+
 function formatMetadataDateTime(value: string | null | undefined) {
-  return (
-    normalizeMetadataValue(value)?.replace(/^(\d{4}):(\d{2}):(\d{2})(?=[ T]|$)/, '$1-$2-$3') ?? null
+  const normalized = normalizeMetadataValue(value)?.replace(
+    /^(\d{4})[:/-](\d{2})[:/-](\d{2})(?=[ T]|$)/,
+    '$1-$2-$3',
   );
+
+  if (!normalized) {
+    return null;
+  }
+
+  const match = normalized.match(
+    /^(?:(\d{4}-\d{2}-\d{2})(?:[ T]+|$))?(?:(AM|PM|오전|오후)\s+)?(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM|오전|오후))?$/i,
+  );
+
+  if (!match) {
+    return normalized;
+  }
+
+  const [, date, periodPrefix, hour, minute, second, periodSuffix] = match;
+  const time = formatMetadataTime(periodPrefix, hour, minute, second, periodSuffix);
+
+  if (!time) {
+    return normalized;
+  }
+
+  return date ? `${date} ${time}` : time;
 }
 
 export function getMediaTakenTimeLabel(media: ArticleMedia) {
