@@ -7,16 +7,29 @@ type MediaMetadataProps = {
   selectedIndex: number;
 };
 
+function MediaFrameCounter({
+  itemCount,
+  selectedIndex,
+}: Pick<MediaMetadataProps, 'itemCount' | 'selectedIndex'>) {
+  return (
+    <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase">
+      frame {selectedIndex + 1}/{itemCount}
+    </p>
+  );
+}
+
 export function MediaMetadata({ itemCount, items, onClick, selectedIndex }: MediaMetadataProps) {
   if (items.length === 0) {
     return (
-      <p
-        className="m-0 justify-self-center font-mono text-sm text-[var(--subtext0)] sm:border sm:border-[var(--overlay0)] sm:bg-[var(--surface0)] sm:px-2 sm:py-1"
+      <footer
+        className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden px-2"
         data-media-modal-surface
         onClick={onClick}
       >
-        frame {selectedIndex + 1}/{itemCount}
-      </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <MediaFrameCounter itemCount={itemCount} selectedIndex={selectedIndex} />
+        </div>
+      </footer>
     );
   }
 
@@ -27,9 +40,7 @@ export function MediaMetadata({ itemCount, items, onClick, selectedIndex }: Medi
       onClick={onClick}
     >
       <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase">
-          frame {selectedIndex + 1}/{itemCount}
-        </p>
+        <MediaFrameCounter itemCount={itemCount} selectedIndex={selectedIndex} />
         <dl className="contents">
           {items.map((item, index) => (
             <div className="contents" key={item.label}>
