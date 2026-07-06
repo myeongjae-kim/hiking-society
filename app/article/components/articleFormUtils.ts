@@ -76,13 +76,12 @@ export async function createCompressedDraftMedia(
     });
   }
 
-  const [compressedFile, originalMetadata] = await Promise.all([
-    createCompressedWebpFile(file, {
-      maxWidth: maxCompressedPhotoWidth,
-      quality: webpQuality,
-    }),
-    readOriginalPhotoMetadata(file),
-  ]);
+  const originalMetadata = await readOriginalPhotoMetadata(file);
+  const compressedFile = await createCompressedWebpFile(file, {
+    maxWidth: maxCompressedPhotoWidth,
+    originalMetadata,
+    quality: webpQuality,
+  });
 
   return createDraftMedia(compressedFile, order, {
     durationMs: null,
