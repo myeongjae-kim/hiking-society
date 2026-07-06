@@ -1,10 +1,21 @@
 type CompressImageOptions = {
   maxWidth: number;
-  originalMetadata?: Record<string, unknown> | null;
   quality: number;
 };
 
 type Bytes = Uint8Array<ArrayBuffer>;
+
+type WebpMetadataChunks = {
+  exif?: Bytes;
+  icc?: Bytes;
+  xmp?: Bytes;
+};
+
+type MetadataBlock = {
+  end: number;
+  start: number;
+  type: string;
+};
 
 const heicImageTypes = new Set([
   'image/heic',
@@ -14,7 +25,12 @@ const heicImageTypes = new Set([
 ]);
 const heicFileNamePattern = /\.(heic|heif)$/i;
 const textEncoder = new TextEncoder();
+const jpegExifHeader = textEncoder.encode('Exif\0\0');
+const jpegXmpHeader = textEncoder.encode('http://ns.adobe.com/xap/1.0/\0');
+const pngXmpKeyword = textEncoder.encode('XML:com.adobe.xmp');
 const webpVp8xChunkSize = 10;
+const webpIccFlag = 0x20;
+const webpExifFlag = 0x08;
 const webpXmpFlag = 0x04;
 
 function getWebpFileName(fileName: string) {
@@ -65,121 +81,6 @@ async function encodeImageDataToWebpBlob(imageData: ImageData, quality: number) 
   return new Blob([buffer], { type: 'image/webp' });
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function getMetadataTag(metadata: Record<string, unknown>, tagName: string) {
-  const exif = metadata.exif;
-
-  if (!isPlainObject(exif)) {
-    return null;
-  }
-
-  const tag = exif[tagName];
-
-  return isPlainObject(tag) ? tag : null;
-}
-
-function getMetadataDescription(metadata: Record<string, unknown>, tagName: string) {
-  const tag = getMetadataTag(metadata, tagName);
-  const description = tag?.description;
-
-  if (typeof description === 'string') {
-    return description.trim() || null;
-  }
-
-  if (typeof description === 'number' && Number.isFinite(description)) {
-    return String(description);
-  }
-
-  return null;
-}
-
-function getNumberPair(value: unknown) {
-  if (!Array.isArray(value) || value.length < 2) {
-    return null;
-  }
-
-  const [numerator, denominator] = value;
-
-  if (
-    typeof numerator !== 'number' ||
-    typeof denominator !== 'number' ||
-    !Number.isFinite(numerator) ||
-    !Number.isFinite(denominator) ||
-    denominator === 0
-  ) {
-    return null;
-  }
-
-  return [numerator, denominator] as const;
-}
-
-function getMetadataRationalValue(metadata: Record<string, unknown>, tagName: string) {
-  const tag = getMetadataTag(metadata, tagName);
-  const value = tag?.value;
-  const pair = getNumberPair(value);
-
-  if (pair) {
-    return `${pair[0]}/${pair[1]}`;
-  }
-
-  if (Array.isArray(value)) {
-    const nestedPair = getNumberPair(value[0]);
-
-    if (nestedPair) {
-      return `${nestedPair[0]}/${nestedPair[1]}`;
-    }
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value);
-  }
-
-  return getMetadataDescription(metadata, tagName);
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
-}
-
-function addXmpAttribute(
-  attributes: string[],
-  metadata: Record<string, unknown>,
-  tagName: string,
-  xmpName: string,
-) {
-  const value = getMetadataDescription(metadata, tagName);
-
-  if (value) {
-    attributes.push(`${xmpName}="${escapeXml(value)}"`);
-  }
-}
-
-function addXmpRationalAttribute(
-  attributes: string[],
-  metadata: Record<string, unknown>,
-  tagName: string,
-  xmpName: string,
-) {
-  const value = getMetadataRationalValue(metadata, tagName);
-
-  if (value) {
-    attributes.push(`${xmpName}="${escapeXml(value)}"`);
-  }
-}
-
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const buffer = new ArrayBuffer(bytes.byteLength);
   new Uint8Array(buffer).set(bytes);
@@ -189,6 +90,21 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 
 function readAscii(bytes: Uint8Array, offset: number, length: number) {
   return String.fromCharCode(...bytes.subarray(offset, offset + length));
+}
+
+function startsWithBytes(bytes: Uint8Array, offset: number, expected: Uint8Array) {
+  if (offset + expected.length > bytes.length) {
+    return false;
+  }
+
+  return expected.every((byte, index) => bytes[offset + index] === byte);
+}
+
+function readUint32BigEndian(bytes: Uint8Array, offset: number) {
+  return (
+    bytes[offset] * 0x1000000 +
+    ((bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3])
+  );
 }
 
 function readUint32LittleEndian(bytes: Uint8Array, offset: number) {
@@ -243,55 +159,232 @@ function createVp8xChunk(flags: number, width: number, height: number) {
   return createRiffChunk('VP8X', payload);
 }
 
-function createStandardXmp(metadata: Record<string, unknown> | null | undefined) {
-  if (!metadata) {
-    return null;
-  }
-
-  const attributes = [
-    'xmlns:tiff="http://ns.adobe.com/tiff/1.0/"',
-    'xmlns:exif="http://ns.adobe.com/exif/1.0/"',
-    'xmlns:xmp="http://ns.adobe.com/xap/1.0/"',
-  ];
-
-  addXmpAttribute(attributes, metadata, 'Make', 'tiff:Make');
-  addXmpAttribute(attributes, metadata, 'Model', 'tiff:Model');
-  addXmpAttribute(attributes, metadata, 'DateTimeOriginal', 'exif:DateTimeOriginal');
-  addXmpAttribute(attributes, metadata, 'DateTimeDigitized', 'exif:DateTimeDigitized');
-  addXmpAttribute(attributes, metadata, 'DateTime', 'xmp:CreateDate');
-  addXmpRationalAttribute(attributes, metadata, 'ExposureTime', 'exif:ExposureTime');
-  addXmpRationalAttribute(attributes, metadata, 'FNumber', 'exif:FNumber');
-  addXmpRationalAttribute(attributes, metadata, 'FocalLength', 'exif:FocalLength');
-  addXmpAttribute(attributes, metadata, 'FocalLengthIn35mmFilm', 'exif:FocalLengthIn35mmFilm');
-  addXmpAttribute(attributes, metadata, 'ISOSpeedRatings', 'exif:ISOSpeedRatings');
-  addXmpRationalAttribute(attributes, metadata, 'ShutterSpeedValue', 'exif:ShutterSpeedValue');
-  addXmpAttribute(attributes, metadata, 'GPSLatitude', 'exif:GPSLatitude');
-  addXmpAttribute(attributes, metadata, 'GPSLongitude', 'exif:GPSLongitude');
-  addXmpAttribute(attributes, metadata, 'GPSAltitude', 'exif:GPSAltitude');
-
-  if (attributes.length === 3) {
-    return null;
-  }
-
-  return textEncoder.encode(
-    [
-      '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>',
-      '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
-      '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
-      `<rdf:Description rdf:about="" ${attributes.join(' ')} />`,
-      '</rdf:RDF>',
-      '</x:xmpmeta>',
-      '<?xpacket end="w"?>',
-    ].join(''),
+function isTiffHeader(bytes: Uint8Array, offset: number) {
+  return (
+    offset + 4 <= bytes.length &&
+    ((bytes[offset] === 0x49 &&
+      bytes[offset + 1] === 0x49 &&
+      bytes[offset + 2] === 0x2a &&
+      bytes[offset + 3] === 0x00) ||
+      (bytes[offset] === 0x4d &&
+        bytes[offset + 1] === 0x4d &&
+        bytes[offset + 2] === 0x00 &&
+        bytes[offset + 3] === 0x2a))
   );
 }
 
-async function attachXmpToWebpBlob(
+function normalizeExifPayload(payload: Bytes) {
+  if (startsWithBytes(payload, 0, jpegExifHeader)) {
+    return payload;
+  }
+
+  if (isTiffHeader(payload, 0)) {
+    return concatBytes([jpegExifHeader, payload]);
+  }
+
+  if (payload.length >= 4) {
+    const tiffOffset = 4 + readUint32BigEndian(payload, 0);
+
+    if (isTiffHeader(payload, tiffOffset)) {
+      return concatBytes([jpegExifHeader, payload.slice(tiffOffset)]);
+    }
+  }
+
+  return null;
+}
+
+function getJpegBlockPayload(bytes: Uint8Array, block: MetadataBlock) {
+  if (block.start + 4 > block.end) {
+    return null;
+  }
+
+  return bytes.slice(block.start + 4, block.end);
+}
+
+function getPngBlockPayload(bytes: Uint8Array, block: MetadataBlock) {
+  if (block.start + 12 > block.end) {
+    return null;
+  }
+
+  return bytes.slice(block.start + 8, block.end - 4);
+}
+
+function extractJpegXmpPayload(payload: Bytes) {
+  return startsWithBytes(payload, 0, jpegXmpHeader) ? payload.slice(jpegXmpHeader.length) : null;
+}
+
+function extractPngXmpPayload(payload: Bytes) {
+  if (!startsWithBytes(payload, 0, pngXmpKeyword)) {
+    return null;
+  }
+
+  const keywordEndOffset = pngXmpKeyword.length;
+
+  if (
+    payload[keywordEndOffset] !== 0 ||
+    payload[keywordEndOffset + 1] !== 0 ||
+    payload[keywordEndOffset + 2] !== 0
+  ) {
+    return null;
+  }
+
+  let offset = keywordEndOffset + 3;
+
+  while (offset < payload.length && payload[offset] !== 0) {
+    offset += 1;
+  }
+
+  offset += 1;
+
+  while (offset < payload.length && payload[offset] !== 0) {
+    offset += 1;
+  }
+
+  offset += 1;
+
+  return offset <= payload.length ? payload.slice(offset) : null;
+}
+
+async function inflateBytes(bytes: Uint8Array) {
+  if (!('DecompressionStream' in globalThis)) {
+    return null;
+  }
+
+  const stream = new Blob([toArrayBuffer(bytes)])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate'));
+
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function extractPngIccPayload(payload: Bytes) {
+  const nullIndex = payload.indexOf(0);
+
+  if (nullIndex < 0 || payload[nullIndex + 1] !== 0) {
+    return null;
+  }
+
+  return inflateBytes(payload.slice(nullIndex + 2));
+}
+
+function mergeMetadataChunks(chunks: readonly WebpMetadataChunks[]) {
+  const result: WebpMetadataChunks = {};
+  const iccChunks: Bytes[] = [];
+
+  for (const chunk of chunks) {
+    result.exif ??= chunk.exif;
+    result.xmp ??= chunk.xmp;
+
+    if (chunk.icc) {
+      iccChunks.push(chunk.icc);
+    }
+  }
+
+  if (iccChunks.length > 0) {
+    result.icc = concatBytes(iccChunks);
+  }
+
+  return result;
+}
+
+async function extractOriginalMetadataChunks(file: File): Promise<WebpMetadataChunks> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  try {
+    const { load } = await import('exifreader');
+    const tags = await load(toArrayBuffer(bytes), {
+      async: true,
+      expanded: true,
+      includeOffsets: true,
+    });
+    const blocks = tags.metadataRange?.blocks ?? [];
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+    const isPng = readAscii(bytes, 1, 3) === 'PNG';
+    const isWebp = readAscii(bytes, 0, 4) === 'RIFF' && readAscii(bytes, 8, 4) === 'WEBP';
+    const extractedChunks = await Promise.all(
+      blocks.map(async (block): Promise<WebpMetadataChunks> => {
+        if (block.start < 0 || block.end > bytes.length || block.start >= block.end) {
+          return {};
+        }
+
+        if (isWebp) {
+          const payloadSize = readUint32LittleEndian(bytes, block.start + 4);
+          const payload = bytes.slice(block.start + 8, block.start + 8 + payloadSize);
+
+          if (block.type === 'exif') {
+            return { exif: payload };
+          }
+
+          if (block.type === 'xmp') {
+            return { xmp: payload };
+          }
+
+          if (block.type === 'icc') {
+            return { icc: payload };
+          }
+        }
+
+        if (block.type === 'exif') {
+          const payload = isJpeg
+            ? getJpegBlockPayload(bytes, block)
+            : isPng
+              ? getPngBlockPayload(bytes, block)
+              : bytes.slice(block.start, block.end);
+          const exif = payload ? normalizeExifPayload(payload) : null;
+
+          return exif ? { exif } : {};
+        }
+
+        if (block.type === 'xmp') {
+          const payload = isJpeg
+            ? getJpegBlockPayload(bytes, block)
+            : isPng
+              ? getPngBlockPayload(bytes, block)
+              : bytes.slice(block.start, block.end);
+          const xmp = isJpeg
+            ? payload
+              ? extractJpegXmpPayload(payload)
+              : null
+            : isPng
+              ? payload
+                ? extractPngXmpPayload(payload)
+                : null
+              : payload;
+
+          return xmp ? { xmp } : {};
+        }
+
+        if (block.type === 'icc') {
+          const payload = isJpeg
+            ? bytes.slice(block.start + 18, block.end)
+            : isPng
+              ? getPngBlockPayload(bytes, block)
+              : bytes.slice(block.start, block.end);
+          const icc = isPng ? (payload ? await extractPngIccPayload(payload) : null) : payload;
+
+          return icc ? { icc } : {};
+        }
+
+        return {};
+      }),
+    );
+
+    return mergeMetadataChunks(extractedChunks);
+  } catch {
+    return {};
+  }
+}
+
+function hasMetadataChunks(metadata: WebpMetadataChunks) {
+  return Boolean(metadata.exif || metadata.icc || metadata.xmp);
+}
+
+async function attachMetadataToWebpBlob(
   webpBlob: Blob,
-  xmp: Uint8Array | null,
+  metadata: WebpMetadataChunks,
   dimensions: { width: number; height: number },
 ) {
-  if (!xmp) {
+  if (!hasMetadataChunks(metadata)) {
     return webpBlob;
   }
 
@@ -301,7 +394,15 @@ async function attachXmpToWebpBlob(
     return webpBlob;
   }
 
-  const xmpChunk = createRiffChunk('XMP ', xmp);
+  const metadataFlags =
+    (metadata.icc ? webpIccFlag : 0) |
+    (metadata.exif ? webpExifFlag : 0) |
+    (metadata.xmp ? webpXmpFlag : 0);
+  const iccChunk = metadata.icc ? createRiffChunk('ICCP', metadata.icc) : null;
+  const trailingMetadataChunks = [
+    metadata.exif ? createRiffChunk('EXIF', metadata.exif) : null,
+    metadata.xmp ? createRiffChunk('XMP ', metadata.xmp) : null,
+  ].filter((chunk): chunk is Bytes => chunk !== null);
 
   if (readAscii(sourceBytes, 12, 4) === 'VP8X') {
     const vp8xChunkSize = readUint32LittleEndian(sourceBytes, 16);
@@ -313,20 +414,26 @@ async function attachXmpToWebpBlob(
 
     const prefix = sourceBytes.slice(0, vp8xChunkEnd);
 
-    prefix[20] |= webpXmpFlag;
+    prefix[20] |= metadataFlags;
 
-    const result = concatBytes([prefix, sourceBytes.slice(vp8xChunkEnd), xmpChunk]);
+    const result = concatBytes([
+      prefix,
+      ...(iccChunk ? [iccChunk] : []),
+      sourceBytes.slice(vp8xChunkEnd),
+      ...trailingMetadataChunks,
+    ]);
     writeUint32LittleEndian(result, 4, result.length - 8);
 
     return new Blob([toArrayBuffer(result)], { type: 'image/webp' });
   }
 
-  const vp8xChunk = createVp8xChunk(webpXmpFlag, dimensions.width, dimensions.height);
+  const vp8xChunk = createVp8xChunk(metadataFlags, dimensions.width, dimensions.height);
   const result = concatBytes([
     sourceBytes.slice(0, 12),
     vp8xChunk,
+    ...(iccChunk ? [iccChunk] : []),
     sourceBytes.slice(12),
-    xmpChunk,
+    ...trailingMetadataChunks,
   ]);
   writeUint32LittleEndian(result, 4, result.length - 8);
 
@@ -337,6 +444,7 @@ export async function createCompressedWebpFile(
   file: File,
   options: CompressImageOptions,
 ): Promise<File> {
+  const metadataChunksPromise = extractOriginalMetadataChunks(file);
   const browserReadableFile = await createBrowserReadableFile(file);
   const imageBitmap = await createImageBitmap(browserReadableFile);
   const longestSide = Math.max(imageBitmap.width, imageBitmap.height);
@@ -366,14 +474,10 @@ export async function createCompressedWebpFile(
   imageBitmap.close();
 
   const blob = await encodeImageDataToWebpBlob(imageData, options.quality);
-  const blobWithMetadata = await attachXmpToWebpBlob(
-    blob,
-    createStandardXmp(options.originalMetadata),
-    {
-      height: targetHeight,
-      width: targetWidth,
-    },
-  );
+  const blobWithMetadata = await attachMetadataToWebpBlob(blob, await metadataChunksPromise, {
+    height: targetHeight,
+    width: targetWidth,
+  });
 
   return new File([blobWithMetadata], getWebpFileName(file.name), {
     lastModified: Date.now(),
