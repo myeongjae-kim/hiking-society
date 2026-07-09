@@ -4,6 +4,15 @@ import {
 } from "#/features/shared/components/styles";
 
 const skeletonBlockClassName = "animate-pulse bg-[var(--surface1)]";
+const feedStatusSkeletonRows = [
+	"summary",
+	"mountain",
+	"distance",
+	"elevation",
+	"participants",
+	"comments",
+	"media",
+] as const;
 
 function SkeletonBlock({ className }: { className: string }) {
 	return (
@@ -69,11 +78,10 @@ function FeedStatusSkeleton() {
 		>
 			<SkeletonBlock className="h-[1.2rem] w-36" />
 			<div className="grid gap-2">
-				{Array.from({ length: 7 }, (_, index) => (
+				{feedStatusSkeletonRows.map((row) => (
 					<div
 						className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2"
-						// biome-ignore lint/suspicious/noArrayIndexKey: 어쩔수가없다
-						key={index}
+						key={row}
 					>
 						<SkeletonBlock className="h-[0.9rem] w-16" />
 						<SkeletonBlock className="h-[0.9rem] w-full" />
