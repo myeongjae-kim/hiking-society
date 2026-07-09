@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.codex-screenshots/
 
 # next.js
 /.next/
@@ -19,6 +20,7 @@
 
 # production
 /build
+/.output/
 
 # misc
 .DS_Store

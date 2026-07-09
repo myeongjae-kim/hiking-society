@@ -1,5 +1,5 @@
 import { env } from '@/core/config/env';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { badRequest } from '@/app/api/[...route]/config/apiUtils';
 
 export function revalidateProfileViews() {

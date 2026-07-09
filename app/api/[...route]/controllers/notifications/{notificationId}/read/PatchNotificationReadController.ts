@@ -1,7 +1,7 @@
 import { applicationContext } from '@/core/config/applicationContext';
 import type { NotificationId } from '@/core/notification/model/Notification';
 import { createRoute } from '@hono/zod-openapi';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { Controller } from '@/app/api/[...route]/config/Controller';
 import { toNumericId } from '@/app/api/[...route]/config/apiUtils';
 import { requireApiUser } from '@/app/api/[...route]/config/auth';

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/app/common/components/AppLink';
 
 import { Command } from '@/app/common/components/Command';
 import { boxBorderClassName } from '@/app/common/components/styles';

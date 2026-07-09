@@ -1,7 +1,7 @@
 'use client';
 
 import { $api } from '@/app/common/api/$api';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/app/common/hooks/useRouter';
 
 export function LogoutButton() {
   const router = useRouter();

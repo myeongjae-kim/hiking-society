@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import Link from '@/app/common/components/AppLink';
+import { useRouter } from '@/app/common/hooks/useRouter';
 import { useMemo, useState } from 'react';
 
 import { useArticleMediaUploader } from '@/app/article/hooks/useArticleMediaUploader';

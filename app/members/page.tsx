@@ -1,8 +1,8 @@
-import { requireRole } from '@/app/auth/actions/session';
+import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import { roleLabels } from '@/core/auth/model/roleLabels';
 import { canChangeRole, type UserRole } from '@/core/auth/model/roles';
-import { applicationContext } from '@/core/config/applicationContext';
-import Link from 'next/link';
+import type { MemberListItem } from '@/core/member/model/MemberListItem';
+import Link from '@/app/common/components/AppLink';
 import { MemberRoleForm } from './components/MemberRoleForm';
 
 const roleOptions = ['associate', 'member', 'admin'] as const satisfies readonly UserRole[];
@@ -11,10 +11,12 @@ function formatDate(value: Date | null) {
   return value ? value.toISOString().slice(0, 10) : 'null';
 }
 
-export default async function MembersPage() {
-  const actor = await requireRole(['admin', 'member']);
-  const members = await applicationContext().get('ListMembersUseCase').list();
+type MembersPageViewProps = {
+  actor: AuthenticatedUser;
+  members: readonly MemberListItem[];
+};
 
+export default function MembersPageView({ actor, members }: MembersPageViewProps) {
   return (
     <main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] p-4 text-[var(--foreground0)] lg:p-8">
       <section

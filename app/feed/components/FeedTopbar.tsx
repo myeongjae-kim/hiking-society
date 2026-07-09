@@ -1,5 +1,5 @@
 import * as Popover from '@radix-ui/react-popover';
-import Link from 'next/link';
+import Link from '@/app/common/components/AppLink';
 
 import { Command } from '@/app/common/components/Command';
 import { ThemeSelector } from '@/app/common/components/ThemeSelector';
@@ -37,7 +37,6 @@ export function FeedTopbar({
     <header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <Command>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="">
             대학생(?)등산동아리
           </a>{' '}

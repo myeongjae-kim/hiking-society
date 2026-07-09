@@ -1,6 +1,6 @@
 import { applicationContext } from '@/core/config/applicationContext';
 import { createRoute } from '@hono/zod-openapi';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { Controller } from '@/app/api/[...route]/config/Controller';
 import { toHikingId, toHikingValues } from '@/app/api/[...route]/config/apiUtils';
 import { requireApiRole } from '@/app/api/[...route]/config/auth';

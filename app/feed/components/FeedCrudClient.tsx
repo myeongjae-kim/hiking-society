@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/app/common/hooks/useRouter';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { ConfirmState } from '@/app/common/components/ConfirmDialog';

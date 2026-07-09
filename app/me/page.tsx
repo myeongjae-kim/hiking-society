@@ -1,11 +1,9 @@
-import { requireCurrentUser } from '@/app/auth/actions/session';
+import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import { ThemeSelector } from '@/app/common/components/ThemeSelector';
 import { inlineButtonClassName } from '@/app/common/components/styles';
-import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
 import { roleLabels } from '@/core/auth/model/roleLabels';
 import { canManageMembers } from '@/core/auth/model/roles';
-import Link from 'next/link';
-import { cookies } from 'next/headers';
+import Link from '@/app/common/components/AppLink';
 import type { ReactNode } from 'react';
 import { LogoutButton } from '../auth/components/LogoutButton';
 import {
@@ -32,10 +30,12 @@ function getProfileInitial(value: string) {
   return value.trim().charAt(0).toUpperCase() || '?';
 }
 
-export default async function MyPage() {
-  const user = await requireCurrentUser();
-  const cookieStore = await cookies();
-  const theme = getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value);
+type MyPageViewProps = {
+  theme: string;
+  user: AuthenticatedUser;
+};
+
+export default function MyPageView({ theme, user }: MyPageViewProps) {
   const displayName = user.displayName ?? user.name ?? user.email ?? '회원';
   const profileInitial = getProfileInitial(displayName);
 

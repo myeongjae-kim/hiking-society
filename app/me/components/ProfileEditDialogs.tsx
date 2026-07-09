@@ -9,7 +9,7 @@ import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { dialogOverlayClassName, inlineButtonClassName } from '@/app/common/components/styles';
 import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/app/common/hooks/useRouter';
 
 type ProfileActionState = {
   error?: string;

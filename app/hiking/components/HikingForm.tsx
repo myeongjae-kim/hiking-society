@@ -1,8 +1,7 @@
 'use client';
 
 import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazy, Suspense, useState } from 'react';
 
 import { ActionButton } from '@/app/common/components/ActionButton';
 import { Command } from '@/app/common/components/Command';
@@ -19,17 +18,19 @@ import { readPhotoMetadataFromFile } from './exifGps';
 import type { HikingFormValues } from './hikingFormTypes';
 import { getHikingFormDefaults } from './hikingFormUtils';
 
-const HikingLocationPicker = dynamic(
-  () => import('./HikingLocationPicker').then((module) => module.HikingLocationPicker),
-  {
-    loading: () => (
-      <div className="grid h-[20rem] place-items-center border border-[var(--overlay0)] bg-[var(--background1)] text-sm text-[var(--subtext0)]">
-        지도 불러오는 중...
-      </div>
-    ),
-    ssr: false,
-  },
+const HikingLocationPicker = lazy(() =>
+  import('./HikingLocationPicker').then((module) => ({
+    default: module.HikingLocationPicker,
+  })),
 );
+
+function HikingLocationPickerLoading() {
+  return (
+    <div className="grid h-[20rem] place-items-center border border-[var(--overlay0)] bg-[var(--background1)] text-sm text-[var(--subtext0)]">
+      지도 불러오는 중...
+    </div>
+  );
+}
 
 const exifPhotoAccept =
   'image/jpeg,image/tiff,image/heic,image/heif,.jpg,.jpeg,.tif,.tiff,.heic,.heif';
@@ -318,18 +319,20 @@ export function HikingForm({
           </button>
           {isLocationPickerOpen ? (
             <div className="border border-[var(--overlay0)] bg-[var(--background0)] p-3">
-              <HikingLocationPicker
-                latitude={values.latitude}
-                longitude={values.longitude}
-                onSelect={(coordinate) =>
-                  setValues((currentValues) => ({
-                    ...currentValues,
-                    latitude: coordinate.latitude,
-                    longitude: coordinate.longitude,
-                  }))
-                }
-                submitting={submitting}
-              />
+              <Suspense fallback={<HikingLocationPickerLoading />}>
+                <HikingLocationPicker
+                  latitude={values.latitude}
+                  longitude={values.longitude}
+                  onSelect={(coordinate) =>
+                    setValues((currentValues) => ({
+                      ...currentValues,
+                      latitude: coordinate.latitude,
+                      longitude: coordinate.longitude,
+                    }))
+                  }
+                  submitting={submitting}
+                />
+              </Suspense>
             </div>
           ) : null}
         </div>

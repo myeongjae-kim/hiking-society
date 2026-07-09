@@ -31,7 +31,7 @@ const ClientDependencyContainer = (props: PropsWithChildren) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={clientEnv.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID}>
+      <GoogleOAuthProvider clientId={clientEnv.VITE_GOOGLE_LOGIN_CLIENT_ID}>
         {props.children}
         <Toaster mobileOffset={toasterMobileOffset} offset={toasterOffset} position="top-center" />
       </GoogleOAuthProvider>

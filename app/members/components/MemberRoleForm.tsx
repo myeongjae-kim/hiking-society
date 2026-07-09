@@ -3,7 +3,7 @@
 import { $api } from '@/app/common/api/$api';
 import { apiQueryKeys } from '@/app/common/api/queryKeys';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/app/common/hooks/useRouter';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 

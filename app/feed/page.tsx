@@ -1,44 +1,43 @@
-import { requireCurrentUser } from '@/app/auth/actions/session';
-import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
-import { applicationContext } from '@/core/config/applicationContext';
+import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { HikingId } from '@/core/hiking/domain';
-import { cookies } from 'next/headers';
+import type { FeedSummarySnapshot } from '@/core/feed/model/FeedSnapshot';
+import type { NotificationListSnapshot } from '@/core/notification/model/Notification';
 import { AssociateFeedNotice } from './components/AssociateFeedNotice';
 import { FeedCrudClient } from './components/FeedCrudClient';
 
-type FeedPageProps = {
-  searchParams?: Promise<{
-    hikingId?: string | string[];
-  }>;
+type FeedPageViewProps = {
+  currentTheme: string;
+  feedSummary: FeedSummarySnapshot | null;
+  notificationSnapshot: NotificationListSnapshot | null;
+  selectedHikingId: HikingId | null;
+  user: AuthenticatedUser;
 };
 
-export default async function FeedPage({ searchParams }: FeedPageProps) {
-  const user = await requireCurrentUser();
-  const params = searchParams ? await searchParams : {};
-  const hikingIdParam = Array.isArray(params.hikingId) ? params.hikingId[0] : params.hikingId;
-
+export default function FeedPageView({
+  currentTheme,
+  feedSummary,
+  notificationSnapshot,
+  selectedHikingId,
+  user,
+}: FeedPageViewProps) {
   if (user.role === 'associate') {
     return <AssociateFeedNotice user={user} />;
   }
 
-  const context = applicationContext();
-  const [feedSummary, notificationSnapshot] = await Promise.all([
-    context.get('ListFeedUseCase').listHikings({ currentUserId: user.id }),
-    context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
-  ]);
-  const cookieStore = await cookies();
-  const theme = getWebtuiTheme(cookieStore.get(WEBTUI_THEME_COOKIE_NAME)?.value);
+  if (!feedSummary || !notificationSnapshot) {
+    return null;
+  }
 
   return (
     <FeedCrudClient
       articleCount={feedSummary.articleCount}
       commentCount={feedSummary.commentCount}
-      currentTheme={theme}
+      currentTheme={currentTheme}
       currentUser={user}
       hikingArticleCounts={feedSummary.hikingArticleCounts}
       hikings={feedSummary.hikings}
       notificationSnapshot={notificationSnapshot}
-      selectedHikingId={hikingIdParam ? (hikingIdParam as HikingId) : null}
+      selectedHikingId={selectedHikingId}
     />
   );
 }

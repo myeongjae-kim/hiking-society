@@ -1,7 +1,7 @@
 'use client';
 
 import * as Popover from '@radix-ui/react-popover';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/app/common/hooks/useRouter';
 import { useMemo, useState, useTransition } from 'react';
 
 import { $api } from '@/app/common/api/$api';
