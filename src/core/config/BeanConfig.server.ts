@@ -5,9 +5,11 @@ import { S3MediaStorageAdapter } from "../article/adapter/S3MediaStorageAdapter"
 import { ArticleCommandService } from "../article/application/ArticleCommandService";
 import { ArticleMediaUploadService } from "../article/application/ArticleMediaUploadService";
 import { GetArticleDetailService } from "../article/application/GetArticleDetailService";
+import { GetArticlePageService } from "../article/application/GetArticlePageService";
 import type { ArticleCommandUseCase } from "../article/application/port/in/ArticleCommandUseCase";
 import type { ArticleMediaUploadUseCase } from "../article/application/port/in/ArticleMediaUploadUseCase";
 import type { GetArticleDetailUseCase } from "../article/application/port/in/GetArticleDetailUseCase";
+import type { GetArticlePageUseCase } from "../article/application/port/in/GetArticlePageUseCase";
 import type { ArticleCommandPort } from "../article/application/port/out/ArticleCommandPort";
 import type { ArticleDetailQueryPort } from "../article/application/port/out/ArticleDetailQueryPort";
 import type { MediaStoragePort } from "../article/application/port/out/MediaStoragePort";
@@ -38,7 +40,9 @@ import type { ListArticleCommentsUseCase } from "../comment/application/port/in/
 import type { CommentCommandPort } from "../comment/application/port/out/CommentCommandPort";
 import type { CommentQueryPort } from "../comment/application/port/out/CommentQueryPort";
 import { FeedDrizzleAdapter } from "../feed/adapter/FeedDrizzleAdapter";
+import { GetFeedHomeService } from "../feed/application/GetFeedHomeService";
 import { ListFeedService } from "../feed/application/ListFeedService";
+import type { GetFeedHomeUseCase } from "../feed/application/port/in/GetFeedHomeUseCase";
 import type { ListFeedUseCase } from "../feed/application/port/in/ListFeedUseCase";
 import type { FeedQueryPort } from "../feed/application/port/out/FeedQueryPort";
 import { HikingDrizzleAdapter } from "../hiking/adapter/HikingDrizzleAdapter";
@@ -51,7 +55,9 @@ import type { LikeCommandUseCase } from "../like/application/port/in/LikeCommand
 import type { LikeCommandPort } from "../like/application/port/out/LikeCommandPort";
 import { MemberCommandAdapter } from "../member/adapter/MemberCommandAdapter";
 import { MemberQueryAdapter } from "../member/adapter/MemberQueryAdapter";
+import { GetMemberManagementService } from "../member/application/GetMemberManagementService";
 import { ListMembersService } from "../member/application/ListMembersService";
+import type { GetMemberManagementUseCase } from "../member/application/port/in/GetMemberManagementUseCase";
 import type { ListMembersUseCase } from "../member/application/port/in/ListMembersUseCase";
 import type { UpdateMemberRoleUseCase } from "../member/application/port/in/UpdateMemberRoleUseCase";
 import type { MemberCommandPort } from "../member/application/port/out/MemberCommandPort";
@@ -91,6 +97,9 @@ export type UseCaseBeans = {
 	CreateSessionTokenUseCase: CreateSessionTokenUseCase;
 	GetCookieOptionsUseCase: GetCookieOptionsUseCase;
 	GetArticleDetailUseCase: GetArticleDetailUseCase;
+	GetArticlePageUseCase: GetArticlePageUseCase;
+	GetFeedHomeUseCase: GetFeedHomeUseCase;
+	GetMemberManagementUseCase: GetMemberManagementUseCase;
 	ListMembersUseCase: ListMembersUseCase;
 	ListNotificationsUseCase: ListNotificationsUseCase;
 	MarkAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
@@ -156,6 +165,9 @@ export const beanConfig: BeanConfig<Beans> = {
 	CookieConfig: (bind) => bind().to(CookieConfig),
 	GetCookieOptionsUseCase: (bind) => bind().to(GetCookieOptionsService),
 	GetArticleDetailUseCase: (bind) => bind().to(GetArticleDetailService),
+	GetArticlePageUseCase: (bind) => bind().to(GetArticlePageService),
+	GetFeedHomeUseCase: (bind) => bind().to(GetFeedHomeService),
+	GetMemberManagementUseCase: (bind) => bind().to(GetMemberManagementService),
 	MemberCommandPort: (bind) => bind().to(MemberCommandAdapter),
 	MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
 	NotificationCommandPort: (bind) => bind().to(NotificationDrizzleAdapter),

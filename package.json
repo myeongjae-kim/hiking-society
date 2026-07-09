@@ -13,7 +13,7 @@
     "format": "biome format",
     "lint": "biome lint && tsc --noEmit && pnpm check-architecture",
     "check": "biome check --write --unsafe",
-    "check-architecture": "depcruise --config .dependency-cruiser.mjs src",
+    "check-architecture": "bash scripts/check-architecture.sh",
     "api:sync": "openapi-typescript http://localhost:3000/api/swagger -o ./src/api/schema.d.ts",
     "find-deadcode": "bash scripts/find-deadcode.sh",
     "db:generate": "drizzle-kit generate",

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	readCurrentTheme,
 	readCurrentUser,
-} from "#/features/auth/session.functions";
+} from "#/app-features/auth/session.functions";
 import type { ArticleId } from "@/core/article/domain";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
@@ -22,7 +22,15 @@ export const getArticleRouteData = createServerFn({ method: "GET" })
 			return { status: "notFound" as const };
 		}
 
-		if (currentUser.role === "associate") {
+		const articlePage = await applicationUseCaseContext()
+			.get("GetArticlePageUseCase")
+			.get({
+				articleId: data.articleId as ArticleId,
+				currentUser,
+				includeNotifications: true,
+			});
+
+		if (articlePage.status === "associate") {
 			return {
 				currentTheme,
 				currentUser,
@@ -30,28 +38,21 @@ export const getArticleRouteData = createServerFn({ method: "GET" })
 			};
 		}
 
-		const services = applicationUseCaseContext();
-		const [snapshot, notificationSnapshot] = await Promise.all([
-			services.get("GetArticleDetailUseCase").get({
-				articleId: data.articleId as ArticleId,
-				currentUserId: currentUser.id,
-			}),
-			services
-				.get("ListNotificationsUseCase")
-				.list({ currentUserId: currentUser.id }),
-		]);
-
-		if (!snapshot) {
+		if (articlePage.status === "notFound") {
 			return { status: "notFound" as const };
 		}
 
+		if (!articlePage.notificationSnapshot) {
+			throw new Error("Article route notification snapshot was not loaded.");
+		}
+
 		return {
-			article: snapshot.article,
-			comments: snapshot.comments,
+			article: articlePage.snapshot.article,
+			comments: articlePage.snapshot.comments,
 			currentTheme,
 			currentUser,
-			hiking: snapshot.hiking,
-			notificationSnapshot,
+			hiking: articlePage.snapshot.hiking,
+			notificationSnapshot: articlePage.notificationSnapshot,
 			status: "ok" as const,
 		};
 	});

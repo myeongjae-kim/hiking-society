@@ -82,6 +82,7 @@ export class CommentCommandDrizzleAdapter implements CommentCommandPort {
 				body: commentTable.body,
 				deletedAt: commentTable.deletedAt,
 				id: commentTable.id,
+				parentCommentId: commentTable.parentCommentId,
 			})
 			.from(commentTable)
 			.where(eq(commentTable.id, toNumericId(commentId)))
@@ -97,6 +98,10 @@ export class CommentCommandDrizzleAdapter implements CommentCommandPort {
 			body: comment.body,
 			deleted: comment.deletedAt !== null,
 			id: String(comment.id) as CommentId,
+			parentCommentId:
+				comment.parentCommentId === null
+					? null
+					: (String(comment.parentCommentId) as CommentId),
 		};
 	}
 

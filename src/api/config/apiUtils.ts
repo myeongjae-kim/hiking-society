@@ -23,6 +23,10 @@ export function badRequest(message: string) {
 	return new ApiError({ error: "BAD_REQUEST", message, status: 400 });
 }
 
+export function forbidden(message = "권한이 없습니다.") {
+	return new ApiError({ error: "FORBIDDEN", message, status: 403 });
+}
+
 export function notFound(message = "대상을 찾을 수 없습니다.") {
 	return new ApiError({ error: "NOT_FOUND", message, status: 404 });
 }

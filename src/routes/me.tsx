@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
 	getCurrentTheme,
 	getCurrentUser,
-} from "#/features/auth/session.functions";
+} from "#/app-features/auth/session.functions";
 import { getLoginRedirectHref } from "#/features/auth/session.shared";
 import MyPageView from "#/features/profile/ProfilePageView";
 

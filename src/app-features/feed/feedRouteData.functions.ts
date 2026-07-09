@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import {
 	readCurrentTheme,
 	readCurrentUser,
-} from "#/features/auth/session.functions";
+} from "#/app-features/auth/session.functions";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
@@ -16,7 +16,14 @@ export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 			return { status: "unauthenticated" as const };
 		}
 
-		if (user.role === "associate") {
+		const data = await applicationUseCaseContext()
+			.get("GetFeedHomeUseCase")
+			.get({
+				currentUser: user,
+				includeNotifications: true,
+			});
+
+		if (data.status === "associate") {
 			return {
 				currentTheme,
 				status: "associate" as const,
@@ -24,18 +31,12 @@ export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 			};
 		}
 
-		const services = applicationUseCaseContext();
-		const [feedSummary, notificationSnapshot] = await Promise.all([
-			services.get("ListFeedUseCase").listHikings({ currentUserId: user.id }),
-			services.get("ListNotificationsUseCase").list({ currentUserId: user.id }),
-		]);
-
 		return {
 			currentTheme,
-			feedSummary,
-			notificationSnapshot,
+			feedSummary: data.feedSummary,
+			notificationSnapshot: data.notificationSnapshot,
 			status: "ok" as const,
-			user,
+			user: data.user,
 		};
 	},
 );

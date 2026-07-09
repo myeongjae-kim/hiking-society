@@ -31,7 +31,7 @@ export default {
 					"^src/core/[^/]+/(application|adapter|config)/",
 					"^src/core/config/",
 					"^drizzle/",
-					"^src/(api|features|integrations|routes|styles|theme)/",
+					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
@@ -47,7 +47,7 @@ export default {
 					"^src/core/[^/]+/adapter/",
 					"^src/core/config/",
 					"^drizzle/",
-					"^src/(api|features|integrations|routes|styles|theme)/",
+					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
@@ -62,23 +62,24 @@ export default {
 				path: [
 					"^src/core/[^/]+/adapter/",
 					"^drizzle/",
-					"^src/(api|features|integrations|routes|styles|theme)/",
+					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
 		},
 		{
 			name: "web-not-to-outbound-ports",
-			comment: "Routes, API controllers, and features should call in-ports only.",
+			comment:
+				"Routes, API controllers, app-features, and features should call in-ports only.",
 			severity: "error",
-			from: { path: "^src/(api|features|routes)/" },
+			from: { path: "^src/(api|app-features|features|routes)/" },
 			to: { path: "^src/core/[^/]+/application/port/out/" },
 		},
 		{
 			name: "web-not-to-database",
 			comment: "Web adapters should not import DB schema or DB connection directly.",
 			severity: "error",
-			from: { path: "^src/(api|features|routes)/" },
+			from: { path: "^src/(api|app-features|features|routes)/" },
 			to: { path: ["^drizzle/", "^src/core/config/drizzle[.]server[.]ts$"] },
 		},
 		{
@@ -86,7 +87,7 @@ export default {
 			comment:
 				"Routes, API controllers, and features should use the typed use case context instead of DI internals.",
 			severity: "error",
-			from: { path: "^src/(api|features|routes)/" },
+			from: { path: "^src/(api|app-features|features|routes)/" },
 			to: {
 				path: [
 					"^src/core/config/applicationContext[.]server[.]ts$",
@@ -103,6 +104,30 @@ export default {
 			to: {
 				path: "^src/features/(article|auth|comment|feed|hiking|media|member|notification|profile)/",
 			},
+		},
+		{
+			name: "app-features-not-to-ui-features",
+			comment:
+				"App feature server-function boundaries should orchestrate core use cases, not depend on UI feature modules.",
+			severity: "error",
+			from: { path: "^src/app-features/" },
+			to: { path: "^src/features/" },
+		},
+		{
+			name: "features-not-to-app-features",
+			comment:
+				"UI feature modules should receive data/actions from routes or props instead of importing server-function boundaries directly.",
+			severity: "error",
+			from: { path: "^src/features/" },
+			to: { path: "^src/app-features/" },
+		},
+		{
+			name: "features-not-to-server-functions",
+			comment:
+				"Server functions belong in src/app-features so src/features stays a UI/client feature boundary.",
+			severity: "error",
+			from: { path: "^src/features/.*[.]functions[.]ts$" },
+			to: { path: "^" },
 		},
 	],
 	options: {

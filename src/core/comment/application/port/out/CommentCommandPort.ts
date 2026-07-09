@@ -13,6 +13,7 @@ export type CommentCommandSnapshot = {
 	readonly body: string;
 	readonly deleted: boolean;
 	readonly id: CommentId;
+	readonly parentCommentId: CommentId | null;
 };
 
 export interface CommentCommandPort {

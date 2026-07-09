@@ -1,5 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
-import { requireApiRole } from "#/api/config/auth";
+import { forbidden } from "#/api/config/apiUtils";
+import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { membersResponseSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
@@ -21,13 +22,19 @@ controller.openapi(
 		tags: ["members"],
 	}),
 	async (c) => {
-		requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const members = await applicationUseCaseContext()
-			.get("ListMembersUseCase")
-			.list();
+		const actor = requireApiUser(c.get("currentUser"));
+		const data = await applicationUseCaseContext()
+			.get("GetMemberManagementUseCase")
+			.get({ actor });
+
+		if (data.status === "forbidden") {
+			throw forbidden();
+		}
 
 		return c.json(
-			membersResponseSchema.parse({ members: members.map(toMemberDto) }),
+			membersResponseSchema.parse({
+				members: data.members.map(toMemberDto),
+			}),
 			200,
 		);
 	},

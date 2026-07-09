@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { getArticleRouteData } from "#/app-features/article/articleRouteData.functions";
 import ArticleDetailPageView from "#/features/article/ArticleDetailPageView";
-import { getArticleRouteData } from "#/features/article/articleRouteData.functions";
 import { getLoginRedirectHref } from "#/features/auth/session.shared";
 import type { CommentId } from "@/core/comment/domain";
 

@@ -2,6 +2,7 @@ import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import { createCommentNotifications } from "@/core/notification/model/NotificationFactory";
+import { CommentOwnership, CommentReplyTarget } from "../domain";
 import type { CommentCommandUseCase } from "./port/in/CommentCommandUseCase";
 import type { CommentCommandPort } from "./port/out/CommentCommandPort";
 
@@ -30,7 +31,7 @@ export class CommentCommandService implements CommentCommandUseCase {
 
 		if (
 			parentCommentId !== null &&
-			(!parent || parent.articleId !== input.articleId || parent.deleted)
+			!CommentReplyTarget.of(parent).canReceiveReplyFor(input.articleId)
 		) {
 			throw applicationError.notFound("답글을 작성할 댓글을 찾을 수 없습니다.");
 		}
@@ -64,7 +65,10 @@ export class CommentCommandService implements CommentCommandUseCase {
 			input.commentId,
 		);
 
-		if (!comment || comment.authorUserId !== input.userId) {
+		if (
+			!comment ||
+			!CommentOwnership.of(comment).canBeManagedBy(input.userId)
+		) {
 			throw applicationError.notFound(
 				"댓글을 수정할 권한이 없거나 댓글을 찾을 수 없습니다.",
 			);
@@ -88,7 +92,10 @@ export class CommentCommandService implements CommentCommandUseCase {
 			input.commentId,
 		);
 
-		if (!comment || comment.authorUserId !== input.userId) {
+		if (
+			!comment ||
+			!CommentOwnership.of(comment).canBeManagedBy(input.userId)
+		) {
 			throw applicationError.notFound(
 				"댓글을 삭제할 권한이 없거나 댓글을 찾을 수 없습니다.",
 			);

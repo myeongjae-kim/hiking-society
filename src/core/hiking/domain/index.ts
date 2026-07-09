@@ -4,3 +4,4 @@ export type {
 	HikingId,
 	UpdateHikingInput,
 } from "./Hiking";
+export { HikingDeletionPolicy, HikingOwnership } from "./HikingPolicy";

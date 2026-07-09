@@ -7,3 +7,4 @@ export type {
 	TopLevelComment,
 	UpdateCommentInput,
 } from "./Comment";
+export { CommentOwnership, CommentReplyTarget } from "./CommentPolicy";

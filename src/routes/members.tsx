@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getMembersRouteData } from "#/app-features/member/memberRouteData.functions";
 import { getLoginRedirectHref } from "#/features/auth/session.shared";
 import MembersPageView from "#/features/member/MemberManagementPageView";
-import { getMembersRouteData } from "#/features/member/memberRouteData.functions";
 
 export const Route = createFileRoute("/members")({
 	component: MembersRoute,

@@ -29,8 +29,9 @@ src/
     common/              # 공통 domain/application 타입
     config/              # DI wiring
   routes/                # TanStack Start file routes
+  app-features/          # server functions와 route/API가 공유하는 앱 기능 경계
   api/                   # Hono/OpenAPI HTTP adapter
-  features/              # React UI와 server functions를 기능 단위로 배치
+  features/              # React UI, client hooks, client-side feature utilities
   integrations/          # TanStack Query 등 기술 통합
   styles/                # 전역 스타일
   theme/                 # 테마 정의
@@ -47,7 +48,7 @@ scripts/                 # 정적/아키텍처 검증 스크립트
 의존 방향은 항상 안쪽으로 향합니다.
 
 ```txt
-src/routes, src/api, src/features
+src/routes, src/api, src/app-features, src/features
         |
         v
 src/core/{feature}/application/port/in
@@ -81,6 +82,8 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 
 ## Feature Boundary
 
+`src/app-features`는 제품 기능 단위의 server function boundary입니다. route loader와 REST controller가 함께 써야 하는 접근 정책/조회 조립은 먼저 `src/core/**/application/port/in` 유스케이스로 올리고, `src/app-features`는 쿠키/테마/read-current-user 같은 웹 작업만 더합니다.
+
 `src/features`는 제품 기능 단위의 웹/UI 코드입니다.
 
 현재 주요 feature는 `article`, `auth`, `comment`, `feed`, `hiking`, `media`, `member`, `notification`, `profile`, `shared`입니다.
@@ -91,6 +94,7 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 - feature 간 조합이 필요하면 더 구체적인 feature 쪽에서 조합합니다.
 - 예를 들어 `AuthorBadge`는 순수 badge 컴포넌트이고, 프로필 이미지 preview는 `article` 쪽에서 `MediaViewer`를 render prop으로 주입합니다.
 - 큰 hook은 순수 계산 함수와 effect orchestration hook으로 나눕니다.
+- `src/features`는 `src/app-features`를 import하지 않습니다. server function은 route나 app-feature boundary를 통해 주입합니다.
 
 `src/features` 아래에는 제품의 기능적 어휘를 둡니다. `integrations`, `routes`, `styles`, `theme`처럼 기술적 관심사는 `src` 최상위의 별도 디렉터리에 둡니다.
 
@@ -100,7 +104,9 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 
 `src/api`는 Hono/OpenAPI HTTP adapter입니다. controller는 request/response 변환, 인증 context 확인, use case 호출, API error 변환만 담당합니다.
 
-`src/features/**.functions.ts`는 TanStack Start server function boundary입니다. cookie read/write나 form payload 변환 같은 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
+`src/app-features/**.functions.ts`는 TanStack Start server function boundary입니다. cookie read/write나 form payload 변환 같은 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
+
+route loader와 REST controller에서 같은 권한/조회 정책이 필요하면 controller와 server function 양쪽에 조건문을 복제하지 않습니다. 먼저 core in-port 유스케이스를 만들고 두 inbound adapter가 그 유스케이스를 호출합니다.
 
 API client 규칙:
 
@@ -149,7 +155,8 @@ core wiring은 `src/core/config/BeanConfig.server.ts`에서 관리합니다.
 
 - `src/core`가 웹/프레임워크 모듈을 import하지 않는지 확인합니다.
 - `src/features/shared`가 다른 feature를 import하지 않는지 확인합니다.
-- `src/routes`, `src/api`, `src/features`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
+- `src/routes`, `src/api`, `src/app-features`, `src/features`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
+- `src/app-features`가 UI feature에 의존하지 않고, `src/features`가 server-function boundary에 의존하지 않는지 확인합니다.
 
 일상 검증:
 

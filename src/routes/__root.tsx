@@ -4,7 +4,7 @@ import {
 	HeadContent,
 	Scripts,
 } from "@tanstack/react-router";
-import { getCurrentTheme } from "#/features/auth/session.functions";
+import { getCurrentTheme } from "#/app-features/auth/session.functions";
 import ClientDependencyContainer from "#/features/shared/components/ClientDependencyContainer";
 import NotFound from "#/features/shared/NotFoundView";
 import appCss from "#/styles/global.css?url";

@@ -1,6 +1,7 @@
 import { createRoute } from "@hono/zod-openapi";
 import { apiErrorSchema } from "#/api/config/ApiError";
-import { requireApiRole } from "#/api/config/auth";
+import { forbidden } from "#/api/config/apiUtils";
+import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { feedResponseSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
@@ -25,14 +26,16 @@ controller.openapi(
 		tags: ["feed"],
 	}),
 	async (c) => {
-		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const snapshot = await applicationUseCaseContext()
-			.get("ListFeedUseCase")
-			.listHikings({
-				currentUserId: user.id,
-			});
+		const user = requireApiUser(c.get("currentUser"));
+		const feedHome = await applicationUseCaseContext()
+			.get("GetFeedHomeUseCase")
+			.get({ currentUser: user });
 
-		return c.json(feedResponseSchema.parse(snapshot), 200);
+		if (feedHome.status === "associate") {
+			throw forbidden();
+		}
+
+		return c.json(feedResponseSchema.parse(feedHome.feedSummary), 200);
 	},
 );
 

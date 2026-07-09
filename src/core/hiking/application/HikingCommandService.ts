@@ -1,5 +1,6 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
+import { HikingDeletionPolicy, HikingOwnership } from "../domain";
 import type { HikingCommandUseCase } from "./port/in/HikingCommandUseCase";
 import type { HikingCommandPort } from "./port/out/HikingCommandPort";
 
@@ -18,7 +19,7 @@ export class HikingCommandService implements HikingCommandUseCase {
 			input.hikingId,
 		);
 
-		if (!hiking || hiking.authorUserId !== input.userId) {
+		if (!hiking || !HikingOwnership.of(hiking).canBeManagedBy(input.userId)) {
 			throw applicationError.notFound(
 				"산행을 수정할 권한이 없거나 산행을 찾을 수 없습니다.",
 			);
@@ -42,13 +43,13 @@ export class HikingCommandService implements HikingCommandUseCase {
 			input.hikingId,
 		);
 
-		if (!hiking || hiking.authorUserId !== input.userId) {
+		if (!hiking || !HikingOwnership.of(hiking).canBeManagedBy(input.userId)) {
 			throw applicationError.notFound(
 				"산행을 삭제할 권한이 없거나 산행을 찾을 수 없습니다.",
 			);
 		}
 
-		if (hiking.activeArticleCount > 0) {
+		if (!HikingDeletionPolicy.of(hiking).canDelete()) {
 			throw applicationError.badRequest("글이 있는 산행은 삭제할 수 없습니다.");
 		}
 

@@ -3,7 +3,7 @@ import {
 	clearSessionCookies,
 	getCurrentUser,
 	setSessionCookies,
-} from "#/features/auth/session.functions";
+} from "#/app-features/auth/session.functions";
 import type { UserRole } from "@/core/auth/model/roles";
 
 export { clearSessionCookies, getCurrentUser, setSessionCookies };

@@ -1,7 +1,7 @@
 import { createRoute } from "@hono/zod-openapi";
 import { apiErrorSchema } from "#/api/config/ApiError";
-import { notFound, toArticleId } from "#/api/config/apiUtils";
-import { requireApiRole } from "#/api/config/auth";
+import { forbidden, notFound, toArticleId } from "#/api/config/apiUtils";
+import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleDetailResponseSchema, idParamSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
@@ -29,20 +29,30 @@ controller.openapi(
 		tags: ["articles"],
 	}),
 	async (c) => {
-		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
+		const user = requireApiUser(c.get("currentUser"));
 		const articleId = toArticleId(c.req.valid("param").articleId);
-		const snapshot = await applicationUseCaseContext()
-			.get("GetArticleDetailUseCase")
+		const articlePage = await applicationUseCaseContext()
+			.get("GetArticlePageUseCase")
 			.get({
 				articleId,
-				currentUserId: user.id,
+				currentUser: user,
 			});
 
-		if (!snapshot) {
+		if (articlePage.status === "associate") {
+			throw forbidden();
+		}
+
+		if (articlePage.status === "notFound") {
 			throw notFound("글을 찾을 수 없습니다.");
 		}
 
-		return c.json(articleDetailResponseSchema.parse(snapshot), 200);
+		return c.json(
+			articleDetailResponseSchema.parse({
+				article: articlePage.snapshot.article,
+				comments: articlePage.snapshot.comments,
+			}),
+			200,
+		);
 	},
 );
 

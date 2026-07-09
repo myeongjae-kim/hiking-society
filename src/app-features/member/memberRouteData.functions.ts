@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { readCurrentUser } from "#/features/auth/session.functions";
-import { canManageMembers } from "@/core/auth/model/roles";
+import { readCurrentUser } from "#/app-features/auth/session.functions";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
@@ -11,15 +10,17 @@ export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 			return { status: "unauthenticated" as const };
 		}
 
-		if (!canManageMembers(actor.role)) {
+		const data = await applicationUseCaseContext()
+			.get("GetMemberManagementUseCase")
+			.get({ actor });
+
+		if (data.status === "forbidden") {
 			return { status: "forbidden" as const };
 		}
 
 		return {
-			actor,
-			members: await applicationUseCaseContext()
-				.get("ListMembersUseCase")
-				.list(),
+			actor: data.actor,
+			members: data.members,
 			status: "ok" as const,
 		};
 	},
