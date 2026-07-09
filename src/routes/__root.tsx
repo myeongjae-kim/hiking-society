@@ -18,7 +18,7 @@ const siteUrl =
 
 const title = "대학생(?)등산동아리";
 const description = "회장만 빼면 대학생 취급받는 직장인 등산모임";
-const resetScrollOnReloadScript = `(function(){try{var navigationEntries=performance.getEntriesByType('navigation');var navigationEntry=navigationEntries[0];if(!navigationEntry||navigationEntry.type!=='reload'){return;}if('scrollRestoration' in history){history.scrollRestoration='manual';}window.scrollTo(0,0);requestAnimationFrame(function(){window.scrollTo(0,0);});}catch(error){}})();`;
+const resetScrollOnReloadScript = `(function(){try{var canControlScrollRestoration='scrollRestoration'in history;var forceTop=function(){window.scrollTo(0,0);document.documentElement.scrollTop=0;if(document.body){document.body.scrollTop=0;}};var setManualRestoration=function(){if(canControlScrollRestoration){history.scrollRestoration='manual';}};setManualRestoration();var navigationEntries=performance.getEntriesByType('navigation');var navigationEntry=navigationEntries[0];var isReload=!!navigationEntry&&navigationEntry.type==='reload';if(isReload){forceTop();requestAnimationFrame(forceTop);addEventListener('DOMContentLoaded',forceTop,{once:true});addEventListener('load',function(){forceTop();requestAnimationFrame(forceTop);},{once:true});}var prepareUnload=function(){setManualRestoration();forceTop();};addEventListener('beforeunload',prepareUnload,{capture:true});addEventListener('pagehide',prepareUnload,{capture:true});}catch(error){}})();`;
 
 interface RouterContext {
 	queryClient: QueryClient;
