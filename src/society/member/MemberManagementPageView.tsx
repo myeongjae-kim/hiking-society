@@ -1,23 +1,20 @@
+import type { MemberContract } from "#/api/contracts";
+import {
+	canSelectMemberRole,
+	userRoleLabels,
+	userRoleViewOptions,
+} from "#/society/shared/authViewPolicy";
 import Link from "#/society/shared/components/AppLink";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import { roleLabels } from "@/core/auth/model/roleLabels";
-import { canChangeRole, type UserRole } from "@/core/auth/model/roles";
-import type { MemberListItem } from "@/core/member/model/MemberListItem";
+import type { MemberManagementActorContract } from "#/society-app/member/memberRouteView";
 import { MemberRoleForm } from "./components/MemberRoleForm";
 
-const roleOptions = [
-	"associate",
-	"member",
-	"admin",
-] as const satisfies readonly UserRole[];
-
-function formatDate(value: Date | null) {
-	return value ? value.toISOString().slice(0, 10) : "null";
+function formatDate(value: string | null) {
+	return value ? value.slice(0, 10) : "null";
 }
 
 type MembersPageViewProps = {
-	actor: AuthenticatedUser;
-	members: readonly MemberListItem[];
+	actor: MemberManagementActorContract;
+	members: readonly MemberContract[];
 };
 
 export default function MembersPageView({
@@ -84,20 +81,24 @@ export default function MembersPageView({
 												defaultValue={member.role}
 												name="role"
 												disabled={
-													!roleOptions.some((role) =>
-														canChangeRole(actor.role, member.role, role),
+													!userRoleViewOptions.some((role) =>
+														canSelectMemberRole(actor.role, member.role, role),
 													)
 												}
 											>
-												{roleOptions.map((role) => (
+												{userRoleViewOptions.map((role) => (
 													<option
 														value={role}
 														key={role}
 														disabled={
-															!canChangeRole(actor.role, member.role, role)
+															!canSelectMemberRole(
+																actor.role,
+																member.role,
+																role,
+															)
 														}
 													>
-														{roleLabels[role]}
+														{userRoleLabels[role]}
 													</option>
 												))}
 											</select>
@@ -105,8 +106,8 @@ export default function MembersPageView({
 												size-="small"
 												type="submit"
 												disabled={
-													!roleOptions.some((role) =>
-														canChangeRole(actor.role, member.role, role),
+													!userRoleViewOptions.some((role) =>
+														canSelectMemberRole(actor.role, member.role, role),
 													)
 												}
 											>

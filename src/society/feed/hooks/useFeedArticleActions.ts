@@ -3,14 +3,14 @@
 import type { Dispatch, SetStateAction } from "react";
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
+import {
+	ARTICLE_MEDIA_REQUIRED_VIEW_MESSAGE,
+	hasPublishableArticleMedia,
+} from "#/society/article/articleViewPolicy";
 import type { ArticleFormValues } from "#/society/article/components/articleFormTypes";
 import { useArticleMediaUploader } from "#/society/article/hooks/useArticleMediaUploader";
 import { createArticleMutationPayload } from "#/society/article/utils/articleMutationPayload";
 import type { Article, ArticleId } from "@/core/article/domain";
-import {
-	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaCollection,
-} from "@/core/article/domain/ArticlePolicy";
 import type { Comment } from "@/core/comment/domain";
 import type { HikingId } from "@/core/hiking/domain";
 
@@ -83,10 +83,10 @@ export function useFeedArticleActions({
 	};
 
 	const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
-		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
+		if (!hasPublishableArticleMedia(values.media)) {
 			runner.setError(
 				`article-new-${hikingId}`,
-				ARTICLE_MEDIA_REQUIRED_MESSAGE,
+				ARTICLE_MEDIA_REQUIRED_VIEW_MESSAGE,
 			);
 			return;
 		}
@@ -134,10 +134,10 @@ export function useFeedArticleActions({
 	};
 
 	const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
-		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
+		if (!hasPublishableArticleMedia(values.media)) {
 			runner.setError(
 				`article-edit-${articleId}`,
-				ARTICLE_MEDIA_REQUIRED_MESSAGE,
+				ARTICLE_MEDIA_REQUIRED_VIEW_MESSAGE,
 			);
 			return;
 		}

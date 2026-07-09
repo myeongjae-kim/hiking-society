@@ -5,6 +5,10 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
+import {
+	ARTICLE_MEDIA_REQUIRED_VIEW_MESSAGE,
+	hasPublishableArticleMedia,
+} from "#/society/article/articleViewPolicy";
 import { useArticleMediaUploader } from "#/society/article/hooks/useArticleMediaUploader";
 import { createArticleMutationPayload } from "#/society/article/utils/articleMutationPayload";
 import { FeedTopbar } from "#/society/feed/components/FeedTopbar";
@@ -21,10 +25,6 @@ import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { useMutationRunner } from "#/society/shared/hooks/useMutationRunner";
 import { useRouter } from "#/society/shared/hooks/useRouter";
 import type { Article, ArticleId } from "@/core/article/domain";
-import {
-	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaCollection,
-} from "@/core/article/domain/ArticlePolicy";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { Comment, CommentId } from "@/core/comment/domain";
 import type { Hiking } from "@/core/hiking/domain";
@@ -207,8 +207,11 @@ export function ArticleDetailClient({
 	};
 
 	const updateArticle = (values: ArticleFormValues) => {
-		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
-			setError(`article-edit-${article.id}`, ARTICLE_MEDIA_REQUIRED_MESSAGE);
+		if (!hasPublishableArticleMedia(values.media)) {
+			setError(
+				`article-edit-${article.id}`,
+				ARTICLE_MEDIA_REQUIRED_VIEW_MESSAGE,
+			);
 			return;
 		}
 

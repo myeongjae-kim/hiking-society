@@ -97,6 +97,14 @@ export default {
 			},
 		},
 		{
+			name: "api-contracts-not-to-core",
+			comment:
+				"API wire contracts and schemas are framework boundary DTOs; they should not import core model/runtime constants.",
+			severity: "error",
+			from: { path: "^src/api/(contracts|schemas)[.]ts$" },
+			to: { path: "^src/core/" },
+		},
+		{
 			name: "society-shared-not-to-product-society-modules",
 			comment: "Shared society UI code should not depend on product modules.",
 			severity: "error",
@@ -128,6 +136,30 @@ export default {
 			severity: "error",
 			from: { path: "^src/society/.*[.]functions[.]ts$" },
 			to: { path: "^" },
+		},
+		{
+			name: "society-ui-not-to-core-domain-policy-runtime",
+			comment:
+				"Society UI may receive core-shaped data, but should not execute core domain policies directly.",
+			severity: "error",
+			from: { path: "^src/society/" },
+			to: {
+				path: [
+					"^src/core/auth/model/(roles|roleLabels)[.]ts$",
+					"^src/core/article/domain/ArticlePolicy[.]ts$",
+				],
+			},
+		},
+		{
+			name: "routes-and-society-not-to-core-runtime",
+			comment:
+				"Routes and society UI can reference core types, but runtime execution must go through society-app or API boundaries.",
+			severity: "error",
+			from: { path: "^src/(routes|society)/" },
+			to: {
+				path: "^src/core/",
+				dependencyTypesNot: ["type-only"],
+			},
 		},
 	],
 	options: {

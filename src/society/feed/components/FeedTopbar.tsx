@@ -1,11 +1,11 @@
 import * as Popover from "@radix-ui/react-popover";
 import { NotificationPopover } from "#/society/notification/components/NotificationPopover";
+import { userRoleLabels } from "#/society/shared/authViewPolicy";
 import Link from "#/society/shared/components/AppLink";
 import { Command } from "#/society/shared/components/Command";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { ThemeSelector } from "#/society/shared/components/ThemeSelector";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import { roleLabels } from "@/core/auth/model/roleLabels";
 import type { AuthorName } from "@/core/common/domain";
 import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
 
@@ -43,7 +43,7 @@ export function FeedTopbar({
 				</Command>
 				<nav className="ml-auto flex flex-wrap items-center gap-2">
 					<span className="font-mono text-[var(--subtext0)] text-xs leading-[1.4]">
-						{String(currentAuthorName)} · {roleLabels[user.role]}
+						{String(currentAuthorName)} · {userRoleLabels[user.role]}
 					</span>
 					<NotificationPopover
 						key={notificationSnapshotKey}

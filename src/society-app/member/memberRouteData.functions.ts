@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { readCurrentUser } from "#/society-app/auth/session.functions";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import {
+	toMemberContract,
+	toMemberManagementActorContract,
+} from "./memberRouteView";
 
 export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -19,8 +23,8 @@ export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 		}
 
 		return {
-			actor: data.actor,
-			members: data.members,
+			actor: toMemberManagementActorContract(data.actor),
+			members: data.members.map(toMemberContract),
 			status: "ok" as const,
 		};
 	},

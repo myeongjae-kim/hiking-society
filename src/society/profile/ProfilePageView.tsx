@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import {
+	canViewMemberManagement,
+	userRoleLabels,
+} from "#/society/shared/authViewPolicy";
 import Link from "#/society/shared/components/AppLink";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { ThemeSelector } from "#/society/shared/components/ThemeSelector";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import { roleLabels } from "@/core/auth/model/roleLabels";
-import { canManageMembers } from "@/core/auth/model/roles";
 import { LogoutButton } from "../auth/components/LogoutButton";
 import {
 	DisplayNameEditDialog,
@@ -105,7 +107,7 @@ export default function MyPageView({ theme, user }: MyPageViewProps) {
 						>
 							피드
 						</Link>
-						{canManageMembers(user.role) ? (
+						{canViewMemberManagement(user.role) ? (
 							<Link
 								is-="button"
 								size-="small"
@@ -137,7 +139,7 @@ export default function MyPageView({ theme, user }: MyPageViewProps) {
 							</div>
 						}
 					/>
-					<Row label="권한" value={roleLabels[user.role]} />
+					<Row label="권한" value={userRoleLabels[user.role]} />
 					<Row label="로그인 제공자" value={user.provider ?? "null"} />
 					<Row label="최근 로그인" value={formatDate(user.lastLoginAt)} />
 				</dl>

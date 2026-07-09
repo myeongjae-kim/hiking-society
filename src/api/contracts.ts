@@ -1,5 +1,11 @@
 export type UserRoleContract = "associate" | "member" | "admin";
 
+export const userRoleContractValues = [
+	"associate",
+	"member",
+	"admin",
+] as const satisfies readonly UserRoleContract[];
+
 export type CurrentUserContract = {
 	displayName: string | null;
 	email: string;

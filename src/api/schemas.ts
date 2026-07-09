@@ -1,5 +1,4 @@
 import { z } from "@hono/zod-openapi";
-import { mutableRoles } from "@/core/auth/model/roles";
 import type {
 	ArticleContract,
 	ArticleDetailResponseContract,
@@ -16,6 +15,7 @@ import type {
 	NotificationListResponseContract,
 	ProfileImageUploadTargetResponseContract,
 } from "./contracts";
+import { userRoleContractValues } from "./contracts";
 
 export const idParamSchema = z.object({
 	articleId: z.string().regex(/^\d+$/).optional(),
@@ -349,5 +349,5 @@ export const notificationsQuerySchema = z.object({
 });
 
 export const updateMemberRoleBodySchema = z.object({
-	role: z.enum(mutableRoles),
+	role: z.enum(userRoleContractValues),
 });
