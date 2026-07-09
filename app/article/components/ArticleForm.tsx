@@ -23,6 +23,7 @@ import {
   getDuplicateMediaKeys,
   getMediaDuplicateKey,
   revokeDraftMediaUrl,
+  rotateDraftMediaFile,
   sortNewDraftMedias,
 } from './articleFormUtils';
 import { getMediaTakenTimeLabel, MediaViewer } from './MediaViewer';
@@ -85,6 +86,8 @@ export function ArticleForm({
   const [values, setValues] = useState<ArticleFormValues>(initialValues);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+  const [isProcessingOverlayOpen, setIsProcessingOverlayOpen] = useState(false);
+  const [rotatingSourceFile, setRotatingSourceFile] = useState<File | null>(null);
   const [processingLabel, setProcessingLabel] = useState('처리 중');
   const [draggedMediaOrder, setDraggedMediaOrder] = useState<number | null>(null);
   const [isMediaDropActive, setIsMediaDropActive] = useState(false);
@@ -139,12 +142,13 @@ export function ArticleForm({
   };
 
   const handleMediaFiles = async (files: File[]) => {
-    if (disabled || files.length === 0) {
+    if (disabled || rotatingSourceFile !== null || files.length === 0) {
       return;
     }
 
     setMediaError(null);
     setIsProcessingMedia(true);
+    setIsProcessingOverlayOpen(true);
 
     try {
       const settledMedias = await Promise.allSettled(
@@ -200,6 +204,7 @@ export function ArticleForm({
     } finally {
       setProcessingLabel('사진이나 동영상 처리 중');
       setIsProcessingMedia(false);
+      setIsProcessingOverlayOpen(false);
     }
   };
 
@@ -301,6 +306,77 @@ export function ArticleForm({
     removeMediaDragPreview();
   };
 
+  const rotateMedia = async (order: number) => {
+    if (disabled || rotatingSourceFile !== null) {
+      return;
+    }
+
+    const target = valuesRef.current.media.find((media) => media.order === order);
+
+    if (!target || target.mediaType !== 'image' || !target.sourceFile) {
+      return;
+    }
+
+    // Rotation runs per photo without flipping the shared `disabled` state, so only
+    // this card's own button is blocked while the other controls stay untouched.
+    const { sourceFile } = target;
+
+    setMediaError(null);
+    setProcessingLabel('사진 회전 중');
+    setRotatingSourceFile(sourceFile);
+
+    // Only surface the loader when the rotation is slow enough to notice, so quick
+    // rotations don't flash the overlay.
+    const overlayTimer = window.setTimeout(() => setIsProcessingOverlayOpen(true), 300);
+
+    try {
+      const rotation = ((target.rotation ?? 0) + 1) % 4;
+      const rotatedFile = await rotateDraftMediaFile(sourceFile, rotation);
+
+      // The photo may have been removed while rotating; drop the result instead of
+      // leaking its object URL. Matching by source file keeps reorders safe too.
+      if (!valuesRef.current.media.some((media) => media.sourceFile === sourceFile)) {
+        return;
+      }
+
+      const rotatedUrl = URL.createObjectURL(rotatedFile);
+
+      setValues((currentValues) => ({
+        ...currentValues,
+        media: currentValues.media.map((media) => {
+          if (media.sourceFile !== sourceFile) {
+            return media;
+          }
+
+          if (media.url.startsWith('blob:')) {
+            URL.revokeObjectURL(media.url);
+          }
+
+          return {
+            ...media,
+            file: rotatedFile,
+            fileName: rotatedFile.name,
+            fileSize: rotatedFile.size,
+            lastModified: rotatedFile.lastModified,
+            rotation,
+            url: rotatedUrl,
+          };
+        }),
+      }));
+    } catch (error) {
+      setMediaError(
+        error instanceof Error
+          ? `${target.fileName}: ${error.message}`
+          : `${target.fileName}: 사진을 회전하지 못했습니다.`,
+      );
+    } finally {
+      window.clearTimeout(overlayTimer);
+      setProcessingLabel('사진이나 동영상 처리 중');
+      setRotatingSourceFile(null);
+      setIsProcessingOverlayOpen(false);
+    }
+  };
+
   const removeMedia = (order: number) => {
     setValues((currentValues) => ({
       ...currentValues,
@@ -324,7 +400,7 @@ export function ArticleForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (disabled) {
+    if (disabled || rotatingSourceFile !== null) {
       return;
     }
 
@@ -391,6 +467,7 @@ export function ArticleForm({
                 const isDragged = draggedMediaOrder === media.order;
                 const canMoveUp = media.order > 1;
                 const canMoveDown = media.order < values.media.length;
+                const canRotate = media.mediaType === 'image' && Boolean(media.sourceFile);
                 const takenTime = getMediaTakenTimeLabel(media);
 
                 return (
@@ -454,7 +531,7 @@ export function ArticleForm({
                           동일한 사진이나 동영상이 선택되었습니다.
                         </span>
                       ) : null}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className={`grid gap-2 ${canRotate ? 'grid-cols-4' : 'grid-cols-3'}`}>
                         <ActionButton
                           disabled={!canMoveUp}
                           onClick={() => moveMedia(media.order, media.order - 1)}
@@ -467,6 +544,15 @@ export function ArticleForm({
                         >
                           아래로
                         </ActionButton>
+                        {canRotate ? (
+                          <ActionButton
+                            disabled={disabled || media.sourceFile === rotatingSourceFile}
+                            onClick={() => rotateMedia(media.order)}
+                            title="오른쪽으로 90도 회전"
+                          >
+                            회전
+                          </ActionButton>
+                        ) : null}
                         <ActionButton onClick={() => removeMedia(media.order)} tone="danger">
                           제거
                         </ActionButton>
@@ -507,7 +593,7 @@ export function ArticleForm({
           </ActionButton>
         </div>
       </form>
-      <LoadingOverlay label={processingLabel} open={isProcessingMedia} />
+      <LoadingOverlay label={processingLabel} open={isProcessingOverlayOpen} />
     </>
   );
 }

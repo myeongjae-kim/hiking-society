@@ -1,6 +1,7 @@
 type CompressImageOptions = {
   maxWidth: number;
   quality: number;
+  quarterTurns?: number;
 };
 
 type Bytes = Uint8Array<ArrayBuffer>;
@@ -32,6 +33,8 @@ const webpVp8xChunkSize = 10;
 const webpIccFlag = 0x20;
 const webpExifFlag = 0x08;
 const webpXmpFlag = 0x04;
+const exifOrientationTag = 0x0112;
+const quarterTurnRadians = Math.PI / 2;
 
 function getWebpFileName(fileName: string) {
   const extensionStartIndex = fileName.lastIndexOf('.');
@@ -191,6 +194,54 @@ function normalizeExifPayload(payload: Bytes) {
   }
 
   return null;
+}
+
+// The canvas pipeline bakes EXIF orientation into pixels, so the preserved EXIF
+// orientation tag is reset to 1 to keep devices that honor it from rotating again.
+function normalizeExifOrientation(exif: Bytes): Bytes {
+  const tiffOffset = startsWithBytes(exif, 0, jpegExifHeader) ? jpegExifHeader.length : 0;
+
+  if (tiffOffset + 8 > exif.length || !isTiffHeader(exif, tiffOffset)) {
+    return exif;
+  }
+
+  const isLittleEndian = exif[tiffOffset] === 0x49;
+  const readUint16 = (offset: number) =>
+    isLittleEndian
+      ? exif[offset] | (exif[offset + 1] << 8)
+      : (exif[offset] << 8) | exif[offset + 1];
+  const readUint32 = (offset: number) =>
+    isLittleEndian ? readUint32LittleEndian(exif, offset) : readUint32BigEndian(exif, offset);
+  const ifdOffset = tiffOffset + readUint32(tiffOffset + 4);
+
+  if (ifdOffset + 2 > exif.length) {
+    return exif;
+  }
+
+  const entryCount = readUint16(ifdOffset);
+  const entriesStart = ifdOffset + 2;
+
+  if (entriesStart + entryCount * 12 > exif.length) {
+    return exif;
+  }
+
+  for (let index = 0; index < entryCount; index += 1) {
+    const entryOffset = entriesStart + index * 12;
+
+    if (readUint16(entryOffset) !== exifOrientationTag) {
+      continue;
+    }
+
+    const result = new Uint8Array(exif) as Bytes;
+    const valueOffset = entryOffset + 8;
+
+    result[valueOffset] = isLittleEndian ? 1 : 0;
+    result[valueOffset + 1] = isLittleEndian ? 0 : 1;
+
+    return result;
+  }
+
+  return exif;
 }
 
 function getJpegBlockPayload(bytes: Uint8Array, block: MetadataBlock) {
@@ -369,7 +420,13 @@ async function extractOriginalMetadataChunks(file: File): Promise<WebpMetadataCh
       }),
     );
 
-    return mergeMetadataChunks(extractedChunks);
+    const merged = mergeMetadataChunks(extractedChunks);
+
+    if (merged.exif) {
+      merged.exif = normalizeExifOrientation(merged.exif);
+    }
+
+    return merged;
   } catch {
     return {};
   }
@@ -446,7 +503,9 @@ export async function createCompressedWebpFile(
 ): Promise<File> {
   const metadataChunksPromise = extractOriginalMetadataChunks(file);
   const browserReadableFile = await createBrowserReadableFile(file);
-  const imageBitmap = await createImageBitmap(browserReadableFile);
+  const imageBitmap = await createImageBitmap(browserReadableFile, {
+    imageOrientation: 'from-image',
+  });
   const longestSide = Math.max(imageBitmap.width, imageBitmap.height);
   const scale = longestSide > options.maxWidth ? options.maxWidth / longestSide : 1;
   const targetWidth = Math.round(imageBitmap.width * scale);
@@ -457,10 +516,18 @@ export async function createCompressedWebpFile(
     throw new Error('Invalid image dimensions.');
   }
 
+  // 90-degree steps are baked into the pixels so the orientation is identical on
+  // every device. Rotating always re-runs this compression from the source file,
+  // so the result stays a single encode generation and never compounds loss.
+  const normalizedTurns = (((options.quarterTurns ?? 0) % 4) + 4) % 4;
+  const swapsAxes = normalizedTurns % 2 === 1;
+  const canvasWidth = swapsAxes ? targetHeight : targetWidth;
+  const canvasHeight = swapsAxes ? targetWidth : targetHeight;
+
   const canvas = document.createElement('canvas');
 
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
 
   const context = canvas.getContext('2d');
 
@@ -469,14 +536,20 @@ export async function createCompressedWebpFile(
     throw new Error('Canvas is not available.');
   }
 
-  context.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
-  const imageData = context.getImageData(0, 0, targetWidth, targetHeight);
+  context.translate(canvasWidth / 2, canvasHeight / 2);
+
+  if (normalizedTurns !== 0) {
+    context.rotate(normalizedTurns * quarterTurnRadians);
+  }
+
+  context.drawImage(imageBitmap, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
+  const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
   imageBitmap.close();
 
   const blob = await encodeImageDataToWebpBlob(imageData, options.quality);
   const blobWithMetadata = await attachMetadataToWebpBlob(blob, await metadataChunksPromise, {
-    height: targetHeight,
-    width: targetWidth,
+    height: canvasHeight,
+    width: canvasWidth,
   });
 
   return new File([blobWithMetadata], getWebpFileName(file.name), {

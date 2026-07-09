@@ -35,6 +35,8 @@ export function createDraftMedia(
     | 'mediaType'
     | 'metadata'
     | 'originalMetadata'
+    | 'rotation'
+    | 'sourceFile'
     | 'thumbnailFile'
     | 'thumbnailUrl'
     | 'width'
@@ -90,9 +92,21 @@ export async function createCompressedDraftMedia(
     mediaType: 'image',
     metadata: createArticleMediaMetadataSummary(originalMetadata),
     originalMetadata,
+    rotation: 0,
+    sourceFile: file,
     thumbnailFile: undefined,
     thumbnailUrl: null,
     width: null,
+  });
+}
+
+// Rotation re-compresses the original source file at the new cumulative angle, so
+// repeated rotations stay a single encode generation instead of stacking loss.
+export async function rotateDraftMediaFile(sourceFile: File, quarterTurns: number): Promise<File> {
+  return createCompressedWebpFile(sourceFile, {
+    maxWidth: maxCompressedPhotoWidth,
+    quality: webpQuality,
+    quarterTurns,
   });
 }
 
