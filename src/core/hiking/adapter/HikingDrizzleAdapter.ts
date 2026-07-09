@@ -79,30 +79,25 @@ export class HikingDrizzleAdapter implements HikingCommandPort {
 
 	async findActiveHikingById(hikingId: HikingId) {
 		const numericHikingId = toNumericId(hikingId);
-		const [hikingRows, articleCountRows] = await Promise.all([
-			db
-				.select({
-					authorUserId: hikingTable.authorUserId,
-					id: hikingTable.id,
-				})
-				.from(hikingTable)
-				.where(
-					and(
-						eq(hikingTable.id, numericHikingId),
-						isNull(hikingTable.deletedAt),
-					),
-				)
-				.limit(1),
-			db
-				.select({ articleCount: sql<number>`count(*)::int` })
-				.from(articleTable)
-				.where(
-					and(
-						eq(articleTable.hikingId, numericHikingId),
-						isNull(articleTable.deletedAt),
-					),
+		const hikingRows = await db
+			.select({
+				authorUserId: hikingTable.authorUserId,
+				id: hikingTable.id,
+			})
+			.from(hikingTable)
+			.where(
+				and(eq(hikingTable.id, numericHikingId), isNull(hikingTable.deletedAt)),
+			)
+			.limit(1);
+		const articleCountRows = await db
+			.select({ articleCount: sql<number>`count(*)::int` })
+			.from(articleTable)
+			.where(
+				and(
+					eq(articleTable.hikingId, numericHikingId),
+					isNull(articleTable.deletedAt),
 				),
-		]);
+			);
 		const hiking = hikingRows[0];
 
 		if (!hiking) {

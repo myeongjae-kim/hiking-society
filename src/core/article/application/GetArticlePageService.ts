@@ -21,21 +21,20 @@ export class GetArticlePageService implements GetArticlePageUseCase {
 		}
 
 		return this.transactionPort.run(async () => {
-			const [snapshot, notificationSnapshot] = await Promise.all([
-				this.getArticleDetailUseCase.get({
-					articleId: input.articleId,
-					currentUserId: input.currentUser.id,
-				}),
-				input.includeNotifications
-					? this.listNotificationsUseCase.list({
-							currentUserId: input.currentUser.id,
-						})
-					: Promise.resolve(null),
-			]);
+			const snapshot = await this.getArticleDetailUseCase.get({
+				articleId: input.articleId,
+				currentUserId: input.currentUser.id,
+			});
 
 			if (!snapshot) {
 				return { status: "notFound" as const };
 			}
+
+			const notificationSnapshot = input.includeNotifications
+				? await this.listNotificationsUseCase.list({
+						currentUserId: input.currentUser.id,
+					})
+				: null;
 
 			return {
 				notificationSnapshot,

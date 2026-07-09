@@ -15,10 +15,8 @@ const articleRouteDataInputSchema = z.object({
 export const getArticleRouteData = createServerFn({ method: "GET" })
 	.validator(articleRouteDataInputSchema)
 	.handler(async ({ data }) => {
-		const [currentUser, currentTheme] = await Promise.all([
-			readCurrentUser(),
-			readCurrentTheme(),
-		]);
+		const currentUser = await readCurrentUser();
+		const currentTheme = await readCurrentTheme();
 
 		if (!currentUser) {
 			return { status: "unauthenticated" as const };

@@ -92,6 +92,12 @@ export function runInDrizzleTransaction<T>(
 	// 트랜잭션 callback 안에서 비동기 작업을 띄워두고 await하지 않은 채 callback이 끝나면,
 	// 그 작업이 나중에 닫힌 tx를 잡고 DB를 호출할 수 있습니다.
 	// transaction 안의 DB 작업은 반드시 callback 안에서 모두 await되어야 합니다.
+	//
+	// transactionPort.run() 또는 db.transaction() 안에서는 DB 쿼리에 Promise.all을 쓰지 마세요.
+	// 트랜잭션 범위는 PostgreSQL 클라이언트/커넥션 하나를 공유하므로, 이전 쿼리가 끝나기 전에
+	// 다음 쿼리를 시작하면 같은 client.query()에 동시 작업이 큐잉됩니다. pg@8에서는
+	// DeprecationWarning이 발생하고, pg@9에서는 에러가 될 수 있습니다. 트랜잭션 안의 DB 쿼리는
+	// 순차적으로 await하거나, 독립적인 병렬 읽기는 트랜잭션 밖으로 빼야 합니다.
 	work: () => Promise<T>,
 	options: DrizzleTransactionOptions = {},
 ) {

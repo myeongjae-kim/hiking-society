@@ -44,6 +44,14 @@ Manage backend-related code under `src/core` using port and adapter architecture
 - Keep `drizzle/schema.ts` as the DB schema source of truth, but do not leak its inferred row types into core application/model contracts.
 <!-- END:backend-architecture-agent-rules -->
 
+<!-- BEGIN:db-transaction-agent-rules -->
+# DB Transactions
+
+Do not run DB queries with `Promise.all` inside `transactionPort.run()` or `db.transaction()`.
+
+These transaction scopes share a single PostgreSQL client/connection. Starting another DB query before the previous query has completed queues concurrent work on the same client, which triggers the `pg` deprecation warning: `Calling client.query() when the client is already executing a query is deprecated`. In `pg@9.0`, this behavior is expected to become an error. Await DB queries sequentially inside a transaction, or move independent parallel reads outside the transaction scope.
+<!-- END:db-transaction-agent-rules -->
+
 <!-- BEGIN:db-schema-agent-rules -->
 # DB Schema
 

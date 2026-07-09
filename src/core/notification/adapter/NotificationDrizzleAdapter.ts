@@ -58,39 +58,37 @@ export class NotificationDrizzleAdapter
 	async list(input: Parameters<NotificationQueryPort["list"]>[0]) {
 		const limit = input.limit ?? 20;
 		const offset = input.offset ?? 0;
-		const [rows, unreadRows] = await Promise.all([
-			db
-				.select({
-					actorUserId: notificationTable.actorUserId,
-					articleId: notificationTable.articleId,
-					commentId: notificationTable.commentId,
-					contentExcerpt: notificationTable.contentExcerpt,
-					createdAt: notificationTable.createdAt,
-					displayName: userTable.displayName,
-					email: userTable.email,
-					id: notificationTable.id,
-					name: userTable.name,
-					profileImageUrl: userTable.profileImageUrl,
-					readAt: notificationTable.readAt,
-					type: notificationTable.type,
-				})
-				.from(notificationTable)
-				.innerJoin(userTable, eq(userTable.id, notificationTable.actorUserId))
-				.where(eq(notificationTable.recipientUserId, input.currentUserId))
-				.orderBy(desc(notificationTable.createdAt))
-				.limit(limit + 1)
-				.offset(offset),
-			db
-				.select({ id: notificationTable.id })
-				.from(notificationTable)
-				.where(
-					and(
-						eq(notificationTable.recipientUserId, input.currentUserId),
-						isNull(notificationTable.readAt),
-					),
-				)
-				.limit(1),
-		]);
+		const rows = await db
+			.select({
+				actorUserId: notificationTable.actorUserId,
+				articleId: notificationTable.articleId,
+				commentId: notificationTable.commentId,
+				contentExcerpt: notificationTable.contentExcerpt,
+				createdAt: notificationTable.createdAt,
+				displayName: userTable.displayName,
+				email: userTable.email,
+				id: notificationTable.id,
+				name: userTable.name,
+				profileImageUrl: userTable.profileImageUrl,
+				readAt: notificationTable.readAt,
+				type: notificationTable.type,
+			})
+			.from(notificationTable)
+			.innerJoin(userTable, eq(userTable.id, notificationTable.actorUserId))
+			.where(eq(notificationTable.recipientUserId, input.currentUserId))
+			.orderBy(desc(notificationTable.createdAt))
+			.limit(limit + 1)
+			.offset(offset);
+		const unreadRows = await db
+			.select({ id: notificationTable.id })
+			.from(notificationTable)
+			.where(
+				and(
+					eq(notificationTable.recipientUserId, input.currentUserId),
+					isNull(notificationTable.readAt),
+				),
+			)
+			.limit(1);
 
 		return {
 			hasMoreNotifications: rows.length > limit,

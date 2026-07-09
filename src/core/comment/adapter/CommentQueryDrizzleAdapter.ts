@@ -43,54 +43,49 @@ export class CommentQueryDrizzleAdapter implements CommentQueryPort {
 		input: Parameters<CommentQueryPort["listArticleComments"]>[0],
 	) {
 		const articleId = toNumericId(input.articleId);
-		const [commentRows, commentLikeRows] = await Promise.all([
-			db
-				.select({
-					articleId: commentTable.articleId,
-					authorUserId: commentTable.authorUserId,
-					body: commentTable.body,
-					createdAt: commentTable.createdAt,
-					deletedAt: commentTable.deletedAt,
-					displayName: userTable.displayName,
-					email: userTable.email,
-					id: commentTable.id,
-					name: userTable.name,
-					parentCommentId: commentTable.parentCommentId,
-					profileImageUrl: userTable.profileImageUrl,
-					updatedAt: commentTable.updatedAt,
-				})
-				.from(commentTable)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
-				.where(
-					and(
-						eq(commentTable.articleId, articleId),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
-				)
-				.orderBy(asc(commentTable.createdAt)),
-			db
-				.select({
-					commentId: commentLikeTable.commentId,
-					userId: commentLikeTable.userId,
-				})
-				.from(commentLikeTable)
-				.innerJoin(
-					commentTable,
-					eq(commentTable.id, commentLikeTable.commentId),
-				)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
-				.where(
-					and(
-						eq(commentTable.articleId, articleId),
-						isNull(commentTable.deletedAt),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+		const commentRows = await db
+			.select({
+				articleId: commentTable.articleId,
+				authorUserId: commentTable.authorUserId,
+				body: commentTable.body,
+				createdAt: commentTable.createdAt,
+				deletedAt: commentTable.deletedAt,
+				displayName: userTable.displayName,
+				email: userTable.email,
+				id: commentTable.id,
+				name: userTable.name,
+				parentCommentId: commentTable.parentCommentId,
+				profileImageUrl: userTable.profileImageUrl,
+				updatedAt: commentTable.updatedAt,
+			})
+			.from(commentTable)
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+			.where(
+				and(
+					eq(commentTable.articleId, articleId),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
 				),
-		]);
+			)
+			.orderBy(asc(commentTable.createdAt));
+		const commentLikeRows = await db
+			.select({
+				commentId: commentLikeTable.commentId,
+				userId: commentLikeTable.userId,
+			})
+			.from(commentLikeTable)
+			.innerJoin(commentTable, eq(commentTable.id, commentLikeTable.commentId))
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
+			.where(
+				and(
+					eq(commentTable.articleId, articleId),
+					isNull(commentTable.deletedAt),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
+				),
+			);
 
 		const commentLikeCountByCommentId = new Map<number, number>();
 		const likedCommentIdsByCurrentUser = new Set<number>();

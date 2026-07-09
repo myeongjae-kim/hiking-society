@@ -24,16 +24,14 @@ export class GetFeedHomeService implements GetFeedHomeUseCase {
 		}
 
 		return this.transactionPort.run(async () => {
-			const [feedSummary, notificationSnapshot] = await Promise.all([
-				this.listFeedUseCase.listHikings({
-					currentUserId: input.currentUser.id,
-				}),
-				input.includeNotifications
-					? this.listNotificationsUseCase.list({
-							currentUserId: input.currentUser.id,
-						})
-					: Promise.resolve(null),
-			]);
+			const feedSummary = await this.listFeedUseCase.listHikings({
+				currentUserId: input.currentUser.id,
+			});
+			const notificationSnapshot = input.includeNotifications
+				? await this.listNotificationsUseCase.list({
+						currentUserId: input.currentUser.id,
+					})
+				: null;
 
 			return {
 				feedSummary,

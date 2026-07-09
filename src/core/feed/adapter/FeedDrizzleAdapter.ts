@@ -83,55 +83,53 @@ function incrementCount(counts: Map<number, number>, id: number) {
 
 export class FeedDrizzleAdapter implements FeedQueryPort {
 	async listHikings() {
-		const [hikingRows, articleCountRows, commentCountRows] = await Promise.all([
-			db
-				.select({
-					authorUserId: hikingTable.authorUserId,
-					completedAt: hikingTable.completedAt,
-					createdAt: hikingTable.createdAt,
-					displayName: userTable.displayName,
-					email: userTable.email,
-					hikingDate: hikingTable.hikingDate,
-					id: hikingTable.id,
-					latitude: hikingTable.latitude,
-					longitude: hikingTable.longitude,
-					altitude: hikingTable.altitude,
-					mountainName: hikingTable.mountainName,
-					order: hikingTable.order,
-					name: userTable.name,
-					participantsCsv: hikingTable.participantsCsv,
-					restaurantAddress: hikingTable.restaurantAddress,
-					startedAt: hikingTable.startedAt,
-					timezone: hikingTable.timezone,
-					updatedAt: hikingTable.updatedAt,
-				})
-				.from(hikingTable)
-				.innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
-				.where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt))),
-			db
-				.select({
-					articleCount: sql<number>`count(*)::int`,
-					hikingId: articleTable.hikingId,
-				})
-				.from(articleTable)
-				.innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
-				.where(and(isNull(articleTable.deletedAt), isNull(userTable.deletedAt)))
-				.groupBy(articleTable.hikingId),
-			db
-				.select({
-					commentCount: sql<number>`count(*)::int`,
-				})
-				.from(commentTable)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
-				.where(
-					and(
-						isNull(commentTable.deletedAt),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+		const hikingRows = await db
+			.select({
+				authorUserId: hikingTable.authorUserId,
+				completedAt: hikingTable.completedAt,
+				createdAt: hikingTable.createdAt,
+				displayName: userTable.displayName,
+				email: userTable.email,
+				hikingDate: hikingTable.hikingDate,
+				id: hikingTable.id,
+				latitude: hikingTable.latitude,
+				longitude: hikingTable.longitude,
+				altitude: hikingTable.altitude,
+				mountainName: hikingTable.mountainName,
+				order: hikingTable.order,
+				name: userTable.name,
+				participantsCsv: hikingTable.participantsCsv,
+				restaurantAddress: hikingTable.restaurantAddress,
+				startedAt: hikingTable.startedAt,
+				timezone: hikingTable.timezone,
+				updatedAt: hikingTable.updatedAt,
+			})
+			.from(hikingTable)
+			.innerJoin(userTable, eq(userTable.id, hikingTable.authorUserId))
+			.where(and(isNull(hikingTable.deletedAt), isNull(userTable.deletedAt)));
+		const articleCountRows = await db
+			.select({
+				articleCount: sql<number>`count(*)::int`,
+				hikingId: articleTable.hikingId,
+			})
+			.from(articleTable)
+			.innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+			.where(and(isNull(articleTable.deletedAt), isNull(userTable.deletedAt)))
+			.groupBy(articleTable.hikingId);
+		const commentCountRows = await db
+			.select({
+				commentCount: sql<number>`count(*)::int`,
+			})
+			.from(commentTable)
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+			.where(
+				and(
+					isNull(commentTable.deletedAt),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
 				),
-		]);
+			);
 
 		const hikings: Hiking[] = hikingRows.map((row) => ({
 			authorName: toAuthorName(row),
@@ -171,140 +169,122 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 		input: Parameters<FeedQueryPort["listHikingArticles"]>[0],
 	) {
 		const hikingId = toNumericId(input.hikingId);
-		const [
-			articleRows,
-			mediaRows,
-			commentRows,
-			articleLikeRows,
-			commentLikeRows,
-		] = await Promise.all([
-			db
-				.select({
-					authorUserId: articleTable.authorUserId,
-					body: articleTable.body,
-					createdAt: articleTable.createdAt,
-					deletedAt: articleTable.deletedAt,
-					displayName: userTable.displayName,
-					email: userTable.email,
-					hikingId: articleTable.hikingId,
-					id: articleTable.id,
-					name: userTable.name,
-					profileImageUrl: userTable.profileImageUrl,
-					updatedAt: articleTable.updatedAt,
-				})
-				.from(articleTable)
-				.innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
-				.where(
-					and(
-						eq(articleTable.hikingId, hikingId),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+		const articleRows = await db
+			.select({
+				authorUserId: articleTable.authorUserId,
+				body: articleTable.body,
+				createdAt: articleTable.createdAt,
+				deletedAt: articleTable.deletedAt,
+				displayName: userTable.displayName,
+				email: userTable.email,
+				hikingId: articleTable.hikingId,
+				id: articleTable.id,
+				name: userTable.name,
+				profileImageUrl: userTable.profileImageUrl,
+				updatedAt: articleTable.updatedAt,
+			})
+			.from(articleTable)
+			.innerJoin(userTable, eq(userTable.id, articleTable.authorUserId))
+			.where(
+				and(
+					eq(articleTable.hikingId, hikingId),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
 				),
-			db
-				.select({
-					articleId: articleMediaTable.articleId,
-					byteSize: articleMediaTable.byteSize,
-					contentType: articleMediaTable.contentType,
-					durationMs: articleMediaTable.durationMs,
-					height: articleMediaTable.height,
-					mediaType: articleMediaTable.mediaType,
-					metadataDateTime: articleMediaMetadataTable.dateTime,
-					metadataExposureTime: articleMediaMetadataTable.exposureTime,
-					metadataFNumber: articleMediaMetadataTable.fNumber,
-					metadataFocalLengthIn35mmFilm:
-						articleMediaMetadataTable.focalLengthIn35mmFilm,
-					metadataIsoSpeedRatings: articleMediaMetadataTable.isoSpeedRatings,
-					metadataMake: articleMediaMetadataTable.make,
-					metadataModel: articleMediaMetadataTable.model,
-					metadataShutterSpeedValue:
-						articleMediaMetadataTable.shutterSpeedValue,
-					objectKey: articleMediaTable.objectKey,
-					order: articleMediaTable.order,
-					thumbnailUrl: articleMediaTable.thumbnailUrl,
-					url: articleMediaTable.url,
-					width: articleMediaTable.width,
-				})
-				.from(articleMediaTable)
-				.leftJoin(
-					articleMediaMetadataTable,
-					eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
-				)
-				.innerJoin(
-					articleTable,
-					eq(articleTable.id, articleMediaTable.articleId),
-				)
-				.where(
-					and(
-						eq(articleTable.hikingId, hikingId),
-						isNull(articleTable.deletedAt),
-					),
-				)
-				.orderBy(articleMediaTable.order),
-			db
-				.select({
-					articleId: commentTable.articleId,
-					authorUserId: commentTable.authorUserId,
-					body: commentTable.body,
-					createdAt: commentTable.createdAt,
-					deletedAt: commentTable.deletedAt,
-					displayName: userTable.displayName,
-					email: userTable.email,
-					id: commentTable.id,
-					name: userTable.name,
-					parentCommentId: commentTable.parentCommentId,
-					profileImageUrl: userTable.profileImageUrl,
-					updatedAt: commentTable.updatedAt,
-				})
-				.from(commentTable)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
-				.where(
-					and(
-						eq(articleTable.hikingId, hikingId),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+			);
+		const mediaRows = await db
+			.select({
+				articleId: articleMediaTable.articleId,
+				byteSize: articleMediaTable.byteSize,
+				contentType: articleMediaTable.contentType,
+				durationMs: articleMediaTable.durationMs,
+				height: articleMediaTable.height,
+				mediaType: articleMediaTable.mediaType,
+				metadataDateTime: articleMediaMetadataTable.dateTime,
+				metadataExposureTime: articleMediaMetadataTable.exposureTime,
+				metadataFNumber: articleMediaMetadataTable.fNumber,
+				metadataFocalLengthIn35mmFilm:
+					articleMediaMetadataTable.focalLengthIn35mmFilm,
+				metadataIsoSpeedRatings: articleMediaMetadataTable.isoSpeedRatings,
+				metadataMake: articleMediaMetadataTable.make,
+				metadataModel: articleMediaMetadataTable.model,
+				metadataShutterSpeedValue: articleMediaMetadataTable.shutterSpeedValue,
+				objectKey: articleMediaTable.objectKey,
+				order: articleMediaTable.order,
+				thumbnailUrl: articleMediaTable.thumbnailUrl,
+				url: articleMediaTable.url,
+				width: articleMediaTable.width,
+			})
+			.from(articleMediaTable)
+			.leftJoin(
+				articleMediaMetadataTable,
+				eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
+			)
+			.innerJoin(articleTable, eq(articleTable.id, articleMediaTable.articleId))
+			.where(
+				and(
+					eq(articleTable.hikingId, hikingId),
+					isNull(articleTable.deletedAt),
 				),
-			db
-				.select({
-					articleId: articleLikeTable.articleId,
-					userId: articleLikeTable.userId,
-				})
-				.from(articleLikeTable)
-				.innerJoin(
-					articleTable,
-					eq(articleTable.id, articleLikeTable.articleId),
-				)
-				.innerJoin(userTable, eq(userTable.id, articleLikeTable.userId))
-				.where(
-					and(
-						eq(articleTable.hikingId, hikingId),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+			)
+			.orderBy(articleMediaTable.order);
+		const commentRows = await db
+			.select({
+				articleId: commentTable.articleId,
+				authorUserId: commentTable.authorUserId,
+				body: commentTable.body,
+				createdAt: commentTable.createdAt,
+				deletedAt: commentTable.deletedAt,
+				displayName: userTable.displayName,
+				email: userTable.email,
+				id: commentTable.id,
+				name: userTable.name,
+				parentCommentId: commentTable.parentCommentId,
+				profileImageUrl: userTable.profileImageUrl,
+				updatedAt: commentTable.updatedAt,
+			})
+			.from(commentTable)
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, commentTable.authorUserId))
+			.where(
+				and(
+					eq(articleTable.hikingId, hikingId),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
 				),
-			db
-				.select({
-					commentId: commentLikeTable.commentId,
-					userId: commentLikeTable.userId,
-				})
-				.from(commentLikeTable)
-				.innerJoin(
-					commentTable,
-					eq(commentTable.id, commentLikeTable.commentId),
-				)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
-				.where(
-					and(
-						eq(articleTable.hikingId, hikingId),
-						isNull(commentTable.deletedAt),
-						isNull(articleTable.deletedAt),
-						isNull(userTable.deletedAt),
-					),
+			);
+		const articleLikeRows = await db
+			.select({
+				articleId: articleLikeTable.articleId,
+				userId: articleLikeTable.userId,
+			})
+			.from(articleLikeTable)
+			.innerJoin(articleTable, eq(articleTable.id, articleLikeTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, articleLikeTable.userId))
+			.where(
+				and(
+					eq(articleTable.hikingId, hikingId),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
 				),
-		]);
+			);
+		const commentLikeRows = await db
+			.select({
+				commentId: commentLikeTable.commentId,
+				userId: commentLikeTable.userId,
+			})
+			.from(commentLikeTable)
+			.innerJoin(commentTable, eq(commentTable.id, commentLikeTable.commentId))
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.innerJoin(userTable, eq(userTable.id, commentLikeTable.userId))
+			.where(
+				and(
+					eq(articleTable.hikingId, hikingId),
+					isNull(commentTable.deletedAt),
+					isNull(articleTable.deletedAt),
+					isNull(userTable.deletedAt),
+				),
+			);
 
 		const mediaByArticleId = new Map<number, ArticleMedia[]>();
 		const articleLikeCountByArticleId = new Map<number, number>();

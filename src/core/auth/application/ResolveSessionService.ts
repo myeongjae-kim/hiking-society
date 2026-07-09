@@ -51,15 +51,13 @@ export class ResolveSessionService implements ResolveSessionUseCase {
 				return { refreshedTokens: null, user: null };
 			}
 
-			const [tokens, user] = await Promise.all([
-				this.createSessionTokenUseCase.create({
-					email: session.email,
-					provider: session.provider,
-					role: session.role,
-					userId: session.userId,
-				}),
-				this.authQueryPort.getUserByUserId(session.userId),
-			]);
+			const tokens = await this.createSessionTokenUseCase.create({
+				email: session.email,
+				provider: session.provider,
+				role: session.role,
+				userId: session.userId,
+			});
+			const user = await this.authQueryPort.getUserByUserId(session.userId);
 
 			return { refreshedTokens: tokens, user };
 		});

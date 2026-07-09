@@ -7,10 +7,8 @@ import { applicationUseCaseContext } from "@/core/config/applicationUseCases.ser
 
 export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 	async () => {
-		const [user, currentTheme] = await Promise.all([
-			readCurrentUser(),
-			readCurrentTheme(),
-		]);
+		const user = await readCurrentUser();
+		const currentTheme = await readCurrentTheme();
 
 		if (!user) {
 			return { status: "unauthenticated" as const };
