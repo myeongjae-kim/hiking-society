@@ -2,7 +2,6 @@ import { createRoute } from "@hono/zod-openapi";
 import { toNumericId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import { revalidatePath } from "#/api/config/revalidate";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
@@ -46,7 +45,6 @@ controller.openapi(
 				userId: user.id,
 				values: { body: c.req.valid("json").body },
 			});
-		revalidatePath("/feed");
 
 		return c.json({ ok: true } as const, 200);
 	},

@@ -74,16 +74,6 @@ export function toHikingValues(values: {
 	};
 }
 
-export function successRevalidationPaths(articleId?: ArticleId | null) {
-	const paths = ["/feed"];
-
-	if (articleId) {
-		paths.push(`/article/${articleId}`);
-	}
-
-	return paths;
-}
-
 export function assertMutableRole(value: string): asserts value is UserRole {
 	if (value !== "associate" && value !== "member" && value !== "admin") {
 		throw badRequest("잘못된 권한입니다.");

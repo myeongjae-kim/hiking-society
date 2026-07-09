@@ -4,7 +4,6 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess } from "../../articleRevalidation";
 
 const controller = Controller();
 
@@ -45,7 +44,6 @@ controller.openapi(
 						}
 					: { articleId, authorUserId: user.id, body: values.body },
 			);
-		revalidateArticleSuccess(articleId);
 
 		return c.json({ ok: true } as const, 200);
 	},

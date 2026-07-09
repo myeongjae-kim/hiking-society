@@ -8,7 +8,6 @@ import {
 } from "#/api/config/sessionCookies";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateProfileViews } from "../profileRevalidation";
 
 const controller = Controller();
 const {
@@ -70,8 +69,6 @@ controller.openapi(
 				cookieOptions(refreshTokenMaxAgeSeconds),
 			);
 		}
-
-		revalidateProfileViews();
 
 		return c.json({ ok: true } as const, 200);
 	},

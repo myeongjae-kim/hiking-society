@@ -3,7 +3,6 @@ import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, profileImageBodySchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateProfileViews } from "../profileRevalidation";
 
 const controller = Controller();
 
@@ -38,7 +37,6 @@ controller.openapi(
 				removeProfileImage: values.removeProfileImage,
 				userId: user.id,
 			});
-		revalidateProfileViews();
 
 		return c.json({ ok: true } as const, 200);
 	},

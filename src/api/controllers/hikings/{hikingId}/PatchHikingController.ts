@@ -2,7 +2,6 @@ import { createRoute } from "@hono/zod-openapi";
 import { toHikingId, toHikingValues } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import { revalidatePath } from "#/api/config/revalidate";
 import { hikingBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
@@ -38,7 +37,6 @@ controller.openapi(
 				userId: user.id,
 				values: toHikingValues(c.req.valid("json")),
 			});
-		revalidatePath("/feed");
 
 		return c.json({ ok: true } as const, 200);
 	},

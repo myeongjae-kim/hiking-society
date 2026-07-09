@@ -2,7 +2,6 @@ import { createRoute } from "@hono/zod-openapi";
 import { toNumericId } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import { revalidatePath } from "#/api/config/revalidate";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import type { NotificationId } from "@/core/notification/model/Notification";
@@ -34,7 +33,6 @@ controller.openapi(
 					"알림 id",
 				),
 			});
-		revalidatePath("/feed");
 
 		return c.json({ ok: true } as const, 200);
 	},

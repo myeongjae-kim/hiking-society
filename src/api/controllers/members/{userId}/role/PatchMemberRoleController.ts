@@ -2,7 +2,6 @@ import { createRoute } from "@hono/zod-openapi";
 import { assertMutableRole } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import { revalidatePath } from "#/api/config/revalidate";
 import {
 	idParamSchema,
 	okSchema,
@@ -45,7 +44,6 @@ controller.openapi(
 				now: new Date(),
 				userId: Number(c.req.valid("param").userId),
 			});
-		revalidatePath("/members");
 
 		return c.json({ ok: true } as const, 200);
 	},

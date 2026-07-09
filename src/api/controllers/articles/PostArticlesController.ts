@@ -4,7 +4,6 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleBodySchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess } from "./articleRevalidation";
 
 const controller = Controller();
 
@@ -45,7 +44,6 @@ controller.openapi(
 				hikingId: toHikingId(values.hikingId),
 				media: values.uploadedMedia,
 			});
-		revalidateArticleSuccess();
 
 		return c.json({ ok: true } as const, 200);
 	},

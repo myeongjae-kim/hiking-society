@@ -8,7 +8,6 @@ import {
 	idParamSchema,
 } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess } from "../articleRevalidation";
 
 const controller = Controller();
 
@@ -46,7 +45,6 @@ controller.openapi(
 			uploadedMedia: values.uploadedMedia,
 			userId: user.id,
 		});
-		revalidateArticleSuccess(articleId);
 
 		const snapshot = await applicationUseCaseContext()
 			.get("GetArticleDetailUseCase")
