@@ -1,8 +1,5 @@
 "use client";
 
-import { type QueryKey, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
 import { useArticleMediaUploader } from "#/features/article/hooks/useArticleMediaUploader";
@@ -25,6 +22,9 @@ import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { Comment, CommentId } from "@/core/comment/domain";
 import type { Hiking } from "@/core/hiking/domain";
 import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import { type QueryKey, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ArticleFormDialog } from "./ArticleFormDialog";
 import { ArticlePanel } from "./ArticlePanel";
 import type { ArticleFormValues } from "./articleFormTypes";
@@ -501,16 +501,14 @@ export function ArticleDetailClient({
 								</dt>
 								<dd className="m-0 flex min-w-0 flex-wrap gap-1">
 									{hikingDisplay.participants.length > 0 ? (
-										hikingDisplay.participants.map(
-											(participant, participantIndex) => (
-												<span
-													className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-[var(--foreground0)] text-xs leading-[1.35]"
-													key={`${participant}-${participantIndex}`}
-												>
-													{participant}
-												</span>
-											),
-										)
+										hikingDisplay.participants.map((participant) => (
+											<span
+												className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-[var(--foreground0)] text-xs leading-[1.35]"
+												key={`${participant}`}
+											>
+												{participant}
+											</span>
+										))
 									) : (
 										<span className="text-[var(--foreground1)]">
 											참석자 미기록

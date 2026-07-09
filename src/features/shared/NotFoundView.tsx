@@ -16,6 +16,7 @@ export default function NotFound() {
 					<div className="grid min-w-0 gap-5 md:py-4">
 						<div className="grid gap-3">
 							<Command>trail.find --status 404</Command>
+							{/** biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix */}
 							<p
 								className="m-0 bg-linear-to-r from-[var(--blue)] to-[var(--green)] bg-clip-text font-mono text-[4.5rem] text-transparent leading-none tracking-normal sm:text-[6rem] lg:text-[7rem]"
 								aria-label="404"

@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
 import Link from "#/features/shared/components/AppLink";
 import { inlineButtonClassName } from "#/features/shared/components/styles";
 import { ThemeSelector } from "#/features/shared/components/ThemeSelector";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import { roleLabels } from "@/core/auth/model/roleLabels";
 import { canManageMembers } from "@/core/auth/model/roles";
+import type { ReactNode } from "react";
 import { LogoutButton } from "../auth/components/LogoutButton";
 import {
 	DisplayNameEditDialog,
@@ -65,6 +65,7 @@ export default function MyPageView({ theme, user }: MyPageViewProps) {
 									className="size-20 rounded-full border border-[var(--overlay0)] object-cover"
 								/>
 							) : (
+								// biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix
 								<div
 									className="grid size-20 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] text-3xl text-[var(--blue)]"
 									aria-label={`${displayName} 프로필 사진 없음`}

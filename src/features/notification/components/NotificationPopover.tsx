@@ -49,6 +49,7 @@ function NotificationAvatar({
 	}
 
 	return (
+		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix
 		<span
 			aria-label={`${notification.actorName} 프로필 사진 없음`}
 			className="mt-0.5 grid size-7 rounded-full border border-[var(--overlay0)] bg-[var(--background0)] font-mono text-[var(--blue)] text-xs leading-none"

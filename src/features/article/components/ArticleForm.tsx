@@ -1,7 +1,5 @@
 "use client";
 
-import type { ChangeEvent, DragEvent, FormEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { PreparedImageSource } from "#/features/media/imageCompression";
 import { ActionButton } from "#/features/shared/components/ActionButton";
 import { Command } from "#/features/shared/components/Command";
@@ -15,6 +13,8 @@ import {
 } from "#/features/shared/components/styles";
 import type { Article } from "@/core/article/domain";
 import type { Hiking } from "@/core/hiking/domain";
+import type { ChangeEvent, DragEvent, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ArticleFormValues, DraftMedia } from "./articleFormTypes";
 import {
@@ -462,6 +462,7 @@ export function ArticleForm({
 					{article ? `article.edit ${article.id}` : "article.new"}{" "}
 					{hiking ? `(hiking #${hiking.order} ${hiking.mountainName})` : ""}
 				</Command>
+				{/** biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix */}
 				<div
 					className={`grid gap-3 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
 						disabled ? "opacity-70" : ""

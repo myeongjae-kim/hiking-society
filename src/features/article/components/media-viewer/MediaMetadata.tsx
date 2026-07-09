@@ -26,6 +26,8 @@ export function MediaMetadata({
 }: MediaMetadataProps) {
 	if (items.length === 0) {
 		return (
+			// biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix
+			// biome-ignore lint/a11y/useKeyWithClickEvents: TODO: fix
 			<footer
 				className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden px-2"
 				data-media-modal-surface
@@ -42,6 +44,8 @@ export function MediaMetadata({
 	}
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix
+		// biome-ignore lint/a11y/useKeyWithClickEvents: TODO: fix
 		<footer
 			className="w-fit max-w-full justify-self-center overflow-x-hidden overflow-y-hidden px-2"
 			data-media-modal-surface

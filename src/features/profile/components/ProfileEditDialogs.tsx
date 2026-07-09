@@ -1,9 +1,5 @@
 "use client";
 
-import * as Dialog from "@radix-ui/react-dialog";
-import { useQueryClient } from "@tanstack/react-query";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
 import { createCompressedWebpFile } from "#/features/media/imageCompression";
@@ -12,6 +8,10 @@ import {
 	inlineButtonClassName,
 } from "#/features/shared/components/styles";
 import { useRouter } from "#/features/shared/hooks/useRouter";
+import * as Dialog from "@radix-ui/react-dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type ProfileActionState = {
 	error?: string;
@@ -513,6 +513,7 @@ export function ProfileImageEditDialog({
 							src={previewUrl}
 						/>
 					) : (
+						// biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix
 						<div
 							aria-label={`${displayName} 프로필 사진 없음`}
 							className="grid size-24 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] text-4xl text-[var(--blue)]"

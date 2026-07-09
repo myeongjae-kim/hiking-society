@@ -26,25 +26,8 @@
 		"enabled": true,
 		"rules": {
 			"preset": "recommended",
-			"a11y": {
-				"noLabelWithoutControl": "off",
-				"noStaticElementInteractions": "off",
-				"noSvgWithoutTitle": "off",
-				"useAriaPropsSupportedByRole": "off",
-				"useKeyWithClickEvents": "off"
-			},
-			"correctness": {
-				"useExhaustiveDependencies": "off"
-			},
 			"nursery": {
 				"useSortedClasses": "on"
-			},
-			"security": {
-				"noDangerouslySetInnerHtml": "off"
-			},
-			"suspicious": {
-				"noArrayIndexKey": "off",
-				"noShadowRestrictedNames": "off"
 			}
 		}
 	},

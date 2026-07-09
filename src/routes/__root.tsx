@@ -1,14 +1,14 @@
+import { getCurrentTheme } from "#/features/auth/session.functions";
+import ClientDependencyContainer from "#/features/shared/components/ClientDependencyContainer";
+import NotFound from "#/features/shared/NotFoundView";
+import appCss from "#/styles/global.css?url";
+import { DEFAULT_WEBTUI_THEME } from "#/theme/webtuiThemes";
 import type { QueryClient } from "@tanstack/react-query";
 import {
 	createRootRouteWithContext,
 	HeadContent,
 	Scripts,
 } from "@tanstack/react-router";
-import { getCurrentTheme } from "#/features/auth/session.functions";
-import ClientDependencyContainer from "#/features/shared/components/ClientDependencyContainer";
-import NotFound from "#/features/shared/NotFoundView";
-import appCss from "#/styles/global.css?url";
-import { DEFAULT_WEBTUI_THEME } from "#/theme/webtuiThemes";
 
 const siteUrl =
 	import.meta.env.VITE_SITE_URL ||
@@ -73,6 +73,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: 새로고침 했을 때 스크롤이 들쭉날쭉이라 필요
 					dangerouslySetInnerHTML={{ __html: resetScrollOnReloadScript }}
 				/>
 			</head>

@@ -1,7 +1,7 @@
-import type { MouseEvent } from "react";
 import { ActionButton } from "#/features/shared/components/ActionButton";
 import { inlineButtonClassName } from "#/features/shared/components/styles";
 import type { Hiking } from "@/core/hiking/domain";
+import type { MouseEvent } from "react";
 
 import { getHikingDisplay } from "./hikingFormUtils";
 
@@ -132,16 +132,14 @@ export function HikingHeader({
 						</dt>
 						<dd className="m-0 flex min-w-0 flex-wrap gap-1">
 							{hikingDisplay.participants.length > 0 ? (
-								hikingDisplay.participants.map(
-									(participant, participantIndex) => (
-										<span
-											className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-[var(--foreground0)] text-xs leading-[1.35]"
-											key={`${participant}-${participantIndex}`}
-										>
-											{participant}
-										</span>
-									),
-								)
+								hikingDisplay.participants.map((participant) => (
+									<span
+										className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-[var(--foreground0)] text-xs leading-[1.35]"
+										key={participant}
+									>
+										{participant}
+									</span>
+								))
 							) : (
 								<span className="text-[var(--foreground1)]">참석자 미기록</span>
 							)}

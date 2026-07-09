@@ -72,6 +72,7 @@ function FeedStatusSkeleton() {
 				{Array.from({ length: 7 }, (_, index) => (
 					<div
 						className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2"
+						// biome-ignore lint/suspicious/noArrayIndexKey: 어쩔수가없다
 						key={index}
 					>
 						<SkeletonBlock className="h-[0.9rem] w-16" />

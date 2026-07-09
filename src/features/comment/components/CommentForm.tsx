@@ -42,6 +42,8 @@ export function CommentForm({
 			<label className="grid gap-1.5">
 				<span className="font-mono text-[var(--green)] text-sm">{prompt}</span>
 				<input
+					// biome-ignore lint/a11y/noAutofocus: TODO: fix
+					autoFocus={autoFocus}
 					className={`${fieldClassName} min-h-[2.5rem] resize-y`}
 					enterKeyHint="done"
 					onChange={(event) => setBody(event.currentTarget.value)}

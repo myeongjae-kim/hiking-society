@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { $api } from "#/api/client/$api";
 import {
+	// biome-ignore lint/suspicious/noShadowRestrictedNames: TODO: fix
 	Map,
 	MapMarker,
 	type MapViewport,

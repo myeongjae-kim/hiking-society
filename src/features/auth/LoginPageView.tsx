@@ -212,19 +212,16 @@ export default function Home({ redirectTo = "/feed" }: HomeProps) {
 						aria-hidden="true"
 					>
 						<span className="hero-title-reserve">
-							{finalHeroTitleLines.map((line, index) => (
-								<span
-									className="hero-title-line"
-									key={`${index}-${line.beforeCursor}`}
-								>
+							{finalHeroTitleLines.map((line) => (
+								<span className="hero-title-line" key={`${line.beforeCursor}`}>
 									{line.beforeCursor}
 								</span>
 							))}
 						</span>
-						{heroTitleFrames.map((frame, index) => (
+						{heroTitleFrames.map((frame) => (
 							<span
 								className={`hero-title-frame ${frame.final ? "hero-title-frame-final" : ""}`}
-								key={`${index}-${frame.before}-${frame.after ?? ""}`}
+								key={`frame.before}-${frame.after ?? ""}`}
 								style={
 									{
 										"--delay": `${frame.delay}ms`,
@@ -232,10 +229,10 @@ export default function Home({ redirectTo = "/feed" }: HomeProps) {
 									} as CSSProperties
 								}
 							>
-								{getHeroTitleLines(frame).map((line, lineIndex) => (
+								{getHeroTitleLines(frame).map((line) => (
 									<span
 										className="hero-title-line"
-										key={`${lineIndex}-${line.beforeCursor}-${line.afterCursor ?? ""}`}
+										key={`${line.beforeCursor}-${line.afterCursor ?? ""}`}
 									>
 										<span>{line.beforeCursor}</span>
 										{line.showCursor && (

@@ -1,10 +1,10 @@
 /* eslint-disable react-hooks/refs */
 "use client";
 
-import MapLibreGL, { type MarkerOptions, type PopupOptions } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import type * as GeoJSON from "geojson";
 import { Loader2, Locate, Maximize, Minus, Plus, X } from "lucide-react";
+import MapLibreGL, { type MarkerOptions, type PopupOptions } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
 	createContext,
 	forwardRef,
@@ -225,6 +225,7 @@ function getViewport(map: MapLibreGL.Map): MapViewport {
 	};
 }
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: TODO: fix
 const Map = forwardRef<MapRef, MapProps>(function Map(
 	{
 		children,
@@ -336,6 +337,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		viewport,
+		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
 		props,
 		projection,
 		resolvedTheme,
@@ -526,6 +528,7 @@ function MapMarker({
 		return markerInstance;
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
 	}, [draggable, longitude, latitude, markerOptions]);
 
 	useEffect(() => {
@@ -655,6 +658,7 @@ function MarkerPopup({
 
 		return popupInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
 	}, [container, popupOptions]);
 
 	useEffect(() => {
@@ -720,6 +724,7 @@ function MarkerTooltip({
 
 		return tooltipInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
 	}, [popupOptions]);
 
 	useEffect(() => {
@@ -1003,6 +1008,7 @@ function CompassButton({ onClick }: { onClick: () => void }) {
 
 	return (
 		<ControlButton onClick={onClick} label="Reset bearing to north">
+			{/** biome-ignore lint/a11y/noSvgWithoutTitle: TODO: fix */}
 			<svg
 				ref={compassRef}
 				viewBox="0 0 24 24"
@@ -1059,6 +1065,7 @@ function MapPopup({
 
 		return popupInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
 	}, [latitude, popupOptions, longitude]);
 
 	useEffect(() => {
@@ -2232,7 +2239,6 @@ function MapClusterLayer<
 	return null;
 }
 
-export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };
 export {
 	Map,
 	MapArc,
@@ -2248,3 +2254,4 @@ export {
 	MarkerTooltip,
 	useMap,
 };
+export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };

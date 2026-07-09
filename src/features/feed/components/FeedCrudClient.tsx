@@ -1,7 +1,5 @@
 "use client";
 
-import { type QueryKey, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
 import { FeedFooter } from "#/features/feed/components/FeedFooter";
 import { FeedTopbar } from "#/features/feed/components/FeedTopbar";
 import { StatusPanel } from "#/features/feed/components/StatusPanel";
@@ -13,6 +11,8 @@ import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { CommentId } from "@/core/comment/domain";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
 import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import { type QueryKey, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 import type {
 	FeedActionEnvironment,
 	FeedArticleStore,
@@ -179,7 +179,7 @@ export function FeedCrudClient({
 							env={env}
 							group={group}
 							groupIndex={groupIndex}
-							key={`${group.hiking.id}-${groupIndex}`}
+							key={group.hiking.id}
 							loader={{
 								articlesByHikingId: articleLoader.articlesByHikingId,
 								commentsByArticleId: articleLoader.commentsByArticleId,

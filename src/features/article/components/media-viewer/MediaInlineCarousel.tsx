@@ -125,6 +125,7 @@ export function MediaInlineCarousel({
 					{activeInlineTakenTime ? <span>{activeInlineTakenTime}</span> : null}
 				</div>
 				{hasMultipleMedia ? (
+					// biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix
 					<div
 						aria-label="글 미디어 위치"
 						className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-1.5 overflow-hidden px-2 py-1"

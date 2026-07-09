@@ -1,5 +1,5 @@
-import { createElement, type ReactNode } from "react";
 import Link from "#/features/shared/components/AppLink";
+import { createElement, type ReactNode } from "react";
 
 import { DateTimeLabel } from "#/features/shared/components/DateTimeLabel";
 import type { Article } from "@/core/article/domain";

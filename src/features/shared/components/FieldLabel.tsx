@@ -5,12 +5,16 @@ import { labelClassName } from "./styles";
 export function FieldLabel({
 	children,
 	label,
+	ariaLabel,
+	htmlFor,
 }: {
 	children: ReactNode;
 	label: string;
+	ariaLabel?: string | undefined;
+	htmlFor?: string | undefined;
 }) {
 	return (
-		<label className={labelClassName}>
+		<label htmlFor={htmlFor} aria-label={ariaLabel} className={labelClassName}>
 			<span>{label}</span>
 			{children}
 		</label>
