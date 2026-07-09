@@ -1,3 +1,4 @@
+import type { PreparedImageSource } from '@/app/common/utils/imageCompression';
 import type { ArticleMedia } from '@/core/article/domain';
 
 export type DraftMedia = ArticleMedia & {
@@ -6,8 +7,8 @@ export type DraftMedia = ArticleMedia & {
   readonly fileSize?: number;
   readonly lastModified?: number;
   readonly originalMetadata?: Record<string, unknown> | null;
+  readonly preparedSource?: PreparedImageSource;
   readonly rotation?: number;
-  readonly sourceFile?: File;
   readonly thumbnailFile?: File;
 };
 

@@ -1,4 +1,8 @@
-import { createCompressedWebpFile } from '@/app/common/utils/imageCompression';
+import {
+  compressPreparedImageSource,
+  prepareImageSource,
+  type PreparedImageSource,
+} from '@/app/common/utils/imageCompression';
 import {
   createArticleMediaMetadataSummary,
   readOriginalPhotoMetadata,
@@ -35,8 +39,8 @@ export function createDraftMedia(
     | 'mediaType'
     | 'metadata'
     | 'originalMetadata'
+    | 'preparedSource'
     | 'rotation'
-    | 'sourceFile'
     | 'thumbnailFile'
     | 'thumbnailUrl'
     | 'width'
@@ -78,13 +82,14 @@ export async function createCompressedDraftMedia(
     });
   }
 
-  const [compressedFile, originalMetadata] = await Promise.all([
-    createCompressedWebpFile(file, {
-      maxWidth: maxCompressedPhotoWidth,
-      quality: webpQuality,
-    }),
+  const [preparedSource, originalMetadata] = await Promise.all([
+    prepareImageSource(file),
     readOriginalPhotoMetadata(file),
   ]);
+  const compressedFile = await compressPreparedImageSource(preparedSource, {
+    maxWidth: maxCompressedPhotoWidth,
+    quality: webpQuality,
+  });
 
   return createDraftMedia(compressedFile, order, {
     durationMs: null,
@@ -92,18 +97,21 @@ export async function createCompressedDraftMedia(
     mediaType: 'image',
     metadata: createArticleMediaMetadataSummary(originalMetadata),
     originalMetadata,
+    preparedSource,
     rotation: 0,
-    sourceFile: file,
     thumbnailFile: undefined,
     thumbnailUrl: null,
     width: null,
   });
 }
 
-// Rotation re-compresses the original source file at the new cumulative angle, so
-// repeated rotations stay a single encode generation instead of stacking loss.
-export async function rotateDraftMediaFile(sourceFile: File, quarterTurns: number): Promise<File> {
-  return createCompressedWebpFile(sourceFile, {
+// Rotation re-encodes the already-prepared source at the new cumulative angle, so
+// repeated rotations stay a single encode generation without re-decoding the source.
+export async function rotateDraftMediaFile(
+  source: PreparedImageSource,
+  quarterTurns: number,
+): Promise<File> {
+  return compressPreparedImageSource(source, {
     maxWidth: maxCompressedPhotoWidth,
     quality: webpQuality,
     quarterTurns,

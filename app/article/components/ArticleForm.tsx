@@ -13,6 +13,7 @@ import {
   hiddenFileInputClassName,
   inlineButtonClassName,
 } from '@/app/common/components/styles';
+import type { PreparedImageSource } from '@/app/common/utils/imageCompression';
 import type { Article } from '@/core/article/domain';
 import type { Hiking } from '@/core/hiking/domain';
 
@@ -87,7 +88,7 @@ export function ArticleForm({
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [isProcessingOverlayOpen, setIsProcessingOverlayOpen] = useState(false);
-  const [rotatingSourceFile, setRotatingSourceFile] = useState<File | null>(null);
+  const [rotatingSource, setRotatingSource] = useState<PreparedImageSource | null>(null);
   const [processingLabel, setProcessingLabel] = useState('처리 중');
   const [draggedMediaOrder, setDraggedMediaOrder] = useState<number | null>(null);
   const [isMediaDropActive, setIsMediaDropActive] = useState(false);
@@ -142,7 +143,7 @@ export function ArticleForm({
   };
 
   const handleMediaFiles = async (files: File[]) => {
-    if (disabled || rotatingSourceFile !== null || files.length === 0) {
+    if (disabled || rotatingSource !== null || files.length === 0) {
       return;
     }
 
@@ -307,23 +308,23 @@ export function ArticleForm({
   };
 
   const rotateMedia = async (order: number) => {
-    if (disabled || rotatingSourceFile !== null) {
+    if (disabled || rotatingSource !== null) {
       return;
     }
 
     const target = valuesRef.current.media.find((media) => media.order === order);
 
-    if (!target || target.mediaType !== 'image' || !target.sourceFile) {
+    if (!target || target.mediaType !== 'image' || !target.preparedSource) {
       return;
     }
 
     // Rotation runs per photo without flipping the shared `disabled` state, so only
     // this card's own button is blocked while the other controls stay untouched.
-    const { sourceFile } = target;
+    const { preparedSource } = target;
 
     setMediaError(null);
     setProcessingLabel('사진 회전 중');
-    setRotatingSourceFile(sourceFile);
+    setRotatingSource(preparedSource);
 
     // Only surface the loader when the rotation is slow enough to notice, so quick
     // rotations don't flash the overlay.
@@ -331,11 +332,11 @@ export function ArticleForm({
 
     try {
       const rotation = ((target.rotation ?? 0) + 1) % 4;
-      const rotatedFile = await rotateDraftMediaFile(sourceFile, rotation);
+      const rotatedFile = await rotateDraftMediaFile(preparedSource, rotation);
 
       // The photo may have been removed while rotating; drop the result instead of
-      // leaking its object URL. Matching by source file keeps reorders safe too.
-      if (!valuesRef.current.media.some((media) => media.sourceFile === sourceFile)) {
+      // leaking its object URL. Matching by prepared source keeps reorders safe too.
+      if (!valuesRef.current.media.some((media) => media.preparedSource === preparedSource)) {
         return;
       }
 
@@ -344,7 +345,7 @@ export function ArticleForm({
       setValues((currentValues) => ({
         ...currentValues,
         media: currentValues.media.map((media) => {
-          if (media.sourceFile !== sourceFile) {
+          if (media.preparedSource !== preparedSource) {
             return media;
           }
 
@@ -372,7 +373,7 @@ export function ArticleForm({
     } finally {
       window.clearTimeout(overlayTimer);
       setProcessingLabel('사진이나 동영상 처리 중');
-      setRotatingSourceFile(null);
+      setRotatingSource(null);
       setIsProcessingOverlayOpen(false);
     }
   };
@@ -400,7 +401,7 @@ export function ArticleForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (disabled || rotatingSourceFile !== null) {
+    if (disabled || rotatingSource !== null) {
       return;
     }
 
@@ -467,7 +468,7 @@ export function ArticleForm({
                 const isDragged = draggedMediaOrder === media.order;
                 const canMoveUp = media.order > 1;
                 const canMoveDown = media.order < values.media.length;
-                const canRotate = media.mediaType === 'image' && Boolean(media.sourceFile);
+                const canRotate = media.mediaType === 'image' && Boolean(media.preparedSource);
                 const takenTime = getMediaTakenTimeLabel(media);
 
                 return (
@@ -546,7 +547,7 @@ export function ArticleForm({
                         </ActionButton>
                         {canRotate ? (
                           <ActionButton
-                            disabled={disabled || media.sourceFile === rotatingSourceFile}
+                            disabled={disabled || media.preparedSource === rotatingSource}
                             onClick={() => rotateMedia(media.order)}
                             title="오른쪽으로 90도 회전"
                           >

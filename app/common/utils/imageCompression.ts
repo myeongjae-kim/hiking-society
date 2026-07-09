@@ -244,6 +244,20 @@ function normalizeExifOrientation(exif: Bytes): Bytes {
   return exif;
 }
 
+// XMP can carry its own tiff:Orientation; since orientation is baked into pixels it
+// is reset to 1 so XMP-preferring viewers don't rotate the already-upright image.
+function normalizeXmpOrientation(xmp: Bytes): Bytes {
+  const text = new TextDecoder().decode(xmp);
+  const normalized = text
+    .replace(/tiff:Orientation\s*=\s*(["'])[1-8]\1/g, (match) => match.replace(/[1-8]/, '1'))
+    .replace(
+      /(<tiff:Orientation>)[1-8](<\/tiff:Orientation>)/g,
+      (_match, open, close) => `${open}1${close}`,
+    );
+
+  return normalized === text ? xmp : (textEncoder.encode(normalized) as Bytes);
+}
+
 function getJpegBlockPayload(bytes: Uint8Array, block: MetadataBlock) {
   if (block.start + 4 > block.end) {
     return null;
@@ -426,6 +440,10 @@ async function extractOriginalMetadataChunks(file: File): Promise<WebpMetadataCh
       merged.exif = normalizeExifOrientation(merged.exif);
     }
 
+    if (merged.xmp) {
+      merged.xmp = normalizeXmpOrientation(merged.xmp);
+    }
+
     return merged;
   } catch {
     return {};
@@ -497,13 +515,29 @@ async function attachMetadataToWebpBlob(
   return new Blob([toArrayBuffer(result)], { type: 'image/webp' });
 }
 
-export async function createCompressedWebpFile(
-  file: File,
+export type PreparedImageSource = {
+  readonly browserReadableFile: File;
+  readonly fileName: string;
+  readonly metadataChunks: WebpMetadataChunks;
+};
+
+// HEIC decoding and EXIF extraction are independent of the output size and rotation,
+// so they are done once here; callers can then re-encode (e.g. to rotate) without
+// repeating the expensive HEIC conversion and metadata parse.
+export async function prepareImageSource(file: File): Promise<PreparedImageSource> {
+  const [metadataChunks, browserReadableFile] = await Promise.all([
+    extractOriginalMetadataChunks(file),
+    createBrowserReadableFile(file),
+  ]);
+
+  return { browserReadableFile, fileName: file.name, metadataChunks };
+}
+
+export async function compressPreparedImageSource(
+  source: PreparedImageSource,
   options: CompressImageOptions,
 ): Promise<File> {
-  const metadataChunksPromise = extractOriginalMetadataChunks(file);
-  const browserReadableFile = await createBrowserReadableFile(file);
-  const imageBitmap = await createImageBitmap(browserReadableFile, {
+  const imageBitmap = await createImageBitmap(source.browserReadableFile, {
     imageOrientation: 'from-image',
   });
   const longestSide = Math.max(imageBitmap.width, imageBitmap.height);
@@ -517,8 +551,8 @@ export async function createCompressedWebpFile(
   }
 
   // 90-degree steps are baked into the pixels so the orientation is identical on
-  // every device. Rotating always re-runs this compression from the source file,
-  // so the result stays a single encode generation and never compounds loss.
+  // every device. Rotating re-runs this encode from the same prepared source, so the
+  // result stays a single encode generation and never compounds loss.
   const normalizedTurns = (((options.quarterTurns ?? 0) % 4) + 4) % 4;
   const swapsAxes = normalizedTurns % 2 === 1;
   const canvasWidth = swapsAxes ? targetHeight : targetWidth;
@@ -547,13 +581,22 @@ export async function createCompressedWebpFile(
   imageBitmap.close();
 
   const blob = await encodeImageDataToWebpBlob(imageData, options.quality);
-  const blobWithMetadata = await attachMetadataToWebpBlob(blob, await metadataChunksPromise, {
+  const blobWithMetadata = await attachMetadataToWebpBlob(blob, source.metadataChunks, {
     height: canvasHeight,
     width: canvasWidth,
   });
 
-  return new File([blobWithMetadata], getWebpFileName(file.name), {
+  return new File([blobWithMetadata], getWebpFileName(source.fileName), {
     lastModified: Date.now(),
     type: 'image/webp',
   });
+}
+
+export async function createCompressedWebpFile(
+  file: File,
+  options: CompressImageOptions,
+): Promise<File> {
+  const source = await prepareImageSource(file);
+
+  return compressPreparedImageSource(source, options);
 }
