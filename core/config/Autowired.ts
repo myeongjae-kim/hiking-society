@@ -1,4 +1,4 @@
 import { returnAutowired } from 'inversify-typesafe-spring-like';
-import { Beans } from './BeanConfig';
+import type { Beans } from './BeanConfig.server';
 
 export const { Autowired } = returnAutowired<Beans>();

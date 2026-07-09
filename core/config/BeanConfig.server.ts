@@ -62,7 +62,7 @@ import { UpdateProfileUseCase } from '../profile/application/port/in/UpdateProfi
 import { ProfileCommandPort } from '../profile/application/port/out/ProfileCommandPort';
 import { ProfileImageStoragePort } from '../profile/application/port/out/ProfileImageStoragePort';
 import { ProfileQueryPort } from '../profile/application/port/out/ProfileQueryPort';
-import { env } from './env';
+import { env } from './env.server';
 
 export type Beans = {
   ArticleDetailQueryPort: ArticleDetailQueryPort;

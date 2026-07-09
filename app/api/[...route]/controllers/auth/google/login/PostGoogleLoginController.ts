@@ -1,5 +1,5 @@
 import type { LoginWithGoogleCodeResult } from '@/core/auth/model/LoginWithGoogleCodeResult';
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createRoute } from '@hono/zod-openapi';
 import { setCookie } from 'hono/cookie';
 import { ApiError } from '@/app/api/[...route]/config/ApiError';

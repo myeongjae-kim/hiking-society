@@ -1,4 +1,4 @@
-import { env } from '@/core/config/env';
+import { env } from '@/core/config/env.server';
 import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { badRequest } from '@/app/api/[...route]/config/apiUtils';
 

@@ -8,131 +8,139 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as MembersRouteImport } from './routes/members';
-import { Route as MeRouteImport } from './routes/me';
-import { Route as FeedRouteImport } from './routes/feed';
-import { Route as IndexRouteImport } from './routes/index';
-import { Route as ArticleArticleIdRouteImport } from './routes/article.$articleId';
-import { Route as ApiSplatRouteImport } from './routes/api.$';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as MembersRouteImport } from './routes/members'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as FeedRouteImport } from './routes/feed'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ArticleArticleIdRouteImport } from './routes/article.$articleId'
+import { Route as ApiSplatRouteImport } from './routes/api.$'
 
 const MembersRoute = MembersRouteImport.update({
   id: '/members',
   path: '/members',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const MeRoute = MeRouteImport.update({
   id: '/me',
   path: '/me',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const FeedRoute = FeedRouteImport.update({
   id: '/feed',
   path: '/feed',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ArticleArticleIdRoute = ArticleArticleIdRouteImport.update({
   id: '/article/$articleId',
   path: '/article/$articleId',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/feed': typeof FeedRoute;
-  '/me': typeof MeRoute;
-  '/members': typeof MembersRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/article/$articleId': typeof ArticleArticleIdRoute;
+  '/': typeof IndexRoute
+  '/feed': typeof FeedRoute
+  '/me': typeof MeRoute
+  '/members': typeof MembersRoute
+  '/api/$': typeof ApiSplatRoute
+  '/article/$articleId': typeof ArticleArticleIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/feed': typeof FeedRoute;
-  '/me': typeof MeRoute;
-  '/members': typeof MembersRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/article/$articleId': typeof ArticleArticleIdRoute;
+  '/': typeof IndexRoute
+  '/feed': typeof FeedRoute
+  '/me': typeof MeRoute
+  '/members': typeof MembersRoute
+  '/api/$': typeof ApiSplatRoute
+  '/article/$articleId': typeof ArticleArticleIdRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/': typeof IndexRoute;
-  '/feed': typeof FeedRoute;
-  '/me': typeof MeRoute;
-  '/members': typeof MembersRoute;
-  '/api/$': typeof ApiSplatRoute;
-  '/article/$articleId': typeof ArticleArticleIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/feed': typeof FeedRoute
+  '/me': typeof MeRoute
+  '/members': typeof MembersRoute
+  '/api/$': typeof ApiSplatRoute
+  '/article/$articleId': typeof ArticleArticleIdRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/feed' | '/me' | '/members' | '/api/$' | '/article/$articleId';
-  fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/feed' | '/me' | '/members' | '/api/$' | '/article/$articleId';
-  id: '__root__' | '/' | '/feed' | '/me' | '/members' | '/api/$' | '/article/$articleId';
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    '/' | '/feed' | '/me' | '/members' | '/api/$' | '/article/$articleId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/feed' | '/me' | '/members' | '/api/$' | '/article/$articleId'
+  id:
+    | '__root__'
+    | '/'
+    | '/feed'
+    | '/me'
+    | '/members'
+    | '/api/$'
+    | '/article/$articleId'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  FeedRoute: typeof FeedRoute;
-  MeRoute: typeof MeRoute;
-  MembersRoute: typeof MembersRoute;
-  ApiSplatRoute: typeof ApiSplatRoute;
-  ArticleArticleIdRoute: typeof ArticleArticleIdRoute;
+  IndexRoute: typeof IndexRoute
+  FeedRoute: typeof FeedRoute
+  MeRoute: typeof MeRoute
+  MembersRoute: typeof MembersRoute
+  ApiSplatRoute: typeof ApiSplatRoute
+  ArticleArticleIdRoute: typeof ArticleArticleIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/members': {
-      id: '/members';
-      path: '/members';
-      fullPath: '/members';
-      preLoaderRoute: typeof MembersRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof MembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/me': {
-      id: '/me';
-      path: '/me';
-      fullPath: '/me';
-      preLoaderRoute: typeof MeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feed': {
-      id: '/feed';
-      path: '/feed';
-      fullPath: '/feed';
-      preLoaderRoute: typeof FeedRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof FeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/article/$articleId': {
-      id: '/article/$articleId';
-      path: '/article/$articleId';
-      fullPath: '/article/$articleId';
-      preLoaderRoute: typeof ArticleArticleIdRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/article/$articleId'
+      path: '/article/$articleId'
+      fullPath: '/article/$articleId'
+      preLoaderRoute: typeof ArticleArticleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/$': {
-      id: '/api/$';
-      path: '/api/$';
-      fullPath: '/api/$';
-      preLoaderRoute: typeof ApiSplatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -143,16 +151,16 @@ const rootRouteChildren: RootRouteChildren = {
   MembersRoute: MembersRoute,
   ApiSplatRoute: ApiSplatRoute,
   ArticleArticleIdRoute: ArticleArticleIdRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx';
-import type { createStart } from '@tanstack/react-start';
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
 declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

@@ -1,5 +1,5 @@
 import type { ArticleId } from '@/core/article/domain';
-import { env } from '@/core/config/env';
+import { env } from '@/core/config/env.server';
 import { z } from '@hono/zod-openapi';
 import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { badRequest, successRevalidationPaths } from '@/app/api/[...route]/config/apiUtils';

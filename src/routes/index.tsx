@@ -1,6 +1,7 @@
 import Home from '@/app/page';
 import { getSafeRedirectTarget } from '@/app/auth/utils/redirectTarget';
-import { getAuthenticatedHomeRedirectHref, getCurrentUser } from '#/lib/server/sessionFns';
+import { getCurrentUser } from '#/lib/server/session.functions';
+import { getAuthenticatedHomeRedirectHref } from '#/lib/server/session.shared';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 function getSingleSearchParam(value: unknown) {

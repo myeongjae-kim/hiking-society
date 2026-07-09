@@ -1,16 +1,10 @@
-import { getSafeRedirectTarget } from '@/app/auth/utils/redirectTarget';
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from '@/app/common/theme/webtuiThemes';
 import type { UserRole } from '@/core/auth/model/roles';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createServerFn, createServerOnlyFn } from '@tanstack/react-start';
 
-async function getApplicationContext() {
-  const { applicationContext } = await import('@/core/config/applicationContext');
-
-  return applicationContext();
-}
-
 async function getCookieConfig() {
-  return (await getApplicationContext()).get('CookieConfig');
+  return applicationContext().get('CookieConfig');
 }
 
 export const readCurrentTheme = createServerOnlyFn(async () => {
@@ -26,7 +20,7 @@ export const getCurrentTheme = createServerFn({ method: 'GET' }).handler(
 export const setSessionCookies = createServerOnlyFn(
   async (input: { email: string; provider: string; role: UserRole; userId: number }) => {
     const { setCookie } = await import('@tanstack/react-start/server');
-    const context = await getApplicationContext();
+    const context = applicationContext();
     const {
       accessTokenCookieName,
       accessTokenMaxAgeSeconds,
@@ -61,7 +55,7 @@ export const clearSessionCookies = createServerOnlyFn(async () => {
 
 export const readCurrentUser = createServerOnlyFn(async () => {
   const { getCookie } = await import('@tanstack/react-start/server');
-  const context = await getApplicationContext();
+  const context = applicationContext();
   const { accessTokenCookieName, refreshTokenCookieName } = context.get('CookieConfig');
   const accessToken = getCookie(accessTokenCookieName);
   const refreshToken = getCookie(refreshTokenCookieName);
@@ -98,15 +92,3 @@ export const readCurrentUser = createServerOnlyFn(async () => {
 export const getCurrentUser = createServerFn({ method: 'GET' }).handler(
   async () => await readCurrentUser(),
 );
-
-export function getLoginRedirectHref(currentHref: string) {
-  const url = new URL('/', 'http://localhost');
-
-  url.searchParams.set('next', currentHref);
-
-  return `${url.pathname}${url.search}`;
-}
-
-export function getAuthenticatedHomeRedirectHref(value: string | undefined) {
-  return getSafeRedirectTarget(value);
-}

@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '@/core/config/env';
+import { env } from '@/core/config/env.server';
 import type { ProfileImageStoragePort } from '../application/port/out/ProfileImageStoragePort';
 
 function sanitizeFileName(fileName: string) {

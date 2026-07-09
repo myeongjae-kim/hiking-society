@@ -1,6 +1,6 @@
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { UserRole } from '@/core/auth/model/roles';
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import type { Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { createMiddleware } from 'hono/factory';

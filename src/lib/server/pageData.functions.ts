@@ -1,13 +1,8 @@
 import { canManageMembers } from '@/core/auth/model/roles';
 import type { ArticleId } from '@/core/article/domain';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createServerFn } from '@tanstack/react-start';
-import { readCurrentTheme, readCurrentUser } from './sessionFns';
-
-async function getApplicationContext() {
-  const { applicationContext } = await import('@/core/config/applicationContext');
-
-  return applicationContext();
-}
+import { readCurrentTheme, readCurrentUser } from './session.functions';
 
 export const getFeedRouteData = createServerFn({ method: 'GET' }).handler(async () => {
   const [user, currentTheme] = await Promise.all([readCurrentUser(), readCurrentTheme()]);
@@ -24,7 +19,7 @@ export const getFeedRouteData = createServerFn({ method: 'GET' }).handler(async 
     };
   }
 
-  const context = await getApplicationContext();
+  const context = applicationContext();
   const [feedSummary, notificationSnapshot] = await Promise.all([
     context.get('ListFeedUseCase').listHikings({ currentUserId: user.id }),
     context.get('ListNotificationsUseCase').list({ currentUserId: user.id }),
@@ -52,7 +47,7 @@ export const getMembersRouteData = createServerFn({ method: 'GET' }).handler(asy
 
   return {
     actor,
-    members: await (await getApplicationContext()).get('ListMembersUseCase').list(),
+    members: await applicationContext().get('ListMembersUseCase').list(),
     status: 'ok' as const,
   };
 });
@@ -78,7 +73,7 @@ export const getArticleRouteData = createServerFn({ method: 'GET' })
       };
     }
 
-    const context = await getApplicationContext();
+    const context = applicationContext();
     const [snapshot, notificationSnapshot] = await Promise.all([
       context
         .get('GetArticleDetailUseCase')

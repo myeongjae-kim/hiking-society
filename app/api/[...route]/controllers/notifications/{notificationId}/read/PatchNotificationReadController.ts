@@ -1,4 +1,4 @@
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import type { NotificationId } from '@/core/notification/model/Notification';
 import { createRoute } from '@hono/zod-openapi';
 import { revalidatePath } from '@/app/api/[...route]/config/revalidate';

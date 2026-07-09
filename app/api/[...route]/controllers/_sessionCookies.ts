@@ -1,4 +1,4 @@
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 
 export const sessionCookieConfig = applicationContext().get('CookieConfig');
 

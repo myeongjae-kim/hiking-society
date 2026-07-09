@@ -1,5 +1,5 @@
 import type { CommentId } from '@/core/comment/domain';
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createRoute } from '@hono/zod-openapi';
 import { revalidatePath } from '@/app/api/[...route]/config/revalidate';
 import { Controller } from '@/app/api/[...route]/config/Controller';

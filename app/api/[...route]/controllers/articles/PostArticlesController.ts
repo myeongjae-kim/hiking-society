@@ -1,5 +1,5 @@
 import type { HikingId } from '@/core/hiking/domain';
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createRoute, z } from '@hono/zod-openapi';
 import { Controller } from '@/app/api/[...route]/config/Controller';
 import { requireApiRole } from '@/app/api/[...route]/config/auth';

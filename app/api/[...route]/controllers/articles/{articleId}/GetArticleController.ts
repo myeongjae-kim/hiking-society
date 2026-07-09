@@ -1,4 +1,4 @@
-import { applicationContext } from '@/core/config/applicationContext';
+import { applicationContext } from '@/core/config/applicationContext.server';
 import { createRoute } from '@hono/zod-openapi';
 import { apiErrorSchema } from '@/app/api/[...route]/config/ApiError';
 import { Controller } from '@/app/api/[...route]/config/Controller';

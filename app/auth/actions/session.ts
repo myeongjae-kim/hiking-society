@@ -1,5 +1,9 @@
 import { type UserRole } from '@/core/auth/model/roles';
-import { clearSessionCookies, getCurrentUser, setSessionCookies } from '#/lib/server/sessionFns';
+import {
+  clearSessionCookies,
+  getCurrentUser,
+  setSessionCookies,
+} from '#/lib/server/session.functions';
 import { redirect } from '@tanstack/react-router';
 
 export { clearSessionCookies, getCurrentUser, setSessionCookies };
