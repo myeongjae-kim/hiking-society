@@ -1,6 +1,167 @@
 # hiking-society
 
-### 아키텍처 고려사항
+산행 모임의 피드, 글, 댓글, 좋아요, 알림, 회원/프로필을 다루는 TanStack Start 애플리케이션입니다.
+
+## Architecture
+
+이 프로젝트의 구조는 다음 원칙을 기준으로 잡습니다.
+
+- **Screaming Architecture**: 최상위 구조가 기술 스택보다 제품의 기능을 먼저 드러내야 합니다.
+- **Port and Adapter Architecture**: 핵심 정책은 `core`의 application/domain/model이 소유하고, DB/S3/OAuth 같은 외부 I/O는 adapter 뒤에 둡니다.
+- **Core는 객체지향**: use case service가 객체로 협력하며 정책을 명시합니다.
+- **Web 영역은 함수형**: route, controller, server function, React hook은 요청/응답 변환과 순수 계산, effect orchestration을 분리합니다.
+
+HTTP 경로, OpenAPI wire shape, DB schema는 아키텍처 리팩터링의 대상이 아닙니다. 이 경계들은 외부 계약으로 취급합니다.
+
+## Directory Layout
+
+```txt
+core/
+  {feature}/
+    domain/              # 도메인 식별자, 값 타입, 핵심 모델
+    model/               # application에서 쓰는 feature별 모델/팩토리
+    application/
+      *Service.ts        # use case 정책
+      port/in/           # 웹/외부에서 호출하는 use case 인터페이스
+      port/out/          # application이 필요로 하는 I/O 인터페이스
+    adapter/             # Drizzle, S3, OAuth 등 구체 구현
+  common/                # 공통 domain/application 타입
+  config/                # DI wiring
+
+src/
+  routes/                # TanStack Start file routes
+  api/                   # Hono/OpenAPI HTTP adapter
+  features/              # React UI와 server functions를 기능 단위로 배치
+  integrations/          # TanStack Query 등 기술 통합
+  styles/                # 전역 스타일
+  theme/                 # 테마 정의
+
+lib/db/schema.ts         # DB schema source of truth
+scripts/                 # 정적/아키텍처 검증 스크립트
+```
+
+## Core Boundary
+
+`core`는 제품 정책의 중심입니다. React, TanStack, Hono, `src`를 import하지 않습니다.
+
+의존 방향은 항상 안쪽으로 향합니다.
+
+```txt
+src/routes, src/api, src/features
+        |
+        v
+core/{feature}/application/port/in
+        |
+        v
+core/{feature}/application service
+        |
+        v
+core/{feature}/application/port/out
+        ^
+        |
+core/{feature}/adapter
+```
+
+application service가 판단해야 하는 정책 예시는 다음과 같습니다.
+
+- 글은 미디어 없이 생성/수정할 수 없습니다.
+- 글이 있는 산행은 삭제할 수 없습니다.
+- 답글 대상 댓글은 같은 글에 속하고 삭제되지 않은 댓글이어야 합니다.
+- 좋아요/댓글/글 생성 시 어떤 알림을 누구에게 만들지는 application/domain 쪽에서 결정합니다.
+- 세션 resolve는 access/refresh token 검증과 user 조회를 `ResolveSessionUseCase` 안에 숨깁니다.
+
+adapter는 다음만 담당합니다.
+
+- DB 조회/반영
+- S3/OAuth/외부 SDK 호출
+- persistence row와 core model 사이 mapping
+- transaction 같은 I/O 일관성
+
+adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 타입 같은 제품 정책을 결정하면 경계 위반입니다.
+
+## Feature Boundary
+
+`src/features`는 제품 기능 단위의 웹/UI 코드입니다.
+
+현재 주요 feature는 `article`, `auth`, `comment`, `feed`, `hiking`, `media`, `member`, `notification`, `profile`, `shared`입니다.
+
+규칙:
+
+- `src/features/shared`는 다른 feature를 import하지 않습니다.
+- feature 간 조합이 필요하면 더 구체적인 feature 쪽에서 조합합니다.
+- 예를 들어 `AuthorBadge`는 순수 badge 컴포넌트이고, 프로필 이미지 preview는 `article` 쪽에서 `MediaViewer`를 render prop으로 주입합니다.
+- 큰 hook은 순수 계산 함수와 effect orchestration hook으로 나눕니다.
+
+`src/features` 아래에는 제품의 기능적 어휘를 둡니다. `integrations`, `routes`, `styles`, `theme`처럼 기술적 관심사는 `src` 최상위의 별도 디렉터리에 둡니다.
+
+## Web Adapters
+
+`src/routes`는 TanStack Start route adapter입니다. route 파일은 loader, component wiring, route-level redirect 정도를 맡고 정책은 core use case로 위임합니다.
+
+`src/api`는 Hono/OpenAPI HTTP adapter입니다. controller는 request/response 변환, 인증 context 확인, use case 호출, API error 변환만 담당합니다.
+
+`src/features/**.functions.ts`는 TanStack Start server function boundary입니다. cookie read/write나 form payload 변환 같은 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
+
+API client 규칙:
+
+- `fetchClient`를 직접 쓰지 않습니다.
+- query/mutation은 `$api.useQuery()`와 `$api.useMutation()`을 사용합니다.
+- query key가 필요하면 `$api.queryOptions().queryKey`에서 가져옵니다.
+
+## Error Handling
+
+core application 정책 오류는 `ApplicationError`로 표현합니다.
+
+API layer는 `ApplicationError`를 `ApiError`로 변환합니다.
+
+```txt
+ApplicationError.BAD_REQUEST  -> 400
+ApplicationError.UNAUTHORIZED -> 401
+ApplicationError.FORBIDDEN    -> 403
+ApplicationError.NOT_FOUND    -> 404
+ApplicationError.CONFLICT     -> 409
+```
+
+도메인/application에서 HTTP 응답 객체나 Hono context를 만들지 않습니다.
+
+## Data and Schema
+
+DB schema의 source of truth는 `lib/db/schema.ts`입니다.
+
+규칙:
+
+- 테이블 이름은 단수형으로 둡니다.
+- table 변수는 `{name}Table` 패턴을 사용합니다.
+- DB schema inferred row type은 core application/model contract로 누수시키지 않습니다.
+- adapter가 persistence row를 domain/model 타입으로 mapping합니다.
+
+## Dependency Injection
+
+core wiring은 `core/config/BeanConfig.server.ts`에서 관리합니다.
+
+웹 영역은 `applicationContext().get('*UseCase')`로 in-port를 호출합니다. `src/**`에서 `application/port/out` 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
+
+## Architecture Checks
+
+아키텍처 회귀를 막기 위해 `scripts/check-architecture.sh`를 둡니다.
+
+검사 내용:
+
+- `core`가 `src`, React, TanStack, Hono를 import하지 않는지 확인합니다.
+- `src/features/shared`가 다른 feature를 import하지 않는지 확인합니다.
+- `src/**`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
+
+일상 검증:
+
+```bash
+/opt/homebrew/bin/pnpm lint
+/opt/homebrew/bin/pnpm build
+/opt/homebrew/bin/pnpm find-deadcode
+```
+
+`pnpm lint`는 Biome, TypeScript, architecture check를 함께 실행합니다.
+
+## References
 
 - https://myeongjae.kim/blog/2026/02/14/nextjs-fullstack-and-serverless-backend-architecture-proposal
 - https://johngrib.github.io/wiki/article/hierarchical-controller-package-structure/
