@@ -1,10 +1,10 @@
-import { Autowired } from "@/core/config/Autowired";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import type { UpdateProfileUseCase } from "./port/in/UpdateProfileUseCase";
+import { Autowired } from "@/core/config/Autowired";
+import type { UpdateEmailUseCase } from "./port/in/UpdateEmailUseCase";
 import type { ProfileCommandPort } from "./port/out/ProfileCommandPort";
 import type { ProfileQueryPort } from "./port/out/ProfileQueryPort";
 
-export class UpdateProfileService implements UpdateProfileUseCase {
+export class UpdateEmailService implements UpdateEmailUseCase {
 	constructor(
 		@Autowired("ProfileQueryPort")
 		private profileQueryPort: ProfileQueryPort,
@@ -12,7 +12,7 @@ export class UpdateProfileService implements UpdateProfileUseCase {
 		private profileCommandPort: ProfileCommandPort,
 	) {}
 
-	async update(input: Parameters<UpdateProfileUseCase["update"]>[0]) {
+	async updateEmail(input: Parameters<UpdateEmailUseCase["updateEmail"]>[0]) {
 		const emailExists =
 			await this.profileQueryPort.existsActiveUserByEmailExceptUserId({
 				email: input.email,
@@ -23,18 +23,6 @@ export class UpdateProfileService implements UpdateProfileUseCase {
 			throw applicationError.conflict("이미 사용 중인 이메일입니다.");
 		}
 
-		const profileImageUrl = input.profileImage
-			? input.profileImage.url
-			: input.removeProfileImage
-				? null
-				: undefined;
-
-		await this.profileCommandPort.updateActiveProfile({
-			displayName: input.displayName,
-			email: input.email,
-			now: input.now,
-			profileImageUrl,
-			userId: input.userId,
-		});
+		await this.profileCommandPort.updateActiveEmail(input);
 	}
 }

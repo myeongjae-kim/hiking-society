@@ -1,12 +1,4 @@
 import type { ArticleId } from "@/core/article/domain";
-import {
-	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaCollection,
-} from "@/core/article/domain/ArticlePolicy";
-import type {
-	ArticleMediaUpload,
-	ExistingArticleMediaInput,
-} from "@/core/article/model/ArticleMediaCommand";
 import type { UserRole } from "@/core/auth/model/roles";
 import type {
 	Altitude,
@@ -79,22 +71,6 @@ export function toHikingValues(values: {
 		),
 		timezone: values.timezone as Timezone,
 	};
-}
-
-export function toArticleMedia(input: {
-	existingMedia: readonly ExistingArticleMediaInput[];
-	uploadedMedia: readonly ArticleMediaUpload[];
-}) {
-	const media = ArticleMediaCollection.from([
-		...input.existingMedia,
-		...input.uploadedMedia,
-	]);
-
-	if (!media.isPublishable()) {
-		throw badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-	}
-
-	return media.sortByOrder();
 }
 
 export function successRevalidationPaths(articleId?: ArticleId | null) {

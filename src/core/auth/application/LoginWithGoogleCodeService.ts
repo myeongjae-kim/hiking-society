@@ -20,8 +20,8 @@ export class LoginWithGoogleCodeService implements LoginWithGoogleCodeUseCase {
 
 		return {
 			session: {
-				email: payload.email,
-				provider: payload.provider,
+				email: user.email,
+				provider: user.provider ?? payload.provider,
 				role: user.role,
 				userId: user.id,
 			},

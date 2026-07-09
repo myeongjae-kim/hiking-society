@@ -27,18 +27,38 @@ export class ProfileDrizzleAdapter
 		return Boolean(row);
 	}
 
-	async updateActiveProfile(
-		input: Parameters<ProfileCommandPort["updateActiveProfile"]>[0],
+	async updateActiveDisplayName(
+		input: Parameters<ProfileCommandPort["updateActiveDisplayName"]>[0],
 	) {
 		await db
 			.update(userTable)
 			.set({
 				displayName: input.displayName,
-				email: input.email,
 				name: input.displayName,
-				...(input.profileImageUrl !== undefined
-					? { profileImageUrl: input.profileImageUrl }
-					: {}),
+				updatedAt: input.now,
+			})
+			.where(and(eq(userTable.id, input.userId), isNull(userTable.deletedAt)));
+	}
+
+	async updateActiveEmail(
+		input: Parameters<ProfileCommandPort["updateActiveEmail"]>[0],
+	) {
+		await db
+			.update(userTable)
+			.set({
+				email: input.email,
+				updatedAt: input.now,
+			})
+			.where(and(eq(userTable.id, input.userId), isNull(userTable.deletedAt)));
+	}
+
+	async updateActiveProfileImage(
+		input: Parameters<ProfileCommandPort["updateActiveProfileImage"]>[0],
+	) {
+		await db
+			.update(userTable)
+			.set({
+				profileImageUrl: input.profileImageUrl,
 				updatedAt: input.now,
 			})
 			.where(and(eq(userTable.id, input.userId), isNull(userTable.deletedAt)));

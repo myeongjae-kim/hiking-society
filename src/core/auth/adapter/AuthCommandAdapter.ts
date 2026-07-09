@@ -3,7 +3,33 @@ import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthCommandPort } from "../application/port/out/AuthCommandPort";
+import type { AuthenticatedUser } from "../model/AuthenticatedUser";
 import type { GoogleAccountPayload } from "../model/GoogleAccountPayload";
+
+function toAuthenticatedUser(
+	user: {
+		displayName: string | null;
+		email: string | null;
+		id: number;
+		lastLoginAt: Date | null;
+		name: string | null;
+		profileImageUrl: string | null;
+		role: AuthenticatedUser["role"];
+	},
+	provider: string,
+	fallbackEmail: string,
+): AuthenticatedUser {
+	return {
+		displayName: user.displayName,
+		email: user.email ?? fallbackEmail,
+		id: user.id,
+		lastLoginAt: user.lastLoginAt,
+		name: user.name,
+		profileImageUrl: user.profileImageUrl,
+		provider,
+		role: user.role,
+	};
+}
 
 export class AuthCommandAdapter implements AuthCommandPort {
 	async upsertGoogleAccount(input: {
@@ -113,10 +139,6 @@ export class AuthCommandAdapter implements AuthCommandPort {
 			return userForSocialAccount;
 		});
 
-		return {
-			email: user.email ?? payload.email,
-			id: user.id,
-			role: user.role,
-		};
+		return toAuthenticatedUser(user, payload.provider, payload.email);
 	}
 }

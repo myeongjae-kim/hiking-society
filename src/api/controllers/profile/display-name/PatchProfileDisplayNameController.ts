@@ -32,13 +32,13 @@ controller.openapi(
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext().get("UpdateProfileUseCase").update({
-			displayName: values.displayName,
-			email: user.email,
-			now: new Date(),
-			removeProfileImage: false,
-			userId: user.id,
-		});
+		await applicationUseCaseContext()
+			.get("UpdateDisplayNameUseCase")
+			.updateDisplayName({
+				displayName: values.displayName,
+				now: new Date(),
+				userId: user.id,
+			});
 		revalidateProfileViews();
 
 		return c.json({ ok: true } as const, 200);

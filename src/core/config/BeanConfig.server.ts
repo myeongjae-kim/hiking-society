@@ -39,6 +39,8 @@ import type { CommentCommandUseCase } from "../comment/application/port/in/Comme
 import type { ListArticleCommentsUseCase } from "../comment/application/port/in/ListArticleCommentsUseCase";
 import type { CommentCommandPort } from "../comment/application/port/out/CommentCommandPort";
 import type { CommentQueryPort } from "../comment/application/port/out/CommentQueryPort";
+import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
+import type { TransactionPort } from "../common/application/port/out/TransactionPort";
 import { FeedDrizzleAdapter } from "../feed/adapter/FeedDrizzleAdapter";
 import { GetFeedHomeService } from "../feed/application/GetFeedHomeService";
 import { ListFeedService } from "../feed/application/ListFeedService";
@@ -74,12 +76,16 @@ import type { NotificationQueryPort } from "../notification/application/port/out
 import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
 import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
 import { ProfileImageUploadService } from "../profile/application/ProfileImageUploadService";
+import type { UpdateDisplayNameUseCase } from "../profile/application/port/in/UpdateDisplayNameUseCase";
+import type { UpdateEmailUseCase } from "../profile/application/port/in/UpdateEmailUseCase";
 import type { ProfileImageUploadUseCase } from "../profile/application/port/in/ProfileImageUploadUseCase";
-import type { UpdateProfileUseCase } from "../profile/application/port/in/UpdateProfileUseCase";
+import type { UpdateProfileImageUseCase } from "../profile/application/port/in/UpdateProfileImageUseCase";
 import type { ProfileCommandPort } from "../profile/application/port/out/ProfileCommandPort";
 import type { ProfileImageStoragePort } from "../profile/application/port/out/ProfileImageStoragePort";
 import type { ProfileQueryPort } from "../profile/application/port/out/ProfileQueryPort";
-import { UpdateProfileService } from "../profile/application/UpdateProfileService";
+import { UpdateDisplayNameService } from "../profile/application/UpdateDisplayNameService";
+import { UpdateEmailService } from "../profile/application/UpdateEmailService";
+import { UpdateProfileImageService } from "../profile/application/UpdateProfileImageService";
 import { env } from "./env.server";
 
 export type UseCaseBeans = {
@@ -106,7 +112,9 @@ export type UseCaseBeans = {
 	MarkNotificationReadUseCase: MarkNotificationReadUseCase;
 	UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
 	ProfileImageUploadUseCase: ProfileImageUploadUseCase;
-	UpdateProfileUseCase: UpdateProfileUseCase;
+	UpdateDisplayNameUseCase: UpdateDisplayNameUseCase;
+	UpdateEmailUseCase: UpdateEmailUseCase;
+	UpdateProfileImageUseCase: UpdateProfileImageUseCase;
 };
 
 type InfrastructureBeans = {
@@ -129,11 +137,13 @@ type InfrastructureBeans = {
 	ProfileCommandPort: ProfileCommandPort;
 	ProfileImageStoragePort: ProfileImageStoragePort;
 	ProfileQueryPort: ProfileQueryPort;
+	TransactionPort: TransactionPort;
 	TextEncoder: TextEncoder;
 	JWT_SECRET: string;
 	GOOGLE_LOGIN_CLIENT_ID: string;
 	GOOGLE_LOGIN_CLIENT_SECRET: string;
 	NODE_ENV: typeof process.env.NODE_ENV;
+	S3_PUBLIC_BASE_URL: string;
 };
 
 export type Beans = InfrastructureBeans & UseCaseBeans;
@@ -182,7 +192,10 @@ export const beanConfig: BeanConfig<Beans> = {
 	ProfileImageUploadUseCase: (bind) => bind().to(ProfileImageUploadService),
 	ProfileImageStoragePort: (bind) => bind().to(S3ProfileImageStorageAdapter),
 	ProfileQueryPort: (bind) => bind().to(ProfileDrizzleAdapter),
-	UpdateProfileUseCase: (bind) => bind().to(UpdateProfileService),
+	TransactionPort: (bind) => bind().to(DrizzleTransactionAdapter),
+	UpdateDisplayNameUseCase: (bind) => bind().to(UpdateDisplayNameService),
+	UpdateEmailUseCase: (bind) => bind().to(UpdateEmailService),
+	UpdateProfileImageUseCase: (bind) => bind().to(UpdateProfileImageService),
 	TextEncoder: (bind) => bind().to(TextEncoder),
 	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>
@@ -190,4 +203,5 @@ export const beanConfig: BeanConfig<Beans> = {
 	GOOGLE_LOGIN_CLIENT_SECRET: (bind) =>
 		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_SECRET),
 	NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),
+	S3_PUBLIC_BASE_URL: (bind) => bind().toConstantValue(env.S3_PUBLIC_BASE_URL),
 };

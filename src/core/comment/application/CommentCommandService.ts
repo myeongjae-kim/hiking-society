@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import { createCommentNotifications } from "@/core/notification/model/NotificationFactory";
@@ -12,47 +13,53 @@ export class CommentCommandService implements CommentCommandUseCase {
 		private commentCommandPort: CommentCommandPort,
 		@Autowired("NotificationCommandPort")
 		private notificationCommandPort: NotificationCommandPort,
+		@Autowired("TransactionPort")
+		private transactionPort: TransactionPort,
 	) {}
 
 	async create(input: Parameters<CommentCommandUseCase["create"]>[0]) {
-		const article = await this.commentCommandPort.findActiveArticleById(
-			input.articleId,
-		);
+		await this.transactionPort.run(async () => {
+			const article = await this.commentCommandPort.findActiveArticleById(
+				input.articleId,
+			);
 
-		if (!article) {
-			throw applicationError.notFound("댓글을 작성할 글을 찾을 수 없습니다.");
-		}
+			if (!article) {
+				throw applicationError.notFound("댓글을 작성할 글을 찾을 수 없습니다.");
+			}
 
-		const parentCommentId =
-			"parentCommentId" in input ? input.parentCommentId : null;
-		const parent = parentCommentId
-			? await this.commentCommandPort.findCommentById(parentCommentId)
-			: null;
+			const parentCommentId =
+				"parentCommentId" in input ? input.parentCommentId : null;
+			const parent = parentCommentId
+				? await this.commentCommandPort.findCommentById(parentCommentId)
+				: null;
 
-		if (
-			parentCommentId !== null &&
-			!CommentReplyTarget.of(parent).canReceiveReplyFor(input.articleId)
-		) {
-			throw applicationError.notFound("답글을 작성할 댓글을 찾을 수 없습니다.");
-		}
+			if (
+				parentCommentId !== null &&
+				!CommentReplyTarget.of(parent).canReceiveReplyFor(input.articleId)
+			) {
+				throw applicationError.notFound(
+					"답글을 작성할 댓글을 찾을 수 없습니다.",
+				);
+			}
 
-		const commentId = await this.commentCommandPort.create({
-			articleId: input.articleId,
-			authorUserId: input.authorUserId,
-			body: input.body,
-			parentCommentId,
-		});
-
-		await this.notificationCommandPort.createMany({
-			notifications: createCommentNotifications({
-				actorUserId: input.authorUserId,
-				articleAuthorUserId: article.authorUserId,
+			const commentId = await this.commentCommandPort.create({
 				articleId: input.articleId,
-				commentBody: input.body,
-				commentId,
-				parentCommentAuthorUserId: parent?.authorUserId ?? null,
+				authorUserId: input.authorUserId,
+				body: input.body,
 				parentCommentId,
-			}),
+			});
+
+			await this.notificationCommandPort.createMany({
+				notifications: createCommentNotifications({
+					actorUserId: input.authorUserId,
+					articleAuthorUserId: article.authorUserId,
+					articleId: input.articleId,
+					commentBody: input.body,
+					commentId,
+					parentCommentAuthorUserId: parent?.authorUserId ?? null,
+					parentCommentId,
+				}),
+			});
 		});
 	}
 

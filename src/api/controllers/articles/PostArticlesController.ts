@@ -4,7 +4,7 @@ import { Controller } from "#/api/config/Controller";
 import { articleBodySchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import type { HikingId } from "@/core/hiking/domain";
-import { revalidateArticleSuccess, validateUploadedMedia } from "./_helpers";
+import { revalidateArticleSuccess } from "./_helpers";
 
 const controller = Controller();
 
@@ -37,7 +37,6 @@ controller.openapi(
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const values = c.req.valid("json");
 
-		validateUploadedMedia(user.id, values.uploadedMedia);
 		await applicationUseCaseContext()
 			.get("ArticleCommandUseCase")
 			.create({

@@ -1,7 +1,10 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
+import { UploadOwnershipPolicy } from "@/core/common/domain/UploadOwnershipPolicy";
 import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import { createArticleCreatedNotifications } from "@/core/notification/model/NotificationFactory";
+import type { ArticleMediaUpload } from "../model/ArticleMediaCommand";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
 	ArticleMediaCollection,
@@ -16,46 +19,93 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 		private articleCommandPort: ArticleCommandPort,
 		@Autowired("NotificationCommandPort")
 		private notificationCommandPort: NotificationCommandPort,
+		@Autowired("TransactionPort")
+		private transactionPort: TransactionPort,
+		@Autowired("S3_PUBLIC_BASE_URL")
+		private s3PublicBaseUrl: string,
 	) {}
 
-	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
-		if (!ArticleMediaCollection.from(input.media).isPublishable()) {
-			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-		}
-
-		const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
-			input.hikingId,
-		);
-
-		if (!hasActiveHiking) {
-			throw applicationError.notFound("산행을 찾을 수 없습니다.");
-		}
-
-		const articleId = await this.articleCommandPort.create({
-			authorUserId: input.authorUserId,
-			body: input.body,
-			hikingId: input.hikingId,
-			storedMedia: input.media,
+	private assertOwnedUploadedMedia(
+		userId: number,
+		media: readonly ArticleMediaUpload[],
+	) {
+		const ownershipPolicy = UploadOwnershipPolicy.forUser({
+			objectPrefix: "article-media",
+			publicBaseUrl: this.s3PublicBaseUrl,
+			userId,
 		});
-		const recipientUserIds =
-			await this.articleCommandPort.listActiveNotificationRecipientIds({
-				excludeUserId: input.authorUserId,
-			});
 
-		await this.notificationCommandPort.createMany({
-			notifications: createArticleCreatedNotifications({
-				actorUserId: input.authorUserId,
-				articleBody: input.body,
-				articleId,
-				recipientUserIds,
-			}),
+		for (const item of media) {
+			if (
+				!ownershipPolicy.hasOwnedObjectKey(item.objectKey) ||
+				!ownershipPolicy.hasExpectedPublicUrl({
+					objectKey: item.objectKey,
+					url: item.url,
+				})
+			) {
+				throw applicationError.badRequest("잘못된 업로드 파일입니다.");
+			}
+
+			if (
+				item.thumbnailUrl &&
+				!ownershipPolicy.hasOwnedPublicUrl(item.thumbnailUrl)
+			) {
+				throw applicationError.badRequest("잘못된 업로드 URL입니다.");
+			}
+		}
+	}
+
+	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
+		await this.transactionPort.run(async () => {
+			const media = ArticleMediaCollection.from(input.media);
+
+			if (!media.isPublishable()) {
+				throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
+			}
+
+			this.assertOwnedUploadedMedia(input.authorUserId, input.media);
+
+			const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
+				input.hikingId,
+			);
+
+			if (!hasActiveHiking) {
+				throw applicationError.notFound("산행을 찾을 수 없습니다.");
+			}
+
+			const articleId = await this.articleCommandPort.create({
+				authorUserId: input.authorUserId,
+				body: input.body,
+				hikingId: input.hikingId,
+				storedMedia: media.sortByOrder(),
+			});
+			const recipientUserIds =
+				await this.articleCommandPort.listActiveNotificationRecipientIds({
+					excludeUserId: input.authorUserId,
+				});
+
+			await this.notificationCommandPort.createMany({
+				notifications: createArticleCreatedNotifications({
+					actorUserId: input.authorUserId,
+					articleBody: input.body,
+					articleId,
+					recipientUserIds,
+				}),
+			});
 		});
 	}
 
 	async update(input: Parameters<ArticleCommandUseCase["update"]>[0]) {
-		if (!ArticleMediaCollection.from(input.media).isPublishable()) {
+		const media = ArticleMediaCollection.from([
+			...input.existingMedia,
+			...input.uploadedMedia,
+		]);
+
+		if (!media.isPublishable()) {
 			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
+
+		this.assertOwnedUploadedMedia(input.userId, input.uploadedMedia);
 
 		const article = await this.articleCommandPort.findActiveArticleById(
 			input.articleId,
@@ -73,7 +123,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 		const updated = await this.articleCommandPort.update({
 			articleId: input.articleId,
 			now: new Date(),
-			storedMedia: input.media,
+			storedMedia: media.sortByOrder(),
 			values: {
 				body: input.body,
 			},

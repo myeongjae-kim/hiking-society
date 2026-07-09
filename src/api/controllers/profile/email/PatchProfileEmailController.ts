@@ -5,7 +5,7 @@ import { Controller } from "#/api/config/Controller";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { cookieOptions, sessionCookieConfig } from "../../_sessionCookies";
-import { getCurrentDisplayName, revalidateProfileViews } from "../_helpers";
+import { revalidateProfileViews } from "../_helpers";
 
 const controller = Controller();
 const {
@@ -38,15 +38,11 @@ controller.openapi(
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext()
-			.get("UpdateProfileUseCase")
-			.update({
-				displayName: getCurrentDisplayName(user),
-				email: values.email,
-				now: new Date(),
-				removeProfileImage: false,
-				userId: user.id,
-			});
+		await applicationUseCaseContext().get("UpdateEmailUseCase").updateEmail({
+			email: values.email,
+			now: new Date(),
+			userId: user.id,
+		});
 
 		if (values.email !== user.email && user.provider) {
 			const { accessToken, refreshToken } = await applicationUseCaseContext()

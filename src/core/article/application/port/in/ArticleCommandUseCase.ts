@@ -13,8 +13,9 @@ export interface ArticleCommandUseCase {
 	update(input: {
 		articleId: ArticleId;
 		body: string;
+		existingMedia: readonly ExistingArticleMediaInput[];
+		uploadedMedia: readonly ArticleMediaUpload[];
 		userId: number;
-		media: readonly (ArticleMediaUpload | ExistingArticleMediaInput)[];
 	}): Promise<void>;
 	delete(input: { articleId: ArticleId; userId: number }): Promise<void>;
 }

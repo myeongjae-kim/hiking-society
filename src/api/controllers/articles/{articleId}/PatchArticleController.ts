@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
-import { notFound, toArticleId, toArticleMedia } from "#/api/config/apiUtils";
+import { notFound, toArticleId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import {
@@ -8,7 +8,7 @@ import {
 	idParamSchema,
 } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess, validateUploadedMedia } from "../_helpers";
+import { revalidateArticleSuccess } from "../_helpers";
 
 const controller = Controller();
 
@@ -39,15 +39,13 @@ controller.openapi(
 		const articleId = toArticleId(c.req.valid("param").articleId);
 		const values = c.req.valid("json");
 
-		validateUploadedMedia(user.id, values.uploadedMedia);
-		await applicationUseCaseContext()
-			.get("ArticleCommandUseCase")
-			.update({
-				articleId,
-				body: values.body,
-				media: toArticleMedia(values),
-				userId: user.id,
-			});
+		await applicationUseCaseContext().get("ArticleCommandUseCase").update({
+			articleId,
+			body: values.body,
+			existingMedia: values.existingMedia,
+			uploadedMedia: values.uploadedMedia,
+			userId: user.id,
+		});
 		revalidateArticleSuccess(articleId);
 
 		const snapshot = await applicationUseCaseContext()
