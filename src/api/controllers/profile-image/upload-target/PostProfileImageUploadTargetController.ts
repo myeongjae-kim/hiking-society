@@ -1,45 +1,47 @@
-import { applicationContext } from '@/core/config/applicationContext.server';
-import { createRoute } from '@hono/zod-openapi';
-import { Controller } from '#/api/config/Controller';
-import { requireApiUser } from '#/api/config/auth';
+import { createRoute } from "@hono/zod-openapi";
+import { requireApiUser } from "#/api/config/auth";
+import { Controller } from "#/api/config/Controller";
 import {
-  profileImageUploadTargetBodySchema,
-  profileImageUploadTargetResponseSchema,
-} from '#/api/schemas';
+	profileImageUploadTargetBodySchema,
+	profileImageUploadTargetResponseSchema,
+} from "#/api/schemas";
+import { applicationContext } from "@/core/config/applicationContext.server";
 
 const controller = Controller();
 
 controller.openapi(
-  createRoute({
-    method: 'post',
-    path: '/profile-image/upload-target',
-    request: {
-      body: {
-        content: { 'application/json': { schema: profileImageUploadTargetBodySchema } },
-        required: true,
-      },
-    },
-    responses: {
-      200: {
-        content: {
-          'application/json': {
-            schema: profileImageUploadTargetResponseSchema,
-          },
-        },
-        description: 'Upload target',
-      },
-    },
-    security: [{ cookieAuth: [] }],
-    tags: ['profile'],
-  }),
-  async (c) => {
-    const user = requireApiUser(c.get('currentUser'));
-    const target = await applicationContext()
-      .get('ProfileImageStoragePort')
-      .createUploadTarget({ ...c.req.valid('json'), userId: user.id });
+	createRoute({
+		method: "post",
+		path: "/profile-image/upload-target",
+		request: {
+			body: {
+				content: {
+					"application/json": { schema: profileImageUploadTargetBodySchema },
+				},
+				required: true,
+			},
+		},
+		responses: {
+			200: {
+				content: {
+					"application/json": {
+						schema: profileImageUploadTargetResponseSchema,
+					},
+				},
+				description: "Upload target",
+			},
+		},
+		security: [{ cookieAuth: [] }],
+		tags: ["profile"],
+	}),
+	async (c) => {
+		const user = requireApiUser(c.get("currentUser"));
+		const target = await applicationContext()
+			.get("ProfileImageStoragePort")
+			.createUploadTarget({ ...c.req.valid("json"), userId: user.id });
 
-    return c.json(profileImageUploadTargetResponseSchema.parse(target), 200);
-  },
+		return c.json(profileImageUploadTargetResponseSchema.parse(target), 200);
+	},
 );
 
 export default controller;

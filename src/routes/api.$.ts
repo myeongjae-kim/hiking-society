@@ -1,12 +1,12 @@
-import { serverApp } from '#/api/serverApp';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from "@tanstack/react-router";
+import { serverApp } from "#/api/serverApp";
 
 const handler = ({ request }: { request: Request }) => serverApp.fetch(request);
 
-export const Route = createFileRoute('/api/$')({
-  server: {
-    handlers: {
-      ANY: handler,
-    },
-  },
+export const Route = createFileRoute("/api/$")({
+	server: {
+		handlers: {
+			ANY: handler,
+		},
+	},
 });

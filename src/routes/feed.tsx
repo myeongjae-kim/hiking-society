@@ -1,53 +1,55 @@
-import FeedPageView from '#/features/feed/FeedPageView';
-import type { HikingId } from '@/core/hiking/domain';
-import { getFeedRouteData } from '#/features/feed/feedRouteData.functions';
-import { getLoginRedirectHref } from '#/features/auth/session.shared';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { getLoginRedirectHref } from "#/features/auth/session.shared";
+import FeedPageView from "#/features/feed/FeedPageView";
+import { getFeedRouteData } from "#/features/feed/feedRouteData.functions";
+import type { HikingId } from "@/core/hiking/domain";
 
 function getSingleSearchParam(value: unknown) {
-  return Array.isArray(value) ? value[0] : value;
+	return Array.isArray(value) ? value[0] : value;
 }
 
-export const Route = createFileRoute('/feed')({
-  component: FeedRoute,
-  loader: async ({ location }) => {
-    const data = await getFeedRouteData();
+export const Route = createFileRoute("/feed")({
+	component: FeedRoute,
+	loader: async ({ location }) => {
+		const data = await getFeedRouteData();
 
-    if (data.status === 'unauthenticated') {
-      throw redirect({ href: getLoginRedirectHref(location.href) });
-    }
+		if (data.status === "unauthenticated") {
+			throw redirect({ href: getLoginRedirectHref(location.href) });
+		}
 
-    if (data.status === 'associate') {
-      return {
-        currentTheme: data.currentTheme,
-        feedSummary: null,
-        notificationSnapshot: null,
-        selectedHikingId: null,
-        user: data.user,
-      };
-    }
+		if (data.status === "associate") {
+			return {
+				currentTheme: data.currentTheme,
+				feedSummary: null,
+				notificationSnapshot: null,
+				selectedHikingId: null,
+				user: data.user,
+			};
+		}
 
-    return {
-      currentTheme: data.currentTheme,
-      feedSummary: data.feedSummary,
-      notificationSnapshot: data.notificationSnapshot,
-      selectedHikingId: null,
-      user: data.user,
-    };
-  },
-  validateSearch: (search) => ({
-    hikingId: getSingleSearchParam(search.hikingId),
-  }),
+		return {
+			currentTheme: data.currentTheme,
+			feedSummary: data.feedSummary,
+			notificationSnapshot: data.notificationSnapshot,
+			selectedHikingId: null,
+			user: data.user,
+		};
+	},
+	validateSearch: (search) => ({
+		hikingId: getSingleSearchParam(search.hikingId),
+	}),
 });
 
 function FeedRoute() {
-  const data = Route.useLoaderData();
-  const { hikingId } = Route.useSearch();
+	const data = Route.useLoaderData();
+	const { hikingId } = Route.useSearch();
 
-  return (
-    <FeedPageView
-      {...data}
-      selectedHikingId={typeof hikingId === 'string' ? (hikingId as HikingId) : null}
-    />
-  );
+	return (
+		<FeedPageView
+			{...data}
+			selectedHikingId={
+				typeof hikingId === "string" ? (hikingId as HikingId) : null
+			}
+		/>
+	);
 }

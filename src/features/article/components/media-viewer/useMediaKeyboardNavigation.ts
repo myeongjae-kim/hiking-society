@@ -1,39 +1,39 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 type UseMediaKeyboardNavigationOptions = {
-  hasMultipleMedia: boolean;
-  onNext: () => void;
-  onPrevious: () => void;
-  open: boolean;
+	hasMultipleMedia: boolean;
+	onNext: () => void;
+	onPrevious: () => void;
+	open: boolean;
 };
 
 export function useMediaKeyboardNavigation({
-  hasMultipleMedia,
-  onNext,
-  onPrevious,
-  open,
+	hasMultipleMedia,
+	onNext,
+	onPrevious,
+	open,
 }: UseMediaKeyboardNavigationOptions) {
-  useEffect(() => {
-    if (!open || !hasMultipleMedia) {
-      return;
-    }
+	useEffect(() => {
+		if (!open || !hasMultipleMedia) {
+			return;
+		}
 
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        onPrevious();
-      }
+		function handleKeyDown(event: KeyboardEvent) {
+			if (event.key === "ArrowLeft") {
+				event.preventDefault();
+				onPrevious();
+			}
 
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        onNext();
-      }
-    }
+			if (event.key === "ArrowRight") {
+				event.preventDefault();
+				onNext();
+			}
+		}
 
-    window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener("keydown", handleKeyDown);
 
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [hasMultipleMedia, onNext, onPrevious, open]);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [hasMultipleMedia, onNext, onPrevious, open]);
 }

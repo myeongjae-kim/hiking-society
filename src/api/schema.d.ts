@@ -4,1530 +4,1530 @@
  */
 
 export interface paths {
-  '/api/users/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Current user */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['CurrentUser'];
-          };
-        };
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ApiError'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/auth/google/login': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            code: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Logged in user */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['CurrentUser'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/auth/logout': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Logged out */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/profile/display-name': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            displayName: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/profile/email': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: email */
-            email: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/profile/image': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            profileImage?: {
-              byteSize: number;
-              /** @enum {string} */
-              contentType: 'image/webp';
-              objectKey: string;
-              /** Format: uri */
-              url: string;
-            };
-            removeProfileImage: boolean;
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/profile-image/upload-target': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            byteSize: number;
-            /** @enum {string} */
-            contentType: 'image/webp';
-            fileName: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Upload target */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ProfileImageUploadTargetResponse'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/profile-image/uploads': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            objectKeys: string[];
-          };
-        };
-      };
-      responses: {
-        /** @description Cleaned */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/feed': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Feed */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['FeedResponse'];
-          };
-        };
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ApiError'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/feed/hikings/{hikingId}/articles': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          hikingId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Hiking articles */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['HikingArticlesResponse'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/hikings': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            altitude?: number | null;
-            completedTime: string;
-            hikingDate: string;
-            latitude: number;
-            longitude: number;
-            mountainName: string;
-            participantsCsv: string;
-            restaurantAddress: string;
-            startedTime: string;
-            timezone: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Created */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/hikings/{hikingId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          hikingId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Deleted */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          hikingId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            altitude?: number | null;
-            completedTime: string;
-            hikingDate: string;
-            latitude: number;
-            longitude: number;
-            mountainName: string;
-            participantsCsv: string;
-            restaurantAddress: string;
-            startedTime: string;
-            timezone: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/articles': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            body: string;
-            /** @default [] */
-            existingMedia?: {
-              byteSize?: number;
-              contentType?: string;
-              durationMs?: number | null;
-              height?: number | null;
-              /** @enum {string} */
-              mediaType: 'image' | 'video';
-              metadata?: {
-                dateTime?: string | null;
-                exposureTime?: string | null;
-                fNumber?: string | null;
-                focalLengthIn35mmFilm?: string | null;
-                isoSpeedRatings?: string | null;
-                make?: string | null;
-                model?: string | null;
-                shutterSpeedValue?: string | null;
-              } | null;
-              objectKey?: string;
-              order: number;
-              thumbnailUrl?: string | null;
-              url: string;
-              width?: number | null;
-            }[];
-            /** @default [] */
-            uploadedMedia?: {
-              byteSize: number;
-              contentType: string;
-              durationMs?: number | null;
-              height?: number | null;
-              /** @enum {string} */
-              mediaType: 'image' | 'video';
-              objectKey: string;
-              order: number;
-              originalMetadata?: {
-                [key: string]: unknown;
-              } | null;
-              /** Format: uri */
-              thumbnailUrl?: string | null;
-              /** Format: uri */
-              url: string;
-              width?: number | null;
-            }[];
-            hikingId: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Created */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/articles/{articleId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Article detail */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ArticleDetailResponse'];
-          };
-        };
-        /** @description Not found */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ApiError'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Deleted */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            body: string;
-            /** @default [] */
-            existingMedia?: {
-              byteSize?: number;
-              contentType?: string;
-              durationMs?: number | null;
-              height?: number | null;
-              /** @enum {string} */
-              mediaType: 'image' | 'video';
-              metadata?: {
-                dateTime?: string | null;
-                exposureTime?: string | null;
-                fNumber?: string | null;
-                focalLengthIn35mmFilm?: string | null;
-                isoSpeedRatings?: string | null;
-                make?: string | null;
-                model?: string | null;
-                shutterSpeedValue?: string | null;
-              } | null;
-              objectKey?: string;
-              order: number;
-              thumbnailUrl?: string | null;
-              url: string;
-              width?: number | null;
-            }[];
-            /** @default [] */
-            uploadedMedia?: {
-              byteSize: number;
-              contentType: string;
-              durationMs?: number | null;
-              height?: number | null;
-              /** @enum {string} */
-              mediaType: 'image' | 'video';
-              objectKey: string;
-              order: number;
-              originalMetadata?: {
-                [key: string]: unknown;
-              } | null;
-              /** Format: uri */
-              thumbnailUrl?: string | null;
-              /** Format: uri */
-              url: string;
-              width?: number | null;
-            }[];
-          };
-        };
-      };
-      responses: {
-        /** @description Updated article detail */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ArticleDetailResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/articles/{articleId}/like': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Toggled */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Toggled */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/article-media/upload-targets': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            byteSize: number;
-            contentType: string;
-            fileName: string;
-            /** @enum {string} */
-            mediaType: 'image' | 'video';
-            thumbnail?: {
-              byteSize: number;
-              contentType: string;
-              fileName: string;
-            };
-          }[];
-        };
-      };
-      responses: {
-        /** @description Upload targets */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              targets: {
-                objectKey: string;
-                thumbnail?: {
-                  objectKey: string;
-                  uploadUrl: string;
-                  url: string;
-                };
-                uploadUrl: string;
-                url: string;
-              }[];
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/article-media/uploads': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            objectKeys: string[];
-          };
-        };
-      };
-      responses: {
-        /** @description Cleaned */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/articles/{articleId}/comments': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Comments */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['CommentsResponse'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          articleId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            body: string;
-            parentCommentId?: string | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Created */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/comments/{commentId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          commentId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Deleted */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          commentId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            body: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/comments/{commentId}/like': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          commentId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Toggled */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          commentId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Toggled */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/geocoding/search': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query: {
-          q: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Geocoding search results */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['GeocodingSearchResponse'];
-          };
-        };
-        /** @description Bad request */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ApiError'];
-          };
-        };
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['ApiError'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/notifications': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: {
-          limit?: number;
-          offset?: number | null;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Notifications */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['NotificationListResponse'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/notifications/{notificationId}/read': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          notificationId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Read */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/notifications/read-all': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Read all */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/members': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Members */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['MembersResponse'];
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/members/{userId}/role': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          userId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            role: 'associate' | 'member' | 'admin';
-          };
-        };
-      };
-      responses: {
-        /** @description Updated */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': components['schemas']['OkResponse'];
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
+	"/api/users/me": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Current user */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["CurrentUser"];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ApiError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/auth/google/login": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						code: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Logged in user */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["CurrentUser"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/auth/logout": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Logged out */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/profile/display-name": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						displayName: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/profile/email": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						/** Format: email */
+						email: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/profile/image": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						profileImage?: {
+							byteSize: number;
+							/** @enum {string} */
+							contentType: "image/webp";
+							objectKey: string;
+							/** Format: uri */
+							url: string;
+						};
+						removeProfileImage: boolean;
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/profile-image/upload-target": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						byteSize: number;
+						/** @enum {string} */
+						contentType: "image/webp";
+						fileName: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Upload target */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ProfileImageUploadTargetResponse"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/profile-image/uploads": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						objectKeys: string[];
+					};
+				};
+			};
+			responses: {
+				/** @description Cleaned */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/feed": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Feed */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["FeedResponse"];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ApiError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/feed/hikings/{hikingId}/articles": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					hikingId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Hiking articles */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["HikingArticlesResponse"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/hikings": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						altitude?: number | null;
+						completedTime: string;
+						hikingDate: string;
+						latitude: number;
+						longitude: number;
+						mountainName: string;
+						participantsCsv: string;
+						restaurantAddress: string;
+						startedTime: string;
+						timezone: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Created */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/hikings/{hikingId}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					hikingId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Deleted */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					hikingId: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						altitude?: number | null;
+						completedTime: string;
+						hikingDate: string;
+						latitude: number;
+						longitude: number;
+						mountainName: string;
+						participantsCsv: string;
+						restaurantAddress: string;
+						startedTime: string;
+						timezone: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/articles": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						body: string;
+						/** @default [] */
+						existingMedia?: {
+							byteSize?: number;
+							contentType?: string;
+							durationMs?: number | null;
+							height?: number | null;
+							/** @enum {string} */
+							mediaType: "image" | "video";
+							metadata?: {
+								dateTime?: string | null;
+								exposureTime?: string | null;
+								fNumber?: string | null;
+								focalLengthIn35mmFilm?: string | null;
+								isoSpeedRatings?: string | null;
+								make?: string | null;
+								model?: string | null;
+								shutterSpeedValue?: string | null;
+							} | null;
+							objectKey?: string;
+							order: number;
+							thumbnailUrl?: string | null;
+							url: string;
+							width?: number | null;
+						}[];
+						/** @default [] */
+						uploadedMedia?: {
+							byteSize: number;
+							contentType: string;
+							durationMs?: number | null;
+							height?: number | null;
+							/** @enum {string} */
+							mediaType: "image" | "video";
+							objectKey: string;
+							order: number;
+							originalMetadata?: {
+								[key: string]: unknown;
+							} | null;
+							/** Format: uri */
+							thumbnailUrl?: string | null;
+							/** Format: uri */
+							url: string;
+							width?: number | null;
+						}[];
+						hikingId: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Created */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/articles/{articleId}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Article detail */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ArticleDetailResponse"];
+					};
+				};
+				/** @description Not found */
+				404: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ApiError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Deleted */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						body: string;
+						/** @default [] */
+						existingMedia?: {
+							byteSize?: number;
+							contentType?: string;
+							durationMs?: number | null;
+							height?: number | null;
+							/** @enum {string} */
+							mediaType: "image" | "video";
+							metadata?: {
+								dateTime?: string | null;
+								exposureTime?: string | null;
+								fNumber?: string | null;
+								focalLengthIn35mmFilm?: string | null;
+								isoSpeedRatings?: string | null;
+								make?: string | null;
+								model?: string | null;
+								shutterSpeedValue?: string | null;
+							} | null;
+							objectKey?: string;
+							order: number;
+							thumbnailUrl?: string | null;
+							url: string;
+							width?: number | null;
+						}[];
+						/** @default [] */
+						uploadedMedia?: {
+							byteSize: number;
+							contentType: string;
+							durationMs?: number | null;
+							height?: number | null;
+							/** @enum {string} */
+							mediaType: "image" | "video";
+							objectKey: string;
+							order: number;
+							originalMetadata?: {
+								[key: string]: unknown;
+							} | null;
+							/** Format: uri */
+							thumbnailUrl?: string | null;
+							/** Format: uri */
+							url: string;
+							width?: number | null;
+						}[];
+					};
+				};
+			};
+			responses: {
+				/** @description Updated article detail */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ArticleDetailResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/articles/{articleId}/like": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Toggled */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Toggled */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/article-media/upload-targets": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						byteSize: number;
+						contentType: string;
+						fileName: string;
+						/** @enum {string} */
+						mediaType: "image" | "video";
+						thumbnail?: {
+							byteSize: number;
+							contentType: string;
+							fileName: string;
+						};
+					}[];
+				};
+			};
+			responses: {
+				/** @description Upload targets */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": {
+							targets: {
+								objectKey: string;
+								thumbnail?: {
+									objectKey: string;
+									uploadUrl: string;
+									url: string;
+								};
+								uploadUrl: string;
+								url: string;
+							}[];
+						};
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/article-media/uploads": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						objectKeys: string[];
+					};
+				};
+			};
+			responses: {
+				/** @description Cleaned */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/articles/{articleId}/comments": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Comments */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["CommentsResponse"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					articleId: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						body: string;
+						parentCommentId?: string | null;
+					};
+				};
+			};
+			responses: {
+				/** @description Created */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/comments/{commentId}": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					commentId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Deleted */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					commentId: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						body: string;
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/comments/{commentId}/like": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					commentId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Toggled */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		delete: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					commentId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Toggled */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/geocoding/search": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query: {
+					q: string;
+				};
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Geocoding search results */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["GeocodingSearchResponse"];
+					};
+				};
+				/** @description Bad request */
+				400: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ApiError"];
+					};
+				};
+				/** @description Unauthorized */
+				401: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["ApiError"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/notifications": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: {
+					limit?: number;
+					offset?: number | null;
+				};
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Notifications */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["NotificationListResponse"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/notifications/{notificationId}/read": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					notificationId: string;
+				};
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Read */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/notifications/read-all": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Read all */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
+	"/api/members": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path?: never;
+				cookie?: never;
+			};
+			requestBody?: never;
+			responses: {
+				/** @description Members */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["MembersResponse"];
+					};
+				};
+			};
+		};
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/api/members/{userId}/role": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch: {
+			parameters: {
+				query?: never;
+				header?: never;
+				path: {
+					userId: string;
+				};
+				cookie?: never;
+			};
+			requestBody: {
+				content: {
+					"application/json": {
+						/** @enum {string} */
+						role: "associate" | "member" | "admin";
+					};
+				};
+			};
+			responses: {
+				/** @description Updated */
+				200: {
+					headers: {
+						[name: string]: unknown;
+					};
+					content: {
+						"application/json": components["schemas"]["OkResponse"];
+					};
+				};
+			};
+		};
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    CurrentUser: {
-      displayName?: string | null;
-      email: string;
-      id: number;
-      name?: string | null;
-      profileImageUrl?: string | null;
-      provider?: string | null;
-      role: components['schemas']['UserRole'];
-    };
-    /** @enum {string} */
-    UserRole: 'associate' | 'member' | 'admin';
-    ApiError: {
-      code: string;
-      error: string;
-      message: string;
-      status: number;
-    };
-    OkResponse: {
-      /** @enum {boolean} */
-      ok: true;
-    };
-    ProfileImageUploadTargetResponse: {
-      objectKey: string;
-      uploadUrl: string;
-      url: string;
-    };
-    FeedResponse: {
-      articleCount: number;
-      commentCount: number;
-      hikingArticleCounts: {
-        articleCount: number;
-        hikingId: string;
-      }[];
-      hikings: components['schemas']['Hiking'][];
-    };
-    Hiking: {
-      altitude?: number | null;
-      authorName: string;
-      authorUserId?: number;
-      completedAt: string;
-      createdAt: string;
-      hikingDate: string;
-      id: string;
-      latitude: number;
-      longitude: number;
-      mountainName: string;
-      order: number;
-      participantsCsv: string;
-      restaurantAddress?: string | null;
-      startedAt: string;
-      timezone: string;
-      updatedAt: string;
-    };
-    HikingArticlesResponse: {
-      articles: components['schemas']['Article'][];
-      comments: components['schemas']['Comment'][];
-    };
-    Article: {
-      authorName: string;
-      authorProfileImageUrl?: string | null;
-      authorUserId?: number;
-      body: string;
-      createdAt: string;
-      deletedAt?: string | null;
-      edited: boolean;
-      hikingId: string;
-      id: string;
-      likeCount: number;
-      likedByCurrentUser: boolean;
-      media: {
-        byteSize?: number;
-        contentType?: string;
-        durationMs?: number | null;
-        height?: number | null;
-        /** @enum {string} */
-        mediaType: 'image' | 'video';
-        metadata?: {
-          dateTime?: string | null;
-          exposureTime?: string | null;
-          fNumber?: string | null;
-          focalLengthIn35mmFilm?: string | null;
-          isoSpeedRatings?: string | null;
-          make?: string | null;
-          model?: string | null;
-          shutterSpeedValue?: string | null;
-        } | null;
-        objectKey?: string;
-        order: number;
-        thumbnailUrl?: string | null;
-        url: string;
-        width?: number | null;
-      }[];
-      updatedAt: string;
-    };
-    Comment: {
-      articleId: string;
-      authorName: string;
-      authorProfileImageUrl?: string | null;
-      authorUserId?: number;
-      body: string;
-      createdAt: string;
-      deletedAt?: string | null;
-      id: string;
-      likeCount: number;
-      likedByCurrentUser: boolean;
-      parentCommentId?: string | null;
-      updatedAt: string;
-    };
-    ArticleDetailResponse: {
-      article: components['schemas']['Article'];
-      comments: components['schemas']['Comment'][];
-    };
-    CommentsResponse: {
-      comments: components['schemas']['Comment'][];
-    };
-    GeocodingSearchResponse: {
-      results: {
-        id: string;
-        label: string;
-        latitude: number;
-        longitude: number;
-      }[];
-    };
-    NotificationListResponse: {
-      hasMoreNotifications: boolean;
-      hasUnreadNotifications: boolean;
-      notifications: components['schemas']['Notification'][];
-    };
-    Notification: {
-      actorName: string;
-      actorProfileImageUrl?: string | null;
-      actorUserId: number;
-      articleId: string;
-      commentId?: string | null;
-      contentExcerpt: string;
-      createdAt: string;
-      id: string;
-      readAt?: string | null;
-      /** @enum {string} */
-      type:
-        | 'article_created'
-        | 'article_comment'
-        | 'article_reply'
-        | 'comment_reply'
-        | 'article_like'
-        | 'comment_like';
-    };
-    MembersResponse: {
-      members: components['schemas']['Member'][];
-    };
-    Member: {
-      createdAt: string;
-      displayName?: string | null;
-      email?: string | null;
-      id: number;
-      lastLoginAt?: string | null;
-      name?: string | null;
-      provider?: string | null;
-      role: components['schemas']['UserRole'];
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+	schemas: {
+		CurrentUser: {
+			displayName?: string | null;
+			email: string;
+			id: number;
+			name?: string | null;
+			profileImageUrl?: string | null;
+			provider?: string | null;
+			role: components["schemas"]["UserRole"];
+		};
+		/** @enum {string} */
+		UserRole: "associate" | "member" | "admin";
+		ApiError: {
+			code: string;
+			error: string;
+			message: string;
+			status: number;
+		};
+		OkResponse: {
+			/** @enum {boolean} */
+			ok: true;
+		};
+		ProfileImageUploadTargetResponse: {
+			objectKey: string;
+			uploadUrl: string;
+			url: string;
+		};
+		FeedResponse: {
+			articleCount: number;
+			commentCount: number;
+			hikingArticleCounts: {
+				articleCount: number;
+				hikingId: string;
+			}[];
+			hikings: components["schemas"]["Hiking"][];
+		};
+		Hiking: {
+			altitude?: number | null;
+			authorName: string;
+			authorUserId?: number;
+			completedAt: string;
+			createdAt: string;
+			hikingDate: string;
+			id: string;
+			latitude: number;
+			longitude: number;
+			mountainName: string;
+			order: number;
+			participantsCsv: string;
+			restaurantAddress?: string | null;
+			startedAt: string;
+			timezone: string;
+			updatedAt: string;
+		};
+		HikingArticlesResponse: {
+			articles: components["schemas"]["Article"][];
+			comments: components["schemas"]["Comment"][];
+		};
+		Article: {
+			authorName: string;
+			authorProfileImageUrl?: string | null;
+			authorUserId?: number;
+			body: string;
+			createdAt: string;
+			deletedAt?: string | null;
+			edited: boolean;
+			hikingId: string;
+			id: string;
+			likeCount: number;
+			likedByCurrentUser: boolean;
+			media: {
+				byteSize?: number;
+				contentType?: string;
+				durationMs?: number | null;
+				height?: number | null;
+				/** @enum {string} */
+				mediaType: "image" | "video";
+				metadata?: {
+					dateTime?: string | null;
+					exposureTime?: string | null;
+					fNumber?: string | null;
+					focalLengthIn35mmFilm?: string | null;
+					isoSpeedRatings?: string | null;
+					make?: string | null;
+					model?: string | null;
+					shutterSpeedValue?: string | null;
+				} | null;
+				objectKey?: string;
+				order: number;
+				thumbnailUrl?: string | null;
+				url: string;
+				width?: number | null;
+			}[];
+			updatedAt: string;
+		};
+		Comment: {
+			articleId: string;
+			authorName: string;
+			authorProfileImageUrl?: string | null;
+			authorUserId?: number;
+			body: string;
+			createdAt: string;
+			deletedAt?: string | null;
+			id: string;
+			likeCount: number;
+			likedByCurrentUser: boolean;
+			parentCommentId?: string | null;
+			updatedAt: string;
+		};
+		ArticleDetailResponse: {
+			article: components["schemas"]["Article"];
+			comments: components["schemas"]["Comment"][];
+		};
+		CommentsResponse: {
+			comments: components["schemas"]["Comment"][];
+		};
+		GeocodingSearchResponse: {
+			results: {
+				id: string;
+				label: string;
+				latitude: number;
+				longitude: number;
+			}[];
+		};
+		NotificationListResponse: {
+			hasMoreNotifications: boolean;
+			hasUnreadNotifications: boolean;
+			notifications: components["schemas"]["Notification"][];
+		};
+		Notification: {
+			actorName: string;
+			actorProfileImageUrl?: string | null;
+			actorUserId: number;
+			articleId: string;
+			commentId?: string | null;
+			contentExcerpt: string;
+			createdAt: string;
+			id: string;
+			readAt?: string | null;
+			/** @enum {string} */
+			type:
+				| "article_created"
+				| "article_comment"
+				| "article_reply"
+				| "comment_reply"
+				| "article_like"
+				| "comment_like";
+		};
+		MembersResponse: {
+			members: components["schemas"]["Member"][];
+		};
+		Member: {
+			createdAt: string;
+			displayName?: string | null;
+			email?: string | null;
+			id: number;
+			lastLoginAt?: string | null;
+			name?: string | null;
+			provider?: string | null;
+			role: components["schemas"]["UserRole"];
+		};
+	};
+	responses: never;
+	parameters: never;
+	requestBodies: never;
+	headers: never;
+	pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

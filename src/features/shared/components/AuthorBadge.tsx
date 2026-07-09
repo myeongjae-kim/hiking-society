@@ -1,42 +1,51 @@
-'use client';
+"use client";
 
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export type AuthorAvatarRenderer = (avatar: ReactNode) => ReactNode;
 
 type AuthorBadgeProps = {
-  name: string;
-  profileImageUrl: string | null;
-  renderAvatar?: AuthorAvatarRenderer;
-  size?: 'md' | 'sm';
+	name: string;
+	profileImageUrl: string | null;
+	renderAvatar?: AuthorAvatarRenderer;
+	size?: "md" | "sm";
 };
 
 function getInitial(value: string) {
-  return value.trim().charAt(0).toUpperCase() || '?';
+	return value.trim().charAt(0).toUpperCase() || "?";
 }
 
-export function AuthorBadge({ name, profileImageUrl, renderAvatar, size = 'sm' }: AuthorBadgeProps) {
-  const avatarClassName = size === 'md' ? 'size-7 text-sm' : 'size-5 text-[0.6875rem]';
-  const nameClassName = size === 'md' ? 'text-[var(--pink)]' : 'text-[var(--pink)]';
-  const avatar = profileImageUrl ? (
-    <img
-      alt={`${name} 프로필 사진`}
-      className={`${avatarClassName} shrink-0 rounded-full border border-[var(--overlay0)] object-cover transition-[filter] hover:brightness-110`}
-      src={profileImageUrl}
-    />
-  ) : (
-    <span
-      aria-label={`${name} 프로필 사진 없음`}
-      className={`${avatarClassName} grid shrink-0 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] font-mono leading-none text-[var(--blue)]`}
-    >
-      <span className="place-self-center">{getInitial(name)}</span>
-    </span>
-  );
+export function AuthorBadge({
+	name,
+	profileImageUrl,
+	renderAvatar,
+	size = "sm",
+}: AuthorBadgeProps) {
+	const avatarClassName =
+		size === "md" ? "size-7 text-sm" : "size-5 text-[0.6875rem]";
+	const nameClassName =
+		size === "md" ? "text-[var(--pink)]" : "text-[var(--pink)]";
+	const avatar = profileImageUrl ? (
+		<img
+			alt={`${name} 프로필 사진`}
+			className={`${avatarClassName} shrink-0 rounded-full border border-[var(--overlay0)] object-cover transition-[filter] hover:brightness-110`}
+			src={profileImageUrl}
+		/>
+	) : (
+		<span
+			aria-label={`${name} 프로필 사진 없음`}
+			className={`${avatarClassName} grid shrink-0 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] font-mono leading-none text-[var(--blue)]`}
+		>
+			<span className="place-self-center">{getInitial(name)}</span>
+		</span>
+	);
 
-  return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 align-middle">
-      {profileImageUrl && renderAvatar ? renderAvatar(avatar) : avatar}
-      <span className={`min-w-0 whitespace-nowrap ${nameClassName}`}>{name}</span>
-    </span>
-  );
+	return (
+		<span className="inline-flex min-w-0 items-center gap-1.5 align-middle">
+			{profileImageUrl && renderAvatar ? renderAvatar(avatar) : avatar}
+			<span className={`min-w-0 whitespace-nowrap ${nameClassName}`}>
+				{name}
+			</span>
+		</span>
+	);
 }

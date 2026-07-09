@@ -1,38 +1,40 @@
-import Home from '#/features/auth/LoginPageView';
-import { getSafeRedirectTarget } from '#/features/auth/redirectTarget';
-import { getCurrentUser } from '#/features/auth/session.functions';
-import { getAuthenticatedHomeRedirectHref } from '#/features/auth/session.shared';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import Home from "#/features/auth/LoginPageView";
+import { getSafeRedirectTarget } from "#/features/auth/redirectTarget";
+import { getCurrentUser } from "#/features/auth/session.functions";
+import { getAuthenticatedHomeRedirectHref } from "#/features/auth/session.shared";
 
 function getSingleSearchParam(value: unknown) {
-  return Array.isArray(value) ? value[0] : value;
+	return Array.isArray(value) ? value[0] : value;
 }
 
-function validateHomeSearch(search: Record<string, unknown>): { next?: string } {
-  const next = getSingleSearchParam(search.next);
+function validateHomeSearch(search: Record<string, unknown>): {
+	next?: string;
+} {
+	const next = getSingleSearchParam(search.next);
 
-  return {
-    next: typeof next === 'string' ? next : undefined,
-  };
+	return {
+		next: typeof next === "string" ? next : undefined,
+	};
 }
 
-export const Route = createFileRoute('/')({
-  beforeLoad: async ({ search }) => {
-    const user = await getCurrentUser();
-    const { next } = validateHomeSearch(search);
+export const Route = createFileRoute("/")({
+	beforeLoad: async ({ search }) => {
+		const user = await getCurrentUser();
+		const { next } = validateHomeSearch(search);
 
-    if (user) {
-      throw redirect({
-        href: getAuthenticatedHomeRedirectHref(next),
-      });
-    }
-  },
-  component: HomeRoute,
-  validateSearch: validateHomeSearch,
+		if (user) {
+			throw redirect({
+				href: getAuthenticatedHomeRedirectHref(next),
+			});
+		}
+	},
+	component: HomeRoute,
+	validateSearch: validateHomeSearch,
 });
 
 function HomeRoute() {
-  const { next } = Route.useSearch();
+	const { next } = Route.useSearch();
 
-  return <Home redirectTo={getSafeRedirectTarget(next)} />;
+	return <Home redirectTo={getSafeRedirectTarget(next)} />;
 }

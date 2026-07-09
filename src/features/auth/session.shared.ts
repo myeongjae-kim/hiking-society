@@ -1,13 +1,13 @@
-import { getSafeRedirectTarget } from '#/features/auth/redirectTarget';
+import { getSafeRedirectTarget } from "#/features/auth/redirectTarget";
 
 export function getLoginRedirectHref(currentHref: string) {
-  const url = new URL('/', 'http://localhost');
+	const url = new URL("/", "http://localhost");
 
-  url.searchParams.set('next', currentHref);
+	url.searchParams.set("next", currentHref);
 
-  return `${url.pathname}${url.search}`;
+	return `${url.pathname}${url.search}`;
 }
 
 export function getAuthenticatedHomeRedirectHref(value: string | undefined) {
-  return getSafeRedirectTarget(value);
+	return getSafeRedirectTarget(value);
 }

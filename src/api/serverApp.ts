@@ -1,33 +1,37 @@
-import { applicationContext } from '@/core/config/applicationContext.server';
-import { OpenAPIHono } from '@hono/zod-openapi';
-import { authMiddleware } from './config/auth';
-import { globalErrorHandler } from './config/globalErrorHandler';
-import { apiControllers } from './controllers';
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { applicationContext } from "@/core/config/applicationContext.server";
+import { authMiddleware } from "./config/auth";
+import { globalErrorHandler } from "./config/globalErrorHandler";
+import { apiControllers } from "./controllers";
 
-export const serverApp = new OpenAPIHono().basePath('/api');
+export const serverApp = new OpenAPIHono().basePath("/api");
 
-serverApp.use('/*', authMiddleware).onError(globalErrorHandler);
+serverApp.use("/*", authMiddleware).onError(globalErrorHandler);
 
-serverApp.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+serverApp.get("/health", (c) =>
+	c.json({ status: "ok", timestamp: new Date().toISOString() }),
+);
 
-serverApp.openAPIRegistry.registerComponent('securitySchemes', 'cookieAuth', {
-  in: 'cookie',
-  name: applicationContext().get("CookieConfig").accessTokenCookieName,
-  type: 'apiKey',
+serverApp.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
+	in: "cookie",
+	name: applicationContext().get("CookieConfig").accessTokenCookieName,
+	type: "apiKey",
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  serverApp.doc('/swagger', (c) => ({
-    info: {
-      title: 'Hiking Society API',
-      version: '1.0.0',
-    },
-    openapi: '3.0.0',
-    servers: [{ description: 'Current environment', url: new URL(c.req.url).origin }],
-  }));
+if (process.env.NODE_ENV !== "production") {
+	serverApp.doc("/swagger", (c) => ({
+		info: {
+			title: "Hiking Society API",
+			version: "1.0.0",
+		},
+		openapi: "3.0.0",
+		servers: [
+			{ description: "Current environment", url: new URL(c.req.url).origin },
+		],
+	}));
 
-  serverApp.get('/docs', (c) =>
-    c.html(`<!doctype html>
+	serverApp.get("/docs", (c) =>
+		c.html(`<!doctype html>
 <html>
 <head>
   <title>Hiking Society API Docs</title>
@@ -42,7 +46,7 @@ if (process.env.NODE_ENV !== 'production') {
   </script>
 </body>
 </html>`),
-  );
+	);
 }
 
-apiControllers.forEach((controller) => serverApp.route('/', controller));
+apiControllers.forEach((controller) => serverApp.route("/", controller));
