@@ -27,6 +27,18 @@ function getInitialTheme(initialTheme: string) {
 
 function persistTheme(theme: string) {
 	document.documentElement.setAttribute("data-webtui-theme", theme);
+
+	if ("cookieStore" in window) {
+		void cookieStore.set({
+			expires: Date.now() + WEBTUI_THEME_COOKIE_MAX_AGE_SECONDS * 1000,
+			name: WEBTUI_THEME_COOKIE_NAME,
+			path: "/",
+			sameSite: "lax",
+			value: theme,
+		});
+		return;
+	}
+	// biome-ignore lint/suspicious/noDocumentCookie: cookieStore를 지원하지 않는 브라우저용 폴백
 	document.cookie = `${WEBTUI_THEME_COOKIE_NAME}=${encodeURIComponent(
 		theme,
 	)}; Path=/; Max-Age=${WEBTUI_THEME_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
