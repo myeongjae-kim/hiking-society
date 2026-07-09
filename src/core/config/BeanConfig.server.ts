@@ -28,6 +28,7 @@ import { ResolveSessionService } from "../auth/application/ResolveSessionService
 import { VerifyTokenService } from "../auth/application/VerifyTokenService";
 import { CookieConfig } from "../auth/config/CookieConfig";
 import { CommentCommandDrizzleAdapter } from "../comment/adapter/CommentCommandDrizzleAdapter";
+import { CommentQueryDrizzleAdapter } from "../comment/adapter/CommentQueryDrizzleAdapter";
 import { CommentCommandService } from "../comment/application/CommentCommandService";
 import { ListArticleCommentsService } from "../comment/application/ListArticleCommentsService";
 import type { CommentCommandUseCase } from "../comment/application/port/in/CommentCommandUseCase";
@@ -125,7 +126,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
 	CommentCommandPort: (bind) => bind().to(CommentCommandDrizzleAdapter),
 	CommentCommandUseCase: (bind) => bind().to(CommentCommandService),
-	CommentQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
+	CommentQueryPort: (bind) => bind().to(CommentQueryDrizzleAdapter),
 	FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
 	GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
 	HikingCommandPort: (bind) => bind().to(HikingDrizzleAdapter),

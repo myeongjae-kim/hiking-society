@@ -2,6 +2,11 @@ import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import { createArticleCreatedNotifications } from "@/core/notification/model/NotificationFactory";
+import {
+	ARTICLE_MEDIA_REQUIRED_MESSAGE,
+	ArticleMediaRequirement,
+	canManageArticle,
+} from "../domain/ArticlePolicy";
 import type { ArticleCommandUseCase } from "./port/in/ArticleCommandUseCase";
 import type { ArticleCommandPort } from "./port/out/ArticleCommandPort";
 
@@ -14,10 +19,8 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	) {}
 
 	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
-		if (input.media.length === 0) {
-			throw applicationError.badRequest(
-				"글은 사진이나 동영상 없이 저장할 수 없습니다.",
-			);
+		if (!ArticleMediaRequirement.from(input.media).isSatisfied()) {
+			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
 
 		const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
@@ -50,17 +53,21 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	}
 
 	async update(input: Parameters<ArticleCommandUseCase["update"]>[0]) {
-		if (input.media.length === 0) {
-			throw applicationError.badRequest(
-				"글은 사진이나 동영상 없이 저장할 수 없습니다.",
-			);
+		if (!ArticleMediaRequirement.from(input.media).isSatisfied()) {
+			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
 
 		const article = await this.articleCommandPort.findActiveArticleById(
 			input.articleId,
 		);
 
-		if (!article || article.authorUserId !== input.userId) {
+		if (
+			!article ||
+			!canManageArticle({
+				authorUserId: article.authorUserId,
+				userId: input.userId,
+			})
+		) {
 			throw applicationError.notFound(
 				"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
 			);
@@ -87,7 +94,13 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 			input.articleId,
 		);
 
-		if (!article || article.authorUserId !== input.userId) {
+		if (
+			!article ||
+			!canManageArticle({
+				authorUserId: article.authorUserId,
+				userId: input.userId,
+			})
+		) {
 			throw applicationError.notFound(
 				"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
 			);

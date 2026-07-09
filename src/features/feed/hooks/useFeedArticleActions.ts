@@ -7,6 +7,10 @@ import type { ArticleFormValues } from "#/features/article/components/articleFor
 import { useArticleMediaUploader } from "#/features/article/hooks/useArticleMediaUploader";
 import { createArticleMutationPayload } from "#/features/article/utils/articleMutationPayload";
 import type { Article, ArticleId } from "@/core/article/domain";
+import {
+	ARTICLE_MEDIA_REQUIRED_MESSAGE,
+	ArticleMediaRequirement,
+} from "@/core/article/domain/ArticlePolicy";
 import type { Comment } from "@/core/comment/domain";
 import type { HikingId } from "@/core/hiking/domain";
 
@@ -79,10 +83,10 @@ export function useFeedArticleActions({
 	};
 
 	const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
-		if (values.media.length === 0) {
+		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
 			runner.setError(
 				`article-new-${hikingId}`,
-				"글은 사진이나 동영상 없이 저장할 수 없습니다.",
+				ARTICLE_MEDIA_REQUIRED_MESSAGE,
 			);
 			return;
 		}
@@ -130,10 +134,10 @@ export function useFeedArticleActions({
 	};
 
 	const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
-		if (values.media.length === 0) {
+		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
 			runner.setError(
 				`article-edit-${articleId}`,
-				"글은 사진이나 동영상 없이 저장할 수 없습니다.",
+				ARTICLE_MEDIA_REQUIRED_MESSAGE,
 			);
 			return;
 		}

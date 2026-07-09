@@ -1,4 +1,8 @@
 import type { ArticleId } from "@/core/article/domain";
+import {
+	ARTICLE_MEDIA_REQUIRED_MESSAGE,
+	ArticleMediaRequirement,
+} from "@/core/article/domain/ArticlePolicy";
 import type {
 	ArticleMediaUpload,
 	ExistingArticleMediaInput,
@@ -81,8 +85,8 @@ export function toArticleMedia(input: {
 		(left, right) => left.order - right.order,
 	);
 
-	if (media.length === 0) {
-		throw badRequest("글은 사진이나 동영상 없이 저장할 수 없습니다.");
+	if (!ArticleMediaRequirement.from(media).isSatisfied()) {
+		throw badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 	}
 
 	return media;

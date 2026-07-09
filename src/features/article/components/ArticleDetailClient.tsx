@@ -1,5 +1,8 @@
 "use client";
 
+import { type QueryKey, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
 import { useArticleMediaUploader } from "#/features/article/hooks/useArticleMediaUploader";
@@ -18,13 +21,14 @@ import { inlineButtonClassName } from "#/features/shared/components/styles";
 import { useMutationRunner } from "#/features/shared/hooks/useMutationRunner";
 import { useRouter } from "#/features/shared/hooks/useRouter";
 import type { Article, ArticleId } from "@/core/article/domain";
+import {
+	ARTICLE_MEDIA_REQUIRED_MESSAGE,
+	ArticleMediaRequirement,
+} from "@/core/article/domain/ArticlePolicy";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { Comment, CommentId } from "@/core/comment/domain";
 import type { Hiking } from "@/core/hiking/domain";
 import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
-import { type QueryKey, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { ArticleFormDialog } from "./ArticleFormDialog";
 import { ArticlePanel } from "./ArticlePanel";
 import type { ArticleFormValues } from "./articleFormTypes";
@@ -203,11 +207,8 @@ export function ArticleDetailClient({
 	};
 
 	const updateArticle = (values: ArticleFormValues) => {
-		if (values.media.length === 0) {
-			setError(
-				`article-edit-${article.id}`,
-				"글은 사진이나 동영상 없이 저장할 수 없습니다.",
-			);
+		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
+			setError(`article-edit-${article.id}`, ARTICLE_MEDIA_REQUIRED_MESSAGE);
 			return;
 		}
 
