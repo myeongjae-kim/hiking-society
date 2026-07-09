@@ -3,7 +3,7 @@ import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { revalidatePath } from "#/api/config/revalidate";
 import { okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -22,9 +22,11 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("MarkAllNotificationsReadUseCase")
-			.markAllRead({ currentUserId: user.id });
+			.markAllRead({
+				currentUserId: user.id,
+			});
 		revalidatePath("/feed");
 
 		return c.json({ ok: true } as const, 200);

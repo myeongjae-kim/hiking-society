@@ -1,7 +1,7 @@
 import type { ArticleId } from "@/core/article/domain";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaRequirement,
+	ArticleMediaCollection,
 } from "@/core/article/domain/ArticlePolicy";
 import type {
 	ArticleMediaUpload,
@@ -81,15 +81,16 @@ export function toArticleMedia(input: {
 	existingMedia: readonly ExistingArticleMediaInput[];
 	uploadedMedia: readonly ArticleMediaUpload[];
 }) {
-	const media = [...input.existingMedia, ...input.uploadedMedia].toSorted(
-		(left, right) => left.order - right.order,
-	);
+	const media = ArticleMediaCollection.from([
+		...input.existingMedia,
+		...input.uploadedMedia,
+	]);
 
-	if (!ArticleMediaRequirement.from(media).isSatisfied()) {
+	if (!media.isPublishable()) {
 		throw badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 	}
 
-	return media;
+	return media.sortByOrder();
 }
 
 export function successRevalidationPaths(articleId?: ArticleId | null) {

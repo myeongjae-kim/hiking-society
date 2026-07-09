@@ -2,7 +2,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { membersResponseSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { toMemberDto } from "./_memberDto";
 
 const controller = Controller();
@@ -22,7 +22,9 @@ controller.openapi(
 	}),
 	async (c) => {
 		requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const members = await applicationContext().get("ListMembersUseCase").list();
+		const members = await applicationUseCaseContext()
+			.get("ListMembersUseCase")
+			.list();
 
 		return c.json(
 			membersResponseSchema.parse({ members: members.map(toMemberDto) }),

@@ -7,7 +7,7 @@ import {
 	articleDetailResponseSchema,
 	idParamSchema,
 } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { revalidateArticleSuccess, validateUploadedMedia } from "../_helpers";
 
 const controller = Controller();
@@ -40,7 +40,7 @@ controller.openapi(
 		const values = c.req.valid("json");
 
 		validateUploadedMedia(user.id, values.uploadedMedia);
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("ArticleCommandUseCase")
 			.update({
 				articleId,
@@ -50,9 +50,12 @@ controller.openapi(
 			});
 		revalidateArticleSuccess(articleId);
 
-		const snapshot = await applicationContext()
+		const snapshot = await applicationUseCaseContext()
 			.get("GetArticleDetailUseCase")
-			.get({ articleId, currentUserId: user.id });
+			.get({
+				articleId,
+				currentUserId: user.id,
+			});
 
 		if (!snapshot) {
 			throw notFound("글을 찾을 수 없습니다.");

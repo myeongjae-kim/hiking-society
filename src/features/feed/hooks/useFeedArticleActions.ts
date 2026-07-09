@@ -9,7 +9,7 @@ import { createArticleMutationPayload } from "#/features/article/utils/articleMu
 import type { Article, ArticleId } from "@/core/article/domain";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaRequirement,
+	ArticleMediaCollection,
 } from "@/core/article/domain/ArticlePolicy";
 import type { Comment } from "@/core/comment/domain";
 import type { HikingId } from "@/core/hiking/domain";
@@ -83,7 +83,7 @@ export function useFeedArticleActions({
 	};
 
 	const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {
-		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
+		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
 			runner.setError(
 				`article-new-${hikingId}`,
 				ARTICLE_MEDIA_REQUIRED_MESSAGE,
@@ -134,7 +134,7 @@ export function useFeedArticleActions({
 	};
 
 	const updateArticle = (articleId: ArticleId, values: ArticleFormValues) => {
-		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
+		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
 			runner.setError(
 				`article-edit-${articleId}`,
 				ARTICLE_MEDIA_REQUIRED_MESSAGE,

@@ -3,7 +3,7 @@ import { badRequest } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, profileImageBodySchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import {
 	assertProfileImage,
 	getCurrentDisplayName,
@@ -41,7 +41,7 @@ controller.openapi(
 
 		assertProfileImage(values.profileImage, user.id);
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("UpdateProfileUseCase")
 			.update({
 				displayName: getCurrentDisplayName(user),

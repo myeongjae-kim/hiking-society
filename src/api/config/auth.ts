@@ -1,8 +1,9 @@
 import { getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
+import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { UserRole } from "@/core/auth/model/roles";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { ApiError } from "./ApiError";
 import type { ApiVariables } from "./Controller";
 
@@ -10,7 +11,8 @@ const {
 	accessTokenCookieName,
 	accessTokenMaxAgeSeconds,
 	refreshTokenCookieName,
-} = applicationContext().get("CookieConfig");
+	refreshTokenMaxAgeSeconds,
+} = sessionCookieConfig;
 
 const publicRoutes: readonly [string, RegExp][] = [
 	["GET", /^\/api\/health$/],
@@ -35,9 +37,10 @@ function forbidden(message = "권한이 없습니다.") {
 }
 
 async function getUserByToken(accessToken: string | undefined) {
-	return applicationContext()
-		.get("ResolveSessionUseCase")
-		.resolve({ accessToken, refreshToken: null });
+	return applicationUseCaseContext().get("ResolveSessionUseCase").resolve({
+		accessToken,
+		refreshToken: null,
+	});
 }
 
 export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
@@ -45,7 +48,7 @@ export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
 		let session = await getUserByToken(getCookie(c, accessTokenCookieName));
 
 		if (!session.user) {
-			session = await applicationContext()
+			session = await applicationUseCaseContext()
 				.get("ResolveSessionUseCase")
 				.resolve({
 					accessToken: null,
@@ -54,9 +57,8 @@ export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
 		}
 
 		if (session.refreshedTokens) {
-			const context = applicationContext();
-			const { refreshTokenMaxAgeSeconds } = context.get("CookieConfig");
-			const getCookieOptionsUseCase = context.get("GetCookieOptionsUseCase");
+			const services = applicationUseCaseContext();
+			const getCookieOptionsUseCase = services.get("GetCookieOptionsUseCase");
 
 			setCookie(
 				c,

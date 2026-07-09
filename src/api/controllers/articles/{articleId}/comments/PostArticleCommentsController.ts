@@ -4,7 +4,7 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { revalidateArticleSuccess } from "../../_helpers";
 
 const controller = Controller();
@@ -34,7 +34,7 @@ controller.openapi(
 		const articleId = toArticleId(c.req.valid("param").articleId);
 		const values = c.req.valid("json");
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("CommentCommandUseCase")
 			.create(
 				values.parentCommentId

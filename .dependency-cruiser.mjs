@@ -82,6 +82,20 @@ export default {
 			to: { path: ["^drizzle/", "^src/core/config/drizzle[.]server[.]ts$"] },
 		},
 		{
+			name: "web-not-to-composition-internals",
+			comment:
+				"Routes, API controllers, and features should use the typed use case context instead of DI internals.",
+			severity: "error",
+			from: { path: "^src/(api|features|routes)/" },
+			to: {
+				path: [
+					"^src/core/config/applicationContext[.]server[.]ts$",
+					"^src/core/config/Autowired[.]ts$",
+					"^src/core/config/BeanConfig[.]server[.]ts$",
+				],
+			},
+		},
+		{
 			name: "shared-feature-not-to-product-features",
 			comment: "Shared feature code should not depend on product features.",
 			severity: "error",

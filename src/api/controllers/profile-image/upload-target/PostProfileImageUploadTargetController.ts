@@ -5,7 +5,7 @@ import {
 	profileImageUploadTargetBodySchema,
 	profileImageUploadTargetResponseSchema,
 } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -36,9 +36,12 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		const target = await applicationContext()
+		const target = await applicationUseCaseContext()
 			.get("ProfileImageUploadUseCase")
-			.createUploadTarget({ ...c.req.valid("json"), userId: user.id });
+			.createUploadTarget({
+				...c.req.valid("json"),
+				userId: user.id,
+			});
 
 		return c.json(profileImageUploadTargetResponseSchema.parse(target), 200);
 	},

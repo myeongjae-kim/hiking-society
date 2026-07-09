@@ -3,7 +3,7 @@ import { setCookie } from "hono/cookie";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { cookieOptions, sessionCookieConfig } from "../../_sessionCookies";
 import { getCurrentDisplayName, revalidateProfileViews } from "../_helpers";
 
@@ -38,7 +38,7 @@ controller.openapi(
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("UpdateProfileUseCase")
 			.update({
 				displayName: getCurrentDisplayName(user),
@@ -49,7 +49,7 @@ controller.openapi(
 			});
 
 		if (values.email !== user.email && user.provider) {
-			const { accessToken, refreshToken } = await applicationContext()
+			const { accessToken, refreshToken } = await applicationUseCaseContext()
 				.get("CreateSessionTokenUseCase")
 				.create({
 					email: values.email,

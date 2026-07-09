@@ -3,7 +3,7 @@ import {
 	readCurrentTheme,
 	readCurrentUser,
 } from "#/features/auth/session.functions";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -24,10 +24,10 @@ export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 			};
 		}
 
-		const context = applicationContext();
+		const services = applicationUseCaseContext();
 		const [feedSummary, notificationSnapshot] = await Promise.all([
-			context.get("ListFeedUseCase").listHikings({ currentUserId: user.id }),
-			context.get("ListNotificationsUseCase").list({ currentUserId: user.id }),
+			services.get("ListFeedUseCase").listHikings({ currentUserId: user.id }),
+			services.get("ListNotificationsUseCase").list({ currentUserId: user.id }),
 		]);
 
 		return {

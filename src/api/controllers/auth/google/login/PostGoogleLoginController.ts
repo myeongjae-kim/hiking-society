@@ -4,7 +4,7 @@ import { ApiError } from "#/api/config/ApiError";
 import { Controller } from "#/api/config/Controller";
 import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
 import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { cookieOptions, sessionCookieConfig } from "../../../_sessionCookies";
 
 const controller = Controller();
@@ -37,9 +37,12 @@ controller.openapi(
 		let result: LoginWithGoogleCodeResult;
 
 		try {
-			result = await applicationContext()
+			result = await applicationUseCaseContext()
 				.get("LoginWithGoogleCodeUseCase")
-				.login({ code: c.req.valid("json").code, now: new Date() });
+				.login({
+					code: c.req.valid("json").code,
+					now: new Date(),
+				});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "";
 
@@ -54,7 +57,7 @@ controller.openapi(
 
 			throw error;
 		}
-		const { accessToken, refreshToken } = await applicationContext()
+		const { accessToken, refreshToken } = await applicationUseCaseContext()
 			.get("CreateSessionTokenUseCase")
 			.create(result.session);
 

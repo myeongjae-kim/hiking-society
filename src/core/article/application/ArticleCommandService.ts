@@ -4,8 +4,8 @@ import type { NotificationCommandPort } from "@/core/notification/application/po
 import { createArticleCreatedNotifications } from "@/core/notification/model/NotificationFactory";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaRequirement,
-	canManageArticle,
+	ArticleMediaCollection,
+	ArticleOwnership,
 } from "../domain/ArticlePolicy";
 import type { ArticleCommandUseCase } from "./port/in/ArticleCommandUseCase";
 import type { ArticleCommandPort } from "./port/out/ArticleCommandPort";
@@ -19,7 +19,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	) {}
 
 	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
-		if (!ArticleMediaRequirement.from(input.media).isSatisfied()) {
+		if (!ArticleMediaCollection.from(input.media).isPublishable()) {
 			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
 
@@ -53,7 +53,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	}
 
 	async update(input: Parameters<ArticleCommandUseCase["update"]>[0]) {
-		if (!ArticleMediaRequirement.from(input.media).isSatisfied()) {
+		if (!ArticleMediaCollection.from(input.media).isPublishable()) {
 			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
 
@@ -63,10 +63,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 
 		if (
 			!article ||
-			!canManageArticle({
-				authorUserId: article.authorUserId,
-				userId: input.userId,
-			})
+			!ArticleOwnership.of(article).canBeManagedBy(input.userId)
 		) {
 			throw applicationError.notFound(
 				"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
@@ -96,10 +93,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 
 		if (
 			!article ||
-			!canManageArticle({
-				authorUserId: article.authorUserId,
-				userId: input.userId,
-			})
+			!ArticleOwnership.of(article).canBeManagedBy(input.userId)
 		) {
 			throw applicationError.notFound(
 				"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",

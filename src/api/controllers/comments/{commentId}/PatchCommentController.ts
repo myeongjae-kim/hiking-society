@@ -5,7 +5,7 @@ import { Controller } from "#/api/config/Controller";
 import { revalidatePath } from "#/api/config/revalidate";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -36,7 +36,7 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("CommentCommandUseCase")
 			.update({
 				commentId: toNumericId<CommentId>(

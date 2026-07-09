@@ -76,53 +76,58 @@ import type { ProfileQueryPort } from "../profile/application/port/out/ProfileQu
 import { UpdateProfileService } from "../profile/application/UpdateProfileService";
 import { env } from "./env.server";
 
-export type Beans = {
-	ArticleCommandPort: ArticleCommandPort;
-	ArticleDetailQueryPort: ArticleDetailQueryPort;
+export type UseCaseBeans = {
 	ArticleCommandUseCase: ArticleCommandUseCase;
 	ArticleMediaUploadUseCase: ArticleMediaUploadUseCase;
-	AuthCommandPort: AuthCommandPort;
-	AuthQueryPort: AuthQueryPort;
-	CommentCommandPort: CommentCommandPort;
 	CommentCommandUseCase: CommentCommandUseCase;
-	CommentQueryPort: CommentQueryPort;
-	FeedQueryPort: FeedQueryPort;
-	GoogleOAuthPort: GoogleOAuthPort;
-	HikingCommandPort: HikingCommandPort;
 	HikingCommandUseCase: HikingCommandUseCase;
-	LikeCommandPort: LikeCommandPort;
 	LikeCommandUseCase: LikeCommandUseCase;
 	ListArticleCommentsUseCase: ListArticleCommentsUseCase;
 	ListFeedUseCase: ListFeedUseCase;
 	LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
-	MediaStoragePort: MediaStoragePort;
 	ResolveSessionUseCase: ResolveSessionUseCase;
 	VerifyAccessTokenUseCase: VerifyAccessTokenUseCase;
 	VerifyRefreshTokenUseCase: VerifyRefreshTokenUseCase;
 	CreateSessionTokenUseCase: CreateSessionTokenUseCase;
-	CookieConfig: CookieConfig;
 	GetCookieOptionsUseCase: GetCookieOptionsUseCase;
 	GetArticleDetailUseCase: GetArticleDetailUseCase;
-	MemberCommandPort: MemberCommandPort;
-	MemberQueryPort: MemberQueryPort;
-	NotificationCommandPort: NotificationCommandPort;
-	NotificationQueryPort: NotificationQueryPort;
 	ListMembersUseCase: ListMembersUseCase;
 	ListNotificationsUseCase: ListNotificationsUseCase;
 	MarkAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
 	MarkNotificationReadUseCase: MarkNotificationReadUseCase;
 	UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
-	ProfileCommandPort: ProfileCommandPort;
 	ProfileImageUploadUseCase: ProfileImageUploadUseCase;
+	UpdateProfileUseCase: UpdateProfileUseCase;
+};
+
+type InfrastructureBeans = {
+	ArticleCommandPort: ArticleCommandPort;
+	ArticleDetailQueryPort: ArticleDetailQueryPort;
+	AuthCommandPort: AuthCommandPort;
+	AuthQueryPort: AuthQueryPort;
+	CommentCommandPort: CommentCommandPort;
+	CommentQueryPort: CommentQueryPort;
+	FeedQueryPort: FeedQueryPort;
+	GoogleOAuthPort: GoogleOAuthPort;
+	HikingCommandPort: HikingCommandPort;
+	LikeCommandPort: LikeCommandPort;
+	MediaStoragePort: MediaStoragePort;
+	MemberCommandPort: MemberCommandPort;
+	MemberQueryPort: MemberQueryPort;
+	NotificationCommandPort: NotificationCommandPort;
+	NotificationQueryPort: NotificationQueryPort;
+	CookieConfig: CookieConfig;
+	ProfileCommandPort: ProfileCommandPort;
 	ProfileImageStoragePort: ProfileImageStoragePort;
 	ProfileQueryPort: ProfileQueryPort;
-	UpdateProfileUseCase: UpdateProfileUseCase;
 	TextEncoder: TextEncoder;
 	JWT_SECRET: string;
 	GOOGLE_LOGIN_CLIENT_ID: string;
 	GOOGLE_LOGIN_CLIENT_SECRET: string;
 	NODE_ENV: typeof process.env.NODE_ENV;
 };
+
+export type Beans = InfrastructureBeans & UseCaseBeans;
 
 export const beanConfig: BeanConfig<Beans> = {
 	ArticleCommandPort: (bind) => bind().to(ArticleCommandDrizzleAdapter),

@@ -1,5 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import { authMiddleware } from "./config/auth";
 import { globalErrorHandler } from "./config/globalErrorHandler";
 import { apiControllers } from "./controllers";
@@ -14,7 +14,7 @@ serverApp.get("/health", (c) =>
 
 serverApp.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
 	in: "cookie",
-	name: applicationContext().get("CookieConfig").accessTokenCookieName,
+	name: sessionCookieConfig.accessTokenCookieName,
 	type: "apiKey",
 });
 

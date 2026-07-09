@@ -5,7 +5,7 @@ import {
 	notificationListResponseSchema,
 	notificationsQuerySchema,
 } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -28,7 +28,7 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const query = c.req.valid("query");
-		const snapshot = await applicationContext()
+		const snapshot = await applicationUseCaseContext()
 			.get("ListNotificationsUseCase")
 			.list({
 				currentUserId: user.id,

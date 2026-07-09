@@ -3,7 +3,7 @@ import { toArticleId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { revalidateArticleSuccess } from "../_helpers";
 
 const controller = Controller();
@@ -26,9 +26,10 @@ controller.openapi(
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const articleId = toArticleId(c.req.valid("param").articleId);
 
-		await applicationContext()
-			.get("ArticleCommandUseCase")
-			.delete({ articleId, userId: user.id });
+		await applicationUseCaseContext().get("ArticleCommandUseCase").delete({
+			articleId,
+			userId: user.id,
+		});
 		revalidateArticleSuccess(articleId);
 
 		return c.json({ ok: true } as const, 200);

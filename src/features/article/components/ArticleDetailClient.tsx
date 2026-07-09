@@ -23,7 +23,7 @@ import { useRouter } from "#/features/shared/hooks/useRouter";
 import type { Article, ArticleId } from "@/core/article/domain";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
-	ArticleMediaRequirement,
+	ArticleMediaCollection,
 } from "@/core/article/domain/ArticlePolicy";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { Comment, CommentId } from "@/core/comment/domain";
@@ -207,7 +207,7 @@ export function ArticleDetailClient({
 	};
 
 	const updateArticle = (values: ArticleFormValues) => {
-		if (!ArticleMediaRequirement.from(values.media).isSatisfied()) {
+		if (!ArticleMediaCollection.from(values.media).isPublishable()) {
 			setError(`article-edit-${article.id}`, ARTICLE_MEDIA_REQUIRED_MESSAGE);
 			return;
 		}

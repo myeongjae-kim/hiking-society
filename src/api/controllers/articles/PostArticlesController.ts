@@ -2,7 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleBodySchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import type { HikingId } from "@/core/hiking/domain";
 import { revalidateArticleSuccess, validateUploadedMedia } from "./_helpers";
 
@@ -38,7 +38,7 @@ controller.openapi(
 		const values = c.req.valid("json");
 
 		validateUploadedMedia(user.id, values.uploadedMedia);
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("ArticleCommandUseCase")
 			.create({
 				authorUserId: user.id,

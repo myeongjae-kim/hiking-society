@@ -2,7 +2,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, updateDisplayNameBodySchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { revalidateProfileViews } from "../_helpers";
 
 const controller = Controller();
@@ -32,7 +32,7 @@ controller.openapi(
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationContext().get("UpdateProfileUseCase").update({
+		await applicationUseCaseContext().get("UpdateProfileUseCase").update({
 			displayName: values.displayName,
 			email: user.email,
 			now: new Date(),

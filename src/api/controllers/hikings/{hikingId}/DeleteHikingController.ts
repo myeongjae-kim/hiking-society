@@ -4,7 +4,7 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { revalidatePath } from "#/api/config/revalidate";
 import { idParamSchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -25,7 +25,7 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("HikingCommandUseCase")
 			.delete({
 				hikingId: toHikingId(c.req.valid("param").hikingId),

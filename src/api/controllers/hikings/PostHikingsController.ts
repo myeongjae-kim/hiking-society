@@ -4,7 +4,7 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { revalidatePath } from "#/api/config/revalidate";
 import { hikingBodySchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -31,7 +31,7 @@ controller.openapi(
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const values = toHikingValues(c.req.valid("json"));
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("HikingCommandUseCase")
 			.create({
 				...values,

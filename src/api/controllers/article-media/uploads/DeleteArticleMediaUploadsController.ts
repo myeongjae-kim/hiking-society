@@ -2,7 +2,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { cleanupUploadsBodySchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -27,7 +27,7 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("ArticleMediaUploadUseCase")
 			.deleteUploads({
 				objectKeys: c.req.valid("json").objectKeys,

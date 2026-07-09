@@ -1,12 +1,9 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from "#/theme/webtuiThemes";
 import type { RefreshedSessionTokens } from "@/core/auth/application/port/in/ResolveSessionUseCase";
+import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import type { UserRole } from "@/core/auth/model/roles";
-import { applicationContext } from "@/core/config/applicationContext.server";
-
-async function getCookieConfig() {
-	return applicationContext().get("CookieConfig");
-}
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const readCurrentTheme = createServerOnlyFn(async () => {
 	const { getCookie } = await import("@tanstack/react-start/server");
@@ -20,14 +17,14 @@ export const getCurrentTheme = createServerFn({ method: "GET" }).handler(
 
 async function writeSessionCookies(tokens: RefreshedSessionTokens) {
 	const { setCookie } = await import("@tanstack/react-start/server");
-	const context = applicationContext();
+	const services = applicationUseCaseContext();
 	const {
 		accessTokenCookieName,
 		accessTokenMaxAgeSeconds,
 		refreshTokenCookieName,
 		refreshTokenMaxAgeSeconds,
-	} = context.get("CookieConfig");
-	const getCookieOptionsUseCase = context.get("GetCookieOptionsUseCase");
+	} = sessionCookieConfig;
+	const getCookieOptionsUseCase = services.get("GetCookieOptionsUseCase");
 
 	setCookie(
 		accessTokenCookieName,
@@ -48,7 +45,7 @@ export const setSessionCookies = createServerOnlyFn(
 		role: UserRole;
 		userId: number;
 	}) => {
-		const tokens = await applicationContext()
+		const tokens = await applicationUseCaseContext()
 			.get("CreateSessionTokenUseCase")
 			.create(input);
 
@@ -58,8 +55,7 @@ export const setSessionCookies = createServerOnlyFn(
 
 export const clearSessionCookies = createServerOnlyFn(async () => {
 	const { deleteCookie } = await import("@tanstack/react-start/server");
-	const { accessTokenCookieName, refreshTokenCookieName } =
-		await getCookieConfig();
+	const { accessTokenCookieName, refreshTokenCookieName } = sessionCookieConfig;
 
 	deleteCookie(accessTokenCookieName, { path: "/" });
 	deleteCookie(refreshTokenCookieName, { path: "/" });
@@ -67,10 +63,9 @@ export const clearSessionCookies = createServerOnlyFn(async () => {
 
 export const readCurrentUser = createServerOnlyFn(async () => {
 	const { getCookie } = await import("@tanstack/react-start/server");
-	const context = applicationContext();
-	const { accessTokenCookieName, refreshTokenCookieName } =
-		context.get("CookieConfig");
-	const result = await context.get("ResolveSessionUseCase").resolve({
+	const services = applicationUseCaseContext();
+	const { accessTokenCookieName, refreshTokenCookieName } = sessionCookieConfig;
+	const result = await services.get("ResolveSessionUseCase").resolve({
 		accessToken: getCookie(accessTokenCookieName),
 		refreshToken: getCookie(refreshTokenCookieName),
 	});

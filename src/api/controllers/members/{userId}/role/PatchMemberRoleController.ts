@@ -8,7 +8,7 @@ import {
 	okSchema,
 	updateMemberRoleBodySchema,
 } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -37,7 +37,7 @@ controller.openapi(
 		const nextRole = c.req.valid("json").role;
 		assertMutableRole(nextRole);
 
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("UpdateMemberRoleUseCase")
 			.update({
 				actorRole: actor.role,

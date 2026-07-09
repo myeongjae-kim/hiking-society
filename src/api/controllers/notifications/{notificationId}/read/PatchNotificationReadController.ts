@@ -4,7 +4,7 @@ import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { revalidatePath } from "#/api/config/revalidate";
 import { idParamSchema, okSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import type { NotificationId } from "@/core/notification/model/Notification";
 
 const controller = Controller();
@@ -25,7 +25,7 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		await applicationContext()
+		await applicationUseCaseContext()
 			.get("MarkNotificationReadUseCase")
 			.markRead({
 				currentUserId: user.id,

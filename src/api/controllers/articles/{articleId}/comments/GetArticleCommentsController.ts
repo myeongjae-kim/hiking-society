@@ -3,7 +3,7 @@ import { toArticleId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentsResponseSchema, idParamSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -23,7 +23,7 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const comments = await applicationContext()
+		const comments = await applicationUseCaseContext()
 			.get("ListArticleCommentsUseCase")
 			.listArticleComments({
 				articleId: toArticleId(c.req.valid("param").articleId),

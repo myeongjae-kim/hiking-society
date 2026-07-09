@@ -4,7 +4,7 @@ import {
 	readCurrentUser,
 } from "#/features/auth/session.functions";
 import type { ArticleId } from "@/core/article/domain";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const getArticleRouteData = createServerFn({ method: "GET" })
 	.validator((data: { articleId: string }) => data)
@@ -30,13 +30,13 @@ export const getArticleRouteData = createServerFn({ method: "GET" })
 			};
 		}
 
-		const context = applicationContext();
+		const services = applicationUseCaseContext();
 		const [snapshot, notificationSnapshot] = await Promise.all([
-			context.get("GetArticleDetailUseCase").get({
+			services.get("GetArticleDetailUseCase").get({
 				articleId: data.articleId as ArticleId,
 				currentUserId: currentUser.id,
 			}),
-			context
+			services
 				.get("ListNotificationsUseCase")
 				.list({ currentUserId: currentUser.id }),
 		]);

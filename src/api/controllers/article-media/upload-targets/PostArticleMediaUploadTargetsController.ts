@@ -5,7 +5,7 @@ import {
 	articleMediaUploadTargetsBodySchema,
 	articleMediaUploadTargetsResponseSchema,
 } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -36,7 +36,7 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const targets = await applicationContext()
+		const targets = await applicationUseCaseContext()
 			.get("ArticleMediaUploadUseCase")
 			.createUploadTargets({
 				targets: c.req.valid("json"),

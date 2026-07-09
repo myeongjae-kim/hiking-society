@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { readCurrentUser } from "#/features/auth/session.functions";
 import { canManageMembers } from "@/core/auth/model/roles";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 	async () => {
@@ -17,7 +17,9 @@ export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 
 		return {
 			actor,
-			members: await applicationContext().get("ListMembersUseCase").list(),
+			members: await applicationUseCaseContext()
+				.get("ListMembersUseCase")
+				.list(),
 			status: "ok" as const,
 		};
 	},

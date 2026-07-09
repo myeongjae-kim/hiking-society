@@ -4,7 +4,7 @@ import { notFound, toArticleId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleDetailResponseSchema, idParamSchema } from "#/api/schemas";
-import { applicationContext } from "@/core/config/applicationContext.server";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 
@@ -31,9 +31,12 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const articleId = toArticleId(c.req.valid("param").articleId);
-		const snapshot = await applicationContext()
+		const snapshot = await applicationUseCaseContext()
 			.get("GetArticleDetailUseCase")
-			.get({ articleId, currentUserId: user.id });
+			.get({
+				articleId,
+				currentUserId: user.id,
+			});
 
 		if (!snapshot) {
 			throw notFound("글을 찾을 수 없습니다.");
