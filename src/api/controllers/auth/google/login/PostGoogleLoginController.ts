@@ -5,7 +5,10 @@ import { Controller } from "#/api/config/Controller";
 import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
 import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { cookieOptions, sessionCookieConfig } from "../../../_sessionCookies";
+import {
+	cookieOptions,
+	sessionCookieConfig,
+} from "#/api/config/sessionCookies";
 
 const controller = Controller();
 const {

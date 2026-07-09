@@ -4,7 +4,7 @@ import { applicationUseCaseContext } from "@/core/config/applicationUseCases.ser
 import {
 	toMemberContract,
 	toMemberManagementActorContract,
-} from "./memberRouteView";
+} from "./memberRouteContracts";
 
 export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
 	async () => {

@@ -1,5 +1,5 @@
 import { and, eq, isNull, ne } from "drizzle-orm";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import { userTable } from "@/drizzle/schema";
 import type { ProfileCommandPort } from "../application/port/out/ProfileCommandPort";
 import type { ProfileQueryPort } from "../application/port/out/ProfileQueryPort";

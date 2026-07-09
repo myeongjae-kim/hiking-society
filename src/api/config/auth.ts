@@ -1,11 +1,11 @@
 import { getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { UserRole } from "@/core/auth/model/roles";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { ApiError } from "./ApiError";
 import type { ApiVariables } from "./Controller";
+import { cookieOptions, sessionCookieConfig } from "./sessionCookies";
 
 const {
 	accessTokenCookieName,
@@ -57,20 +57,17 @@ export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
 		}
 
 		if (session.refreshedTokens) {
-			const services = applicationUseCaseContext();
-			const getCookieOptionsUseCase = services.get("GetCookieOptionsUseCase");
-
 			setCookie(
 				c,
 				accessTokenCookieName,
 				session.refreshedTokens.accessToken,
-				getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+				cookieOptions(accessTokenMaxAgeSeconds),
 			);
 			setCookie(
 				c,
 				refreshTokenCookieName,
 				session.refreshedTokens.refreshToken,
-				getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+				cookieOptions(refreshTokenMaxAgeSeconds),
 			);
 		}
 

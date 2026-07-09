@@ -9,7 +9,7 @@ import type {
 	StoredArticleMedia,
 } from "@/core/article/model/ArticleMediaCommand";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import type { HikingId } from "@/core/hiking/domain";
 import {
 	articleMediaMetadataTable,

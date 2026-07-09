@@ -1,7 +1,7 @@
-import { env } from "@/core/config/env.server";
 import { AsyncLocalStorage } from "node:async_hooks";
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { env } from "@/core/config/env.server";
 
 const rootDb = drizzle(env.DATABASE_URL);
 type DrizzleDatabase = typeof rootDb;

@@ -1,5 +1,6 @@
 import type { ArticleId } from "@/core/article/domain";
 import type { UserRole } from "@/core/auth/model/roles";
+import type { CommentId } from "@/core/comment/domain";
 import type {
 	Altitude,
 	IsoDateString,
@@ -99,4 +100,8 @@ export function toHikingId(value: string | undefined) {
 
 export function toArticleId(value: string | undefined) {
 	return toNumericId<ArticleId>(value, "글 id");
+}
+
+export function toCommentId(value: string | undefined) {
+	return toNumericId<CommentId>(value, "댓글 id");
 }

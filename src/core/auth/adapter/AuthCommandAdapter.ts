@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthCommandPort } from "../application/port/out/AuthCommandPort";
 import type { AuthenticatedUser } from "../model/AuthenticatedUser";

@@ -4,7 +4,7 @@ import type { CommentQueryPort } from "@/core/comment/application/port/out/Comme
 import type { Comment, CommentId } from "@/core/comment/domain";
 import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import {
 	articleTable,
 	commentLikeTable,

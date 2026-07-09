@@ -66,8 +66,10 @@ import type { MemberCommandPort } from "../member/application/port/out/MemberCom
 import type { MemberQueryPort } from "../member/application/port/out/MemberQueryPort";
 import { UpdateMemberRoleService } from "../member/application/UpdateMemberRoleService";
 import { NotificationDrizzleAdapter } from "../notification/adapter/NotificationDrizzleAdapter";
+import { CreateNotificationsService } from "../notification/application/CreateNotificationsService";
 import { ListNotificationsService } from "../notification/application/ListNotificationsService";
 import { MarkNotificationReadService } from "../notification/application/MarkNotificationReadService";
+import type { CreateNotificationsUseCase } from "../notification/application/port/in/CreateNotificationsUseCase";
 import type { ListNotificationsUseCase } from "../notification/application/port/in/ListNotificationsUseCase";
 import type { MarkAllNotificationsReadUseCase } from "../notification/application/port/in/MarkAllNotificationsReadUseCase";
 import type { MarkNotificationReadUseCase } from "../notification/application/port/in/MarkNotificationReadUseCase";
@@ -107,6 +109,7 @@ export type UseCaseBeans = {
 	GetFeedHomeUseCase: GetFeedHomeUseCase;
 	GetMemberManagementUseCase: GetMemberManagementUseCase;
 	ListMembersUseCase: ListMembersUseCase;
+	CreateNotificationsUseCase: CreateNotificationsUseCase;
 	ListNotificationsUseCase: ListNotificationsUseCase;
 	MarkAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
 	MarkNotificationReadUseCase: MarkNotificationReadUseCase;
@@ -182,6 +185,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	MemberQueryPort: (bind) => bind().to(MemberQueryAdapter),
 	NotificationCommandPort: (bind) => bind().to(NotificationDrizzleAdapter),
 	NotificationQueryPort: (bind) => bind().to(NotificationDrizzleAdapter),
+	CreateNotificationsUseCase: (bind) => bind().to(CreateNotificationsService),
 	ListMembersUseCase: (bind) => bind().to(ListMembersService),
 	ListNotificationsUseCase: (bind) => bind().to(ListNotificationsService),
 	MarkAllNotificationsReadUseCase: (bind) =>
@@ -199,7 +203,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	TextEncoder: (bind) => bind().to(TextEncoder),
 	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>
-		bind().toConstantValue(env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID),
+		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_ID),
 	GOOGLE_LOGIN_CLIENT_SECRET: (bind) =>
 		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_SECRET),
 	NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),

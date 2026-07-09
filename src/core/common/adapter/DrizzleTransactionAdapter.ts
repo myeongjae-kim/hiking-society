@@ -1,4 +1,4 @@
-import { runInDrizzleTransaction } from "@/core/config/drizzle.server";
+import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
 import type { TransactionPort } from "../application/port/out/TransactionPort";
 
 export class DrizzleTransactionAdapter implements TransactionPort {

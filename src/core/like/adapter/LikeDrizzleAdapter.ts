@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import {
 	articleLikeTable,
 	articleTable,

@@ -28,7 +28,7 @@ export const idParamSchema = z.object({
 export const okSchema = z.object({ ok: z.literal(true) }).openapi("OkResponse");
 
 export const userRoleSchema = z
-	.enum(["associate", "member", "admin"])
+	.enum(userRoleContractValues)
 	.openapi("UserRole");
 
 export const currentUserSchema = z

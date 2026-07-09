@@ -2,8 +2,7 @@ import { applicationError } from "@/core/common/application/ApplicationError";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { UploadOwnershipPolicy } from "@/core/common/domain/UploadOwnershipPolicy";
 import { Autowired } from "@/core/config/Autowired";
-import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
-import { createArticleCreatedNotifications } from "@/core/notification/model/NotificationFactory";
+import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
 import type { ArticleMediaUpload } from "../model/ArticleMediaCommand";
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
@@ -17,8 +16,8 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	constructor(
 		@Autowired("ArticleCommandPort")
 		private articleCommandPort: ArticleCommandPort,
-		@Autowired("NotificationCommandPort")
-		private notificationCommandPort: NotificationCommandPort,
+		@Autowired("CreateNotificationsUseCase")
+		private createNotificationsUseCase: CreateNotificationsUseCase,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
 		@Autowired("S3_PUBLIC_BASE_URL")
@@ -84,13 +83,11 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 					excludeUserId: input.authorUserId,
 				});
 
-			await this.notificationCommandPort.createMany({
-				notifications: createArticleCreatedNotifications({
-					actorUserId: input.authorUserId,
-					articleBody: input.body,
-					articleId,
-					recipientUserIds,
-				}),
+			await this.createNotificationsUseCase.createArticleCreated({
+				actorUserId: input.authorUserId,
+				articleBody: input.body,
+				articleId,
+				recipientUserIds,
 			});
 		});
 	}

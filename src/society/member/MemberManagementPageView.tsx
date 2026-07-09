@@ -5,7 +5,6 @@ import {
 	userRoleViewOptions,
 } from "#/society/shared/authViewPolicy";
 import Link from "#/society/shared/components/AppLink";
-import type { MemberManagementActorContract } from "#/society-app/member/memberRouteView";
 import { MemberRoleForm } from "./components/MemberRoleForm";
 
 function formatDate(value: string | null) {
@@ -13,7 +12,10 @@ function formatDate(value: string | null) {
 }
 
 type MembersPageViewProps = {
-	actor: MemberManagementActorContract;
+	actor: {
+		id: number;
+		role: MemberContract["role"];
+	};
 	members: readonly MemberContract[];
 };
 

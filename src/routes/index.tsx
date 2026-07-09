@@ -3,10 +3,7 @@ import { getCurrentUser } from "#/society-app/auth/session.functions";
 import Home from "#/society/auth/LoginPageView";
 import { getSafeRedirectTarget } from "#/society/auth/redirectTarget";
 import { getAuthenticatedHomeRedirectHref } from "#/society/auth/session.shared";
-
-function getSingleSearchParam(value: unknown) {
-	return Array.isArray(value) ? value[0] : value;
-}
+import { getSingleSearchParam } from "#/routing/searchParams";
 
 function validateHomeSearch(search: Record<string, unknown>): {
 	next?: string;

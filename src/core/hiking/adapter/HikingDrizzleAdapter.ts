@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import type { HikingCommandPort } from "@/core/hiking/application/port/out/HikingCommandPort";
 import type { HikingId } from "@/core/hiking/domain";
 import { articleTable, hikingTable } from "@/drizzle/schema";

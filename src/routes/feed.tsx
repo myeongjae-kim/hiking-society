@@ -2,11 +2,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { getFeedRouteData } from "#/society-app/feed/feedRouteData.functions";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
 import FeedPageView from "#/society/feed/FeedPageView";
+import { toNumericSearchId } from "#/routing/searchParams";
 import type { HikingId } from "@/core/hiking/domain";
-
-function getSingleSearchParam(value: unknown) {
-	return Array.isArray(value) ? value[0] : value;
-}
 
 export const Route = createFileRoute("/feed")({
 	component: FeedRoute,
@@ -36,7 +33,7 @@ export const Route = createFileRoute("/feed")({
 		};
 	},
 	validateSearch: (search) => ({
-		hikingId: getSingleSearchParam(search.hikingId),
+		hikingId: toNumericSearchId<HikingId>(search.hikingId),
 	}),
 });
 
@@ -44,12 +41,5 @@ function FeedRoute() {
 	const data = Route.useLoaderData();
 	const { hikingId } = Route.useSearch();
 
-	return (
-		<FeedPageView
-			{...data}
-			selectedHikingId={
-				typeof hikingId === "string" ? (hikingId as HikingId) : null
-			}
-		/>
-	);
+	return <FeedPageView {...data} selectedHikingId={hikingId} />;
 }

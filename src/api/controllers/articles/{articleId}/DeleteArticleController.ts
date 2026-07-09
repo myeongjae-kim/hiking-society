@@ -4,7 +4,7 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess } from "../_helpers";
+import { revalidateArticleSuccess } from "../articleRevalidation";
 
 const controller = Controller();
 

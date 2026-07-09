@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
 
 	const googleClientId =
 		env.VITE_GOOGLE_LOGIN_CLIENT_ID ??
+		env.GOOGLE_LOGIN_CLIENT_ID ??
 		env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID ??
 		"";
 

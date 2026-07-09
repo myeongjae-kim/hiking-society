@@ -1,8 +1,8 @@
 import { createRoute } from "@hono/zod-openapi";
 import { deleteCookie } from "hono/cookie";
 import { Controller } from "#/api/config/Controller";
+import { sessionCookieConfig } from "#/api/config/sessionCookies";
 import { okSchema } from "#/api/schemas";
-import { sessionCookieConfig } from "../../_sessionCookies";
 
 const controller = Controller();
 const { accessTokenCookieName, refreshTokenCookieName } = sessionCookieConfig;

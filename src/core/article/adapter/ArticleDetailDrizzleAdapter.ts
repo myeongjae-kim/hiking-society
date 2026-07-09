@@ -19,7 +19,7 @@ import type {
 	Timezone,
 } from "@/core/common/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
 import {
 	articleLikeTable,

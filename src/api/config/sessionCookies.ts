@@ -1,5 +1,7 @@
+import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-export { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
+
+export { sessionCookieConfig };
 
 export function cookieOptions(maxAge: number) {
 	return applicationUseCaseContext()

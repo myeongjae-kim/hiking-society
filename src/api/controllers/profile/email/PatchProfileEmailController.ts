@@ -2,10 +2,13 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
+import {
+	cookieOptions,
+	sessionCookieConfig,
+} from "#/api/config/sessionCookies";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { cookieOptions, sessionCookieConfig } from "../../_sessionCookies";
-import { revalidateProfileViews } from "../_helpers";
+import { revalidateProfileViews } from "../profileRevalidation";
 
 const controller = Controller();
 const {

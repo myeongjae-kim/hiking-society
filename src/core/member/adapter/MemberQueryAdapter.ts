@@ -1,5 +1,5 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { MemberQueryPort } from "../application/port/out/MemberQueryPort";
 import type { MemberListItem } from "../model/MemberListItem";

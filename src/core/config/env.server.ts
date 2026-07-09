@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-	NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID: z.string(),
 	DATABASE_URL: z.string(),
-	JWT_SECRET: z.string(),
+	GOOGLE_LOGIN_CLIENT_ID: z.string(),
 	GOOGLE_LOGIN_CLIENT_SECRET: z.string(),
+	JWT_SECRET: z.string(),
 	S3_ACCESS_KEY_ID: z.string(),
 	S3_BUCKET: z.string(),
 	S3_ENDPOINT: z.string().url(),
@@ -13,4 +13,10 @@ const envSchema = z.object({
 	S3_SECRET_ACCESS_KEY: z.string(),
 });
 
-export const env = envSchema.parse(process.env);
+export const env = envSchema.parse({
+	...process.env,
+	GOOGLE_LOGIN_CLIENT_ID:
+		process.env.GOOGLE_LOGIN_CLIENT_ID ??
+		process.env.VITE_GOOGLE_LOGIN_CLIENT_ID ??
+		process.env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID,
+});

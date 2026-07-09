@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import { userTable } from "@/drizzle/schema";
 import type { MemberCommandPort } from "../application/port/out/MemberCommandPort";
 

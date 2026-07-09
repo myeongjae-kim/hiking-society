@@ -1,13 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import {
 	readCurrentTheme,
 	readCurrentUser,
 } from "#/society-app/auth/session.functions";
+import { toNumericSearchId } from "#/routing/searchParams";
 import type { ArticleId } from "@/core/article/domain";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
+const articleRouteDataInputSchema = z.object({
+	articleId: z.string(),
+});
+
 export const getArticleRouteData = createServerFn({ method: "GET" })
-	.validator((data: { articleId: string }) => data)
+	.validator(articleRouteDataInputSchema)
 	.handler(async ({ data }) => {
 		const [currentUser, currentTheme] = await Promise.all([
 			readCurrentUser(),
@@ -18,14 +24,16 @@ export const getArticleRouteData = createServerFn({ method: "GET" })
 			return { status: "unauthenticated" as const };
 		}
 
-		if (!/^\d+$/.test(data.articleId)) {
+		const articleId = toNumericSearchId<ArticleId>(data.articleId);
+
+		if (!articleId) {
 			return { status: "notFound" as const };
 		}
 
 		const articlePage = await applicationUseCaseContext()
 			.get("GetArticlePageUseCase")
 			.get({
-				articleId: data.articleId as ArticleId,
+				articleId,
 				currentUser,
 				includeNotifications: true,
 			});

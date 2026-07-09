@@ -1,7 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
 import { authMiddleware } from "./config/auth";
 import { globalErrorHandler } from "./config/globalErrorHandler";
+import { sessionCookieConfig } from "./config/sessionCookies";
 import { apiControllers } from "./controllers";
 
 export const serverApp = new OpenAPIHono().basePath("/api");

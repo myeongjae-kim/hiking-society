@@ -1,8 +1,7 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
-import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
-import { createCommentNotifications } from "@/core/notification/model/NotificationFactory";
+import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
 import { CommentOwnership, CommentReplyTarget } from "../domain";
 import type { CommentCommandUseCase } from "./port/in/CommentCommandUseCase";
 import type { CommentCommandPort } from "./port/out/CommentCommandPort";
@@ -11,8 +10,8 @@ export class CommentCommandService implements CommentCommandUseCase {
 	constructor(
 		@Autowired("CommentCommandPort")
 		private commentCommandPort: CommentCommandPort,
-		@Autowired("NotificationCommandPort")
-		private notificationCommandPort: NotificationCommandPort,
+		@Autowired("CreateNotificationsUseCase")
+		private createNotificationsUseCase: CreateNotificationsUseCase,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
 	) {}
@@ -49,16 +48,14 @@ export class CommentCommandService implements CommentCommandUseCase {
 				parentCommentId,
 			});
 
-			await this.notificationCommandPort.createMany({
-				notifications: createCommentNotifications({
-					actorUserId: input.authorUserId,
-					articleAuthorUserId: article.authorUserId,
-					articleId: input.articleId,
-					commentBody: input.body,
-					commentId,
-					parentCommentAuthorUserId: parent?.authorUserId ?? null,
-					parentCommentId,
-				}),
+			await this.createNotificationsUseCase.createComment({
+				actorUserId: input.authorUserId,
+				articleAuthorUserId: article.authorUserId,
+				articleId: input.articleId,
+				commentBody: input.body,
+				commentId,
+				parentCommentAuthorUserId: parent?.authorUserId ?? null,
+				parentCommentId,
 			});
 		});
 	}

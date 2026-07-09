@@ -2,21 +2,9 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { getArticleRouteData } from "#/society-app/article/articleRouteData.functions";
 import ArticleDetailPageView from "#/society/article/ArticleDetailPageView";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
+import { AssociateFeedNotice } from "#/society/feed/components/AssociateFeedNotice";
+import { toNumericSearchId } from "#/routing/searchParams";
 import type { CommentId } from "@/core/comment/domain";
-
-function getSingleSearchParam(value: unknown) {
-	return Array.isArray(value) ? value[0] : value;
-}
-
-function toCommentId(value: unknown) {
-	const commentId = getSingleSearchParam(value);
-
-	if (typeof commentId !== "string" || !/^\d+$/.test(commentId)) {
-		return null;
-	}
-
-	return commentId as CommentId;
-}
 
 export const Route = createFileRoute("/article/$articleId")({
 	component: ArticleDetailRoute,
@@ -35,12 +23,9 @@ export const Route = createFileRoute("/article/$articleId")({
 
 		if (data.status === "associate") {
 			return {
-				article: null,
-				comments: [],
 				currentTheme: data.currentTheme,
 				currentUser: data.currentUser,
-				hiking: null,
-				notificationSnapshot: null,
+				status: "associate" as const,
 			};
 		}
 
@@ -51,10 +36,11 @@ export const Route = createFileRoute("/article/$articleId")({
 			currentUser: data.currentUser,
 			hiking: data.hiking,
 			notificationSnapshot: data.notificationSnapshot,
+			status: "ok" as const,
 		};
 	},
 	validateSearch: (search) => ({
-		commentId: getSingleSearchParam(search.commentId),
+		commentId: toNumericSearchId<CommentId>(search.commentId),
 	}),
 });
 
@@ -62,24 +48,13 @@ function ArticleDetailRoute() {
 	const data = Route.useLoaderData();
 	const { commentId } = Route.useSearch();
 
-	if (!data.article || !data.hiking || !data.notificationSnapshot) {
-		return (
-			<ArticleDetailPageView
-				article={null as never}
-				comments={[]}
-				currentTheme={data.currentTheme}
-				currentUser={data.currentUser}
-				hiking={null as never}
-				highlightedCommentId={null}
-				notificationSnapshot={null as never}
-			/>
-		);
+	if (data.status === "associate") {
+		return <AssociateFeedNotice user={data.currentUser} />;
 	}
 
+	const { status: _status, ...pageData } = data;
+
 	return (
-		<ArticleDetailPageView
-			{...data}
-			highlightedCommentId={toCommentId(commentId)}
-		/>
+		<ArticleDetailPageView {...pageData} highlightedCommentId={commentId} />
 	);
 }

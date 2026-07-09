@@ -1,5 +1,4 @@
 import { ArticleDetailClient } from "#/society/article/components/ArticleDetailClient";
-import { AssociateFeedNotice } from "#/society/feed/components/AssociateFeedNotice";
 import type { Article } from "@/core/article/domain";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { Comment, CommentId } from "@/core/comment/domain";
@@ -25,10 +24,6 @@ export default function ArticleDetailPageView({
 	highlightedCommentId,
 	notificationSnapshot,
 }: ArticleDetailPageViewProps) {
-	if (currentUser.role === "associate") {
-		return <AssociateFeedNotice user={currentUser} />;
-	}
-
 	return (
 		<ArticleDetailClient
 			article={article}

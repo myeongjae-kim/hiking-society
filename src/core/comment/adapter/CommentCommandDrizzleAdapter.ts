@@ -3,7 +3,7 @@ import type { ArticleId } from "@/core/article/domain";
 import type { CommentCommandPort } from "@/core/comment/application/port/out/CommentCommandPort";
 import type { CommentId } from "@/core/comment/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import { db } from "@/core/config/drizzle.server";
+import { db } from "@/core/common/adapter/drizzle.server";
 import { articleTable, commentTable } from "@/drizzle/schema";
 
 function toNumericId(id: string) {

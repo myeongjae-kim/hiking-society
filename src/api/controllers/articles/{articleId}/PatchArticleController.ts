@@ -8,7 +8,7 @@ import {
 	idParamSchema,
 } from "#/api/schemas";
 import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
-import { revalidateArticleSuccess } from "../_helpers";
+import { revalidateArticleSuccess } from "../articleRevalidation";
 
 const controller = Controller();
 

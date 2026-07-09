@@ -2,10 +2,7 @@ import type { CurrentUserContract, MemberContract } from "#/api/contracts";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { MemberListItem } from "@/core/member/model/MemberListItem";
 
-export type MemberManagementActorContract = Pick<
-	CurrentUserContract,
-	"id" | "role"
->;
+type MemberManagementActorContract = Pick<CurrentUserContract, "id" | "role">;
 
 export function toMemberManagementActorContract(
 	user: AuthenticatedUser,

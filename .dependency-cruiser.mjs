@@ -80,7 +80,12 @@ export default {
 			comment: "Web adapters should not import DB schema or DB connection directly.",
 			severity: "error",
 			from: { path: "^src/(api|routes|society|society-app)/" },
-			to: { path: ["^drizzle/", "^src/core/config/drizzle[.]server[.]ts$"] },
+			to: {
+				path: [
+					"^drizzle/",
+					"^src/core/common/adapter/drizzle[.]server[.]ts$",
+				],
+			},
 		},
 		{
 			name: "web-not-to-composition-internals",
@@ -103,6 +108,14 @@ export default {
 			severity: "error",
 			from: { path: "^src/api/(contracts|schemas)[.]ts$" },
 			to: { path: "^src/core/" },
+		},
+		{
+			name: "api-config-not-to-controllers",
+			comment:
+				"API config and middleware are lower-level HTTP adapter infrastructure and should not depend on concrete controllers.",
+			severity: "error",
+			from: { path: "^src/api/config/" },
+			to: { path: "^src/api/controllers/" },
 		},
 		{
 			name: "society-shared-not-to-product-society-modules",
