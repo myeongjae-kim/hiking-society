@@ -35,17 +35,20 @@ env:
   VERCEL_PROJECT_NAME_STAGING: ${{ inputs.VERCEL_PROJECT_NAME_STAGING }} # 프로젝트별로 repository에서 지정해줘야 한다.
   VERCEL_PROJECT_NAME_PROD: ${{ inputs.VERCEL_PROJECT_NAME_PROD }} # 프로젝트별로 repository에서 지정해줘야 한다.
   MESSAGE_FAILURE: Vercel 배포에 실패했습니다. Github Actions 로그를 확인해주세요.
-  MESSAGE_SUCCESS: Vercel 배포 API를 호출했습니다. Vercel 플러그인의 댓글을 기다려주세요.
-  MESSAGE_SUCCESS_PROD: Vercel 배포 API를 호출했습니다. Preview 배포를 확인하고 이상이 없다면\nInspector에서 \'Promote to Production\'을 수동으로 눌러 실제 환경에 배포하세요.
+  MESSAGE_SUCCESS: Vercel 배포가 완료되었습니다.
+  MESSAGE_SUCCESS_PROD: Vercel Preview 배포가 완료되었습니다. 이상이 없다면\nInspector에서 \'Promote to Production\'을 수동으로 눌러 실제 환경에 배포하세요.
+  VERCEL_WAIT_TIMEOUT_SECONDS: 1200
+  VERCEL_WAIT_INTERVAL_SECONDS: 10
 
 jobs:
   deploy-preview-staging:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - id: deploy
         run: |
-          curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
+          RESPONSE=$(curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ env.VERCEL_DEPLOYMENT_TOKEN }}" \
             -d '{
@@ -55,8 +58,15 @@ jobs:
               "org": "${{ github.event.repository.owner.login }}",
               "repo": "${{ github.event.repository.name }}",
               "ref": "${{ github.head_ref }}"
-            },
-          }'
+            }
+          }')
+          DEPLOYMENT_ID=$(echo "$RESPONSE" | jq -er '.id // .uid')
+          echo "deployment_id=${DEPLOYMENT_ID}" >> "$GITHUB_OUTPUT"
+      - id: wait
+        name: "Wait for Vercel deployment"
+        env:
+          VERCEL_DEPLOYMENT_ID: ${{ steps.deploy.outputs.deployment_id }}
+        run: bash ./.github/scripts/wait-for-vercel-deployment.sh
       - name: "Add PR comment when failed"
         uses: actions/github-script@v6
         if: failure()
@@ -79,15 +89,16 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}'
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}\n| Name | Inspect | Deployment |\n| :--- | :----- | :------ |\n| **${{ env.VERCEL_PROJECT_NAME_STAGING }}** | [Check Inspector](${{ steps.wait.outputs.inspectorUrl }}) | [Visit Deployment](https://${{ steps.wait.outputs.url }})'
             })
   deploy-production-staging:
     if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_STAGING) }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - id: deploy
         run: |
-          curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
+          RESPONSE=$(curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ env.VERCEL_DEPLOYMENT_TOKEN }}" \
             -d '{
@@ -99,7 +110,14 @@ jobs:
               "ref": "${{ inputs.BRANCH_NAME_STAGING }}"
             },
             "target": "production"
-          }'
+          }')
+          DEPLOYMENT_ID=$(echo "$RESPONSE" | jq -er '.id // .uid')
+          echo "deployment_id=${DEPLOYMENT_ID}" >> "$GITHUB_OUTPUT"
+      - id: wait
+        name: "Wait for Vercel deployment"
+        env:
+          VERCEL_DEPLOYMENT_ID: ${{ steps.deploy.outputs.deployment_id }}
+        run: bash ./.github/scripts/wait-for-vercel-deployment.sh
       - name: "Add commit comment when failed"
         uses: actions/github-script@v6
         if: failure()
@@ -122,12 +140,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: '${{ github.sha }}',
-              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}'
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS }}\n| Name | Inspect | Deployment |\n| :--- | :----- | :------ |\n| **${{ env.VERCEL_PROJECT_NAME_STAGING }}** | [Check Inspector](${{ steps.wait.outputs.inspectorUrl }}) | [Visit Deployment](https://${{ steps.wait.outputs.url }})'
             })
   deploy-production-prod:
     if: ${{ github.ref == format('{0}{1}', 'refs/heads/', inputs.BRANCH_NAME_PROD) }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - id: deploy
         run: |
           RESPONSE=$(curl --fail -X POST "https://api.vercel.com/v13/deployments?teamId=${{ env.VERCEL_TEAM_ID }}" \
@@ -144,7 +163,13 @@ jobs:
             "target": "production",
             "autoAssignCustomDomains": false
           }')
-          echo "value=$(echo $RESPONSE | jq -c '{url, inspectorUrl}')" >> $GITHUB_OUTPUT
+          DEPLOYMENT_ID=$(echo "$RESPONSE" | jq -er '.id // .uid')
+          echo "deployment_id=${DEPLOYMENT_ID}" >> "$GITHUB_OUTPUT"
+      - id: wait
+        name: "Wait for Vercel deployment"
+        env:
+          VERCEL_DEPLOYMENT_ID: ${{ steps.deploy.outputs.deployment_id }}
+        run: bash ./.github/scripts/wait-for-vercel-deployment.sh
       - name: "Add commit comment when failed"
         uses: actions/github-script@v6
         if: failure()
@@ -167,5 +192,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: '${{ github.sha }}',
-              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS_PROD }}\n| Name | Inspect | Deployment |\n| :--- | :----- | :------ |\n| **${{ env.VERCEL_PROJECT_NAME_PROD }}** | [Check Inspector](${{ fromJSON(steps.deploy.outputs.value).inspectorUrl }}) | [Visit Deployment](https://${{ fromJSON(steps.deploy.outputs.value).url }})'
+              body: '✅ \'${{ github.workflow }}\' succeeded: ${{ env.MESSAGE_SUCCESS_PROD }}\n| Name | Inspect | Deployment |\n| :--- | :----- | :------ |\n| **${{ env.VERCEL_PROJECT_NAME_PROD }}** | [Check Inspector](${{ steps.wait.outputs.inspectorUrl }}) | [Visit Deployment](https://${{ steps.wait.outputs.url }})'
             })
