@@ -1,4 +1,5 @@
 import { UserRolePolicy } from "@/core/auth/model/roles";
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { ListNotificationsUseCase } from "@/core/notification/application/port/in/ListNotificationsUseCase";
 import type { GetArticleDetailUseCase } from "./port/in/GetArticleDetailUseCase";
@@ -10,6 +11,8 @@ export class GetArticlePageService implements GetArticlePageUseCase {
 		private getArticleDetailUseCase: GetArticleDetailUseCase,
 		@Autowired("ListNotificationsUseCase")
 		private listNotificationsUseCase: ListNotificationsUseCase,
+		@Autowired("TransactionPort")
+		private transactionPort: TransactionPort,
 	) {}
 
 	async get(input: Parameters<GetArticlePageUseCase["get"]>[0]) {
@@ -17,26 +20,28 @@ export class GetArticlePageService implements GetArticlePageUseCase {
 			return { status: "associate" as const };
 		}
 
-		const [snapshot, notificationSnapshot] = await Promise.all([
-			this.getArticleDetailUseCase.get({
-				articleId: input.articleId,
-				currentUserId: input.currentUser.id,
-			}),
-			input.includeNotifications
-				? this.listNotificationsUseCase.list({
-						currentUserId: input.currentUser.id,
-					})
-				: Promise.resolve(null),
-		]);
+		return this.transactionPort.run(async () => {
+			const [snapshot, notificationSnapshot] = await Promise.all([
+				this.getArticleDetailUseCase.get({
+					articleId: input.articleId,
+					currentUserId: input.currentUser.id,
+				}),
+				input.includeNotifications
+					? this.listNotificationsUseCase.list({
+							currentUserId: input.currentUser.id,
+						})
+					: Promise.resolve(null),
+			]);
 
-		if (!snapshot) {
-			return { status: "notFound" as const };
-		}
+			if (!snapshot) {
+				return { status: "notFound" as const };
+			}
 
-		return {
-			notificationSnapshot,
-			snapshot,
-			status: "ok" as const,
-		};
+			return {
+				notificationSnapshot,
+				snapshot,
+				status: "ok" as const,
+			};
+		});
 	}
 }

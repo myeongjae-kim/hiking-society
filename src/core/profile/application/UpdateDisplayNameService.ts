@@ -1,3 +1,4 @@
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { UpdateDisplayNameUseCase } from "./port/in/UpdateDisplayNameUseCase";
 import type { ProfileCommandPort } from "./port/out/ProfileCommandPort";
@@ -6,11 +7,16 @@ export class UpdateDisplayNameService implements UpdateDisplayNameUseCase {
 	constructor(
 		@Autowired("ProfileCommandPort")
 		private profileCommandPort: ProfileCommandPort,
+		@Autowired("TransactionPort")
+		private transactionPort: TransactionPort,
 	) {}
 
 	async updateDisplayName(
 		input: Parameters<UpdateDisplayNameUseCase["updateDisplayName"]>[0],
 	) {
-		await this.profileCommandPort.updateActiveDisplayName(input);
+		await this.transactionPort.run(
+			() => this.profileCommandPort.updateActiveDisplayName(input),
+			{ readOnly: false },
+		);
 	}
 }

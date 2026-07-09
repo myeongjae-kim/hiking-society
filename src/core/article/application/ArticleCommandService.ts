@@ -55,107 +55,120 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	}
 
 	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
-		await this.transactionPort.run(async () => {
-			const media = ArticleMediaCollection.from(input.media).toPublishable();
+		await this.transactionPort.run(
+			async () => {
+				const media = ArticleMediaCollection.from(input.media).toPublishable();
 
-			if (!media) {
-				throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-			}
+				if (!media) {
+					throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
+				}
 
-			this.assertOwnedUploadedMedia(input.authorUserId, input.media);
+				this.assertOwnedUploadedMedia(input.authorUserId, input.media);
 
-			const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
-				input.hikingId,
-			);
+				const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
+					input.hikingId,
+				);
 
-			if (!hasActiveHiking) {
-				throw applicationError.notFound("산행을 찾을 수 없습니다.");
-			}
+				if (!hasActiveHiking) {
+					throw applicationError.notFound("산행을 찾을 수 없습니다.");
+				}
 
-			const articleId = await this.articleCommandPort.create({
-				authorUserId: input.authorUserId,
-				body: input.body,
-				hikingId: input.hikingId,
-				storedMedia: media.sortByOrder(),
-			});
-			const recipientUserIds =
-				await this.articleCommandPort.listActiveNotificationRecipientIds({
-					excludeUserId: input.authorUserId,
+				const articleId = await this.articleCommandPort.create({
+					authorUserId: input.authorUserId,
+					body: input.body,
+					hikingId: input.hikingId,
+					storedMedia: media.sortByOrder(),
 				});
+				const recipientUserIds =
+					await this.articleCommandPort.listActiveNotificationRecipientIds({
+						excludeUserId: input.authorUserId,
+					});
 
-			await this.createNotificationsUseCase.createArticleCreated({
-				actorUserId: input.authorUserId,
-				articleBody: input.body,
-				articleId,
-				recipientUserIds,
-			});
-		});
+				await this.createNotificationsUseCase.createArticleCreated({
+					actorUserId: input.authorUserId,
+					articleBody: input.body,
+					articleId,
+					recipientUserIds,
+				});
+			},
+			{ readOnly: false },
+		);
 	}
 
 	async update(input: Parameters<ArticleCommandUseCase["update"]>[0]) {
-		const media = ArticleMediaCollection.from([
-			...input.existingMedia,
-			...input.uploadedMedia,
-		]).toPublishable();
+		await this.transactionPort.run(
+			async () => {
+				const media = ArticleMediaCollection.from([
+					...input.existingMedia,
+					...input.uploadedMedia,
+				]).toPublishable();
 
-		if (!media) {
-			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-		}
+				if (!media) {
+					throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
+				}
 
-		this.assertOwnedUploadedMedia(input.userId, input.uploadedMedia);
+				this.assertOwnedUploadedMedia(input.userId, input.uploadedMedia);
 
-		const article = await this.articleCommandPort.findActiveArticleById(
-			input.articleId,
-		);
+				const article = await this.articleCommandPort.findActiveArticleById(
+					input.articleId,
+				);
 
-		if (
-			!article ||
-			!ArticleOwnership.of(article).canBeManagedBy(input.userId)
-		) {
-			throw applicationError.notFound(
-				"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
-			);
-		}
+				if (
+					!article ||
+					!ArticleOwnership.of(article).canBeManagedBy(input.userId)
+				) {
+					throw applicationError.notFound(
+						"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
+					);
+				}
 
-		const updated = await this.articleCommandPort.update({
-			articleId: input.articleId,
-			now: new Date(),
-			storedMedia: media.sortByOrder(),
-			values: {
-				body: input.body,
+				const updated = await this.articleCommandPort.update({
+					articleId: input.articleId,
+					now: new Date(),
+					storedMedia: media.sortByOrder(),
+					values: {
+						body: input.body,
+					},
+				});
+
+				if (!updated) {
+					throw applicationError.notFound(
+						"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
+					);
+				}
 			},
-		});
-
-		if (!updated) {
-			throw applicationError.notFound(
-				"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
-			);
-		}
+			{ readOnly: false },
+		);
 	}
 
 	async delete(input: Parameters<ArticleCommandUseCase["delete"]>[0]) {
-		const article = await this.articleCommandPort.findActiveArticleById(
-			input.articleId,
+		await this.transactionPort.run(
+			async () => {
+				const article = await this.articleCommandPort.findActiveArticleById(
+					input.articleId,
+				);
+
+				if (
+					!article ||
+					!ArticleOwnership.of(article).canBeManagedBy(input.userId)
+				) {
+					throw applicationError.notFound(
+						"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
+					);
+				}
+
+				const deleted = await this.articleCommandPort.delete({
+					articleId: input.articleId,
+					now: new Date(),
+				});
+
+				if (!deleted) {
+					throw applicationError.notFound(
+						"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
+					);
+				}
+			},
+			{ readOnly: false },
 		);
-
-		if (
-			!article ||
-			!ArticleOwnership.of(article).canBeManagedBy(input.userId)
-		) {
-			throw applicationError.notFound(
-				"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
-			);
-		}
-
-		const deleted = await this.articleCommandPort.delete({
-			articleId: input.articleId,
-			now: new Date(),
-		});
-
-		if (!deleted) {
-			throw applicationError.notFound(
-				"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
-			);
-		}
 	}
 }

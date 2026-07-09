@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { CreateNotificationsService } from "./CreateNotificationsService";
 import type { NotificationCommandPort } from "./port/out/NotificationCommandPort";
 
@@ -15,13 +16,22 @@ function createCommandPort(): NotificationCommandPort {
 	};
 }
 
+function createTransactionPort(): TransactionPort {
+	return {
+		run: vi.fn((work) => work()),
+	};
+}
+
 describe("CreateNotificationsService", () => {
 	let commandPort: NotificationCommandPort;
 	let service: CreateNotificationsService;
 
 	beforeEach(() => {
 		commandPort = createCommandPort();
-		service = new CreateNotificationsService(commandPort);
+		service = new CreateNotificationsService(
+			commandPort,
+			createTransactionPort(),
+		);
 	});
 
 	it("creates article notifications through the command port", async () => {

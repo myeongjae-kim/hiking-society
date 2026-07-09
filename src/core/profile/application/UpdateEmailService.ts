@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { UpdateEmailUseCase } from "./port/in/UpdateEmailUseCase";
 import type { ProfileCommandPort } from "./port/out/ProfileCommandPort";
@@ -10,19 +11,26 @@ export class UpdateEmailService implements UpdateEmailUseCase {
 		private profileQueryPort: ProfileQueryPort,
 		@Autowired("ProfileCommandPort")
 		private profileCommandPort: ProfileCommandPort,
+		@Autowired("TransactionPort")
+		private transactionPort: TransactionPort,
 	) {}
 
 	async updateEmail(input: Parameters<UpdateEmailUseCase["updateEmail"]>[0]) {
-		const emailExists =
-			await this.profileQueryPort.existsActiveUserByEmailExceptUserId({
-				email: input.email,
-				userId: input.userId,
-			});
+		await this.transactionPort.run(
+			async () => {
+				const emailExists =
+					await this.profileQueryPort.existsActiveUserByEmailExceptUserId({
+						email: input.email,
+						userId: input.userId,
+					});
 
-		if (emailExists) {
-			throw applicationError.conflict("이미 사용 중인 이메일입니다.");
-		}
+				if (emailExists) {
+					throw applicationError.conflict("이미 사용 중인 이메일입니다.");
+				}
 
-		await this.profileCommandPort.updateActiveEmail(input);
+				await this.profileCommandPort.updateActiveEmail(input);
+			},
+			{ readOnly: false },
+		);
 	}
 }

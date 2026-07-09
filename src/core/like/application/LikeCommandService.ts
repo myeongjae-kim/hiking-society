@@ -18,47 +18,53 @@ export class LikeCommandService implements LikeCommandUseCase {
 	async toggleArticleLike(
 		input: Parameters<LikeCommandUseCase["toggleArticleLike"]>[0],
 	) {
-		await this.transactionPort.run(async () => {
-			const result = await this.likeCommandPort.toggleArticleLike(input);
+		await this.transactionPort.run(
+			async () => {
+				const result = await this.likeCommandPort.toggleArticleLike(input);
 
-			if (!result) {
-				throw applicationError.notFound("좋아요할 글을 찾을 수 없습니다.");
-			}
+				if (!result) {
+					throw applicationError.notFound("좋아요할 글을 찾을 수 없습니다.");
+				}
 
-			if (!result.liked) {
-				return;
-			}
+				if (!result.liked) {
+					return;
+				}
 
-			await this.createNotificationsUseCase.createArticleLike({
-				actorUserId: input.userId,
-				articleAuthorUserId: result.articleAuthorUserId,
-				articleBody: result.articleBody,
-				articleId: result.articleId,
-			});
-		});
+				await this.createNotificationsUseCase.createArticleLike({
+					actorUserId: input.userId,
+					articleAuthorUserId: result.articleAuthorUserId,
+					articleBody: result.articleBody,
+					articleId: result.articleId,
+				});
+			},
+			{ readOnly: false },
+		);
 	}
 
 	async toggleCommentLike(
 		input: Parameters<LikeCommandUseCase["toggleCommentLike"]>[0],
 	) {
-		await this.transactionPort.run(async () => {
-			const result = await this.likeCommandPort.toggleCommentLike(input);
+		await this.transactionPort.run(
+			async () => {
+				const result = await this.likeCommandPort.toggleCommentLike(input);
 
-			if (!result) {
-				throw applicationError.notFound("좋아요할 댓글을 찾을 수 없습니다.");
-			}
+				if (!result) {
+					throw applicationError.notFound("좋아요할 댓글을 찾을 수 없습니다.");
+				}
 
-			if (!result.liked) {
-				return;
-			}
+				if (!result.liked) {
+					return;
+				}
 
-			await this.createNotificationsUseCase.createCommentLike({
-				actorUserId: input.userId,
-				articleId: result.articleId,
-				commentAuthorUserId: result.commentAuthorUserId,
-				commentBody: result.commentBody,
-				commentId: result.commentId,
-			});
-		});
+				await this.createNotificationsUseCase.createCommentLike({
+					actorUserId: input.userId,
+					articleId: result.articleId,
+					commentAuthorUserId: result.commentAuthorUserId,
+					commentBody: result.commentBody,
+					commentId: result.commentId,
+				});
+			},
+			{ readOnly: false },
+		);
 	}
 }
