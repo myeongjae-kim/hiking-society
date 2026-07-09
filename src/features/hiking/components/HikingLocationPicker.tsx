@@ -109,6 +109,7 @@ export function HikingLocationPicker({
 		pitch: 0,
 		zoom: selectedCoordinate ? 12 : 8,
 	});
+	const viewportTransition = useMemo(() => ({ duration: 700 }), []);
 	const [query, setQuery] = useState("");
 	const [searchTerm, setSearchTerm] = useState("");
 	const trimmedQuery = query.trim();
@@ -267,6 +268,7 @@ export function HikingLocationPicker({
 					className="h-full"
 					onViewportChange={setViewport}
 					viewport={viewport}
+					viewportTransition={viewportTransition}
 					zoom={viewport.zoom}
 				>
 					<MapClickHandler onClick={handleMapClick} />

@@ -161,6 +161,12 @@ type MapViewport = {
 };
 
 type MapStyleOption = string | MapLibreGL.StyleSpecification;
+type MapViewportTransition =
+	| false
+	| Pick<
+			MapLibreGL.EaseToOptions,
+			"animate" | "duration" | "easing" | "essential"
+	  >;
 
 type MapRef = MapLibreGL.Map;
 
@@ -199,6 +205,8 @@ type MapProps = {
 	 * to enable controlled mode where the map viewport is driven by your state.
 	 */
 	onViewportChange?: (viewport: MapViewport) => void;
+	/** Animate controlled viewport changes instead of jumping immediately. */
+	viewportTransition?: MapViewportTransition;
 	/** Show a loading indicator on the map */
 	loading?: boolean;
 } & Omit<MapLibreGL.MapOptions, "container" | "style">;
@@ -235,6 +243,7 @@ const HikingMap = forwardRef<MapRef, MapProps>(function HikingMap(
 		projection,
 		viewport,
 		onViewportChange,
+		viewportTransition = false,
 		loading = false,
 		...props
 	},
@@ -343,7 +352,7 @@ const HikingMap = forwardRef<MapRef, MapProps>(function HikingMap(
 	// Sync controlled viewport to map
 	useEffect(() => {
 		if (!mapInstance || !isControlled || !viewport) return;
-		if (mapInstance.isMoving()) return;
+		if (mapInstance.isMoving() && !internalUpdateRef.current) return;
 
 		const current = getViewport(mapInstance);
 		const next = {
@@ -364,9 +373,25 @@ const HikingMap = forwardRef<MapRef, MapProps>(function HikingMap(
 		}
 
 		internalUpdateRef.current = true;
+
+		if (viewportTransition) {
+			const releaseInternalUpdate = () => {
+				internalUpdateRef.current = false;
+				onViewportChangeRef.current?.(getViewport(mapInstance));
+			};
+
+			mapInstance.stop();
+			mapInstance.once("moveend", releaseInternalUpdate);
+			mapInstance.easeTo({
+				...next,
+				...viewportTransition,
+			});
+			return;
+		}
+
 		mapInstance.jumpTo(next);
 		internalUpdateRef.current = false;
-	}, [mapInstance, isControlled, viewport]);
+	}, [mapInstance, isControlled, viewport, viewportTransition]);
 
 	// Handle style change
 	useEffect(() => {
