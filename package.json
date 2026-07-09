@@ -12,7 +12,7 @@
     "start": "vite preview",
     "format": "biome format",
     "lint": "biome lint && tsc --noEmit && pnpm check-architecture",
-    "check": "biome check --fix",
+    "check": "biome check --write --unsafe",
     "check-architecture": "bash scripts/check-architecture.sh",
     "api:sync": "openapi-typescript http://localhost:3000/api/swagger -o ./src/api/schema.d.ts",
     "find-deadcode": "bash scripts/find-deadcode.sh",

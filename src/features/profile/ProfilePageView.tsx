@@ -26,9 +26,9 @@ function Row({
 	value: ReactNode;
 }) {
 	return (
-		<div className="grid grid-cols-1 gap-2 border-b border-dotted border-[var(--overlay0)] pb-2 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
+		<div className="grid grid-cols-1 gap-2 border-[var(--overlay0)] border-b border-dotted pb-2 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4">
 			<dt className="text-[var(--subtext0)]">{label}</dt>
-			<dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground0)]">
+			<dd className="m-0 min-w-0 text-[var(--foreground0)] [overflow-wrap:anywhere]">
 				{value}
 			</dd>
 			<div className="min-w-0">{action}</div>
@@ -52,7 +52,7 @@ export default function MyPageView({ theme, user }: MyPageViewProps) {
 	return (
 		<main className="min-h-svh bg-[var(--background0)] p-4 text-[var(--foreground0)] lg:p-8">
 			<section
-				className="mx-auto grid w-[min(100%,48rem)] gap-5 bg-[var(--surface0)] !p-5 [--box-border-color:var(--overlay0)] [--box-border-width:1px]"
+				className="!p-5 mx-auto grid w-[min(100%,48rem)] gap-5 bg-[var(--surface0)] [--box-border-color:var(--overlay0)] [--box-border-width:1px]"
 				box-="round"
 			>
 				<header className="flex flex-wrap items-center justify-between gap-3">
@@ -87,7 +87,7 @@ export default function MyPageView({ theme, user }: MyPageViewProps) {
 							/>
 						</div>
 						<div className="min-w-0">
-							<p className="m-0 font-mono text-sm text-[var(--mauve)]">
+							<p className="m-0 font-mono text-[var(--mauve)] text-sm">
 								$ profile.show
 							</p>
 							<h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">

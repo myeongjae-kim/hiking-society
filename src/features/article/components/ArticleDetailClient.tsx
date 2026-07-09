@@ -439,7 +439,7 @@ export function ArticleDetailClient({
 	};
 
 	return (
-		<main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
+		<main className="min-h-svh bg-[length:2rem_2rem] bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] text-[var(--foreground0)]">
 			<FeedTopbar
 				currentAuthorName={currentAuthorName}
 				currentTheme={currentTheme}
@@ -454,14 +454,14 @@ export function ArticleDetailClient({
 						</div>
 
 						<div className="flex justify-between">
-							<h1 className="m-0 flex min-w-0 items-center gap-2 text-[1.25rem] leading-[1.1] tracking-normal break-keep text-[var(--blue)] sm:text-[1.75rem]">
+							<h1 className="m-0 flex min-w-0 items-center gap-2 break-keep text-[1.25rem] text-[var(--blue)] leading-[1.1] tracking-normal sm:text-[1.75rem]">
 								<span className="min-w-0">
 									{hiking.order}. {hiking.mountainName}
 								</span>
 							</h1>
 							<div className="flex flex-wrap items-center justify-end gap-2">
 								<span
-									className="font-mono text-sm leading-none !text-[var(--yellow)] sm:text-base"
+									className="!text-[var(--yellow)] font-mono text-sm leading-none sm:text-base"
 									is-="badge"
 									variant-="background1"
 								>
@@ -473,10 +473,10 @@ export function ArticleDetailClient({
 							</div>
 						</div>
 					</header>
-					<div className="grid gap-2 border border-t-0 border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_68%,transparent)] px-3 py-2 sm:px-4">
+					<div className="grid gap-2 border border-[var(--overlay0)] border-t-0 bg-[color-mix(in_srgb,var(--surface0)_68%,transparent)] px-3 py-2 sm:px-4">
 						<dl className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm leading-[1.35]">
 							<div className="flex min-w-0 items-baseline gap-1.5">
-								<dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">
+								<dt className="m-0 shrink-0 text-[var(--subtext0)] text-xs">
 									날짜/시간
 								</dt>
 								<dd className="m-0 min-w-0 text-[var(--foreground1)]">
@@ -490,13 +490,13 @@ export function ArticleDetailClient({
 										</>
 									) : null}
 									<span className="px-1 text-[var(--subtext0)]">·</span>
-									<span className="font-mono text-xs text-[var(--subtext0)]">
+									<span className="font-mono text-[var(--subtext0)] text-xs">
 										{hikingDisplay.timezoneLabel}
 									</span>
 								</dd>
 							</div>
 							<div className="flex min-w-0 items-baseline gap-1.5">
-								<dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">
+								<dt className="m-0 shrink-0 text-[var(--subtext0)] text-xs">
 									참석자
 								</dt>
 								<dd className="m-0 flex min-w-0 flex-wrap gap-1">
@@ -504,7 +504,7 @@ export function ArticleDetailClient({
 										hikingDisplay.participants.map(
 											(participant, participantIndex) => (
 												<span
-													className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-xs leading-[1.35] text-[var(--foreground0)]"
+													className="border border-[var(--overlay0)] bg-[var(--surface1)] px-1.5 text-[var(--foreground0)] text-xs leading-[1.35]"
 													key={`${participant}-${participantIndex}`}
 												>
 													{participant}
@@ -519,7 +519,7 @@ export function ArticleDetailClient({
 								</dd>
 							</div>
 							<div className="flex min-w-0 items-baseline gap-1.5">
-								<dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">
+								<dt className="m-0 shrink-0 text-[var(--subtext0)] text-xs">
 									위치/고도
 								</dt>
 								<dd className="m-0 min-w-0 font-mono text-[var(--foreground1)]">
@@ -532,10 +532,10 @@ export function ArticleDetailClient({
 							</div>
 							{hikingDisplay.restaurantLabel ? (
 								<div className="flex min-w-0 items-baseline gap-1.5">
-									<dt className="m-0 shrink-0 text-xs text-[var(--subtext0)]">
+									<dt className="m-0 shrink-0 text-[var(--subtext0)] text-xs">
 										뒤풀이
 									</dt>
-									<dd className="m-0 min-w-0 [overflow-wrap:anywhere] text-[var(--foreground1)]">
+									<dd className="m-0 min-w-0 text-[var(--foreground1)] [overflow-wrap:anywhere]">
 										{hikingDisplay.restaurantLabel}
 									</dd>
 								</div>

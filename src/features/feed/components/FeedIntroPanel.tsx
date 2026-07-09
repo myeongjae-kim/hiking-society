@@ -9,7 +9,7 @@ type FeedIntroPanelProps = {
 export function FeedIntroPanel({ onCreateHiking }: FeedIntroPanelProps) {
 	return (
 		<section
-			className={`grid gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-4 ${boxBorderClassName}`}
+			className={`!p-4 grid gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] ${boxBorderClassName}`}
 			box-="round"
 		>
 			<div className="flex flex-wrap items-center justify-between gap-3">

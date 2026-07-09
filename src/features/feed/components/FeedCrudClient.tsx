@@ -160,7 +160,7 @@ export function FeedCrudClient({
 				: undefined;
 
 	return (
-		<main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]">
+		<main className="min-h-svh bg-[length:2rem_2rem] bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] text-[var(--foreground0)]">
 			<FeedTopbar
 				currentAuthorName={currentAuthorName}
 				currentTheme={currentTheme}

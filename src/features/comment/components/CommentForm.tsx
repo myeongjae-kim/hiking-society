@@ -40,9 +40,8 @@ export function CommentForm({
 	return (
 		<form className="grid gap-2" onSubmit={handleSubmit}>
 			<label className="grid gap-1.5">
-				<span className="font-mono text-sm text-[var(--green)]">{prompt}</span>
+				<span className="font-mono text-[var(--green)] text-sm">{prompt}</span>
 				<input
-					autoFocus={autoFocus}
 					className={`${fieldClassName} min-h-[2.5rem] resize-y`}
 					enterKeyHint="done"
 					onChange={(event) => setBody(event.currentTarget.value)}
@@ -50,7 +49,7 @@ export function CommentForm({
 					value={body}
 				/>
 			</label>
-			{error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
+			{error ? <p className="m-0 text-[var(--red)] text-sm">{error}</p> : null}
 			<div className="flex flex-wrap justify-end gap-2">
 				{onCancel ? <ActionButton onClick={onCancel}>취소</ActionButton> : null}
 				<ActionButton disabled={submitting} type="submit">

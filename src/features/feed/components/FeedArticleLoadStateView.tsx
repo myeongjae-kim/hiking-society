@@ -23,7 +23,7 @@ export function FeedArticleLoadStateView({
 	if (hasLoadedArticles && loadState.status === "refreshing") {
 		return (
 			<div
-				className={`flex flex-wrap items-center gap-2 bg-[var(--surface0)] !p-3 text-[0.9rem] text-[var(--subtext0)] ${boxBorderClassName}`}
+				className={`!p-3 flex flex-wrap items-center gap-2 bg-[var(--surface0)] text-[0.9rem] text-[var(--subtext0)] ${boxBorderClassName}`}
 				box-="round"
 			>
 				<Command>articles.refresh {hikingId}</Command>
@@ -36,7 +36,7 @@ export function FeedArticleLoadStateView({
 	if (hasLoadedArticles && loadState.status === "error") {
 		return (
 			<div
-				className={`flex flex-wrap items-center gap-3 bg-[var(--surface0)] !p-3 text-[0.9rem] ${boxBorderClassName}`}
+				className={`!p-3 flex flex-wrap items-center gap-3 bg-[var(--surface0)] text-[0.9rem] ${boxBorderClassName}`}
 				box-="round"
 			>
 				<Command>articles.stale {hikingId}</Command>
@@ -49,7 +49,7 @@ export function FeedArticleLoadStateView({
 	if (!hasLoadedArticles && loadState.status === "error") {
 		return (
 			<div
-				className={`grid min-h-40 content-center gap-3 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+				className={`!p-4 grid min-h-40 content-center gap-3 bg-[var(--surface0)] ${boxBorderClassName}`}
 				box-="round"
 			>
 				<Command>articles.error {hikingId}</Command>
@@ -64,7 +64,7 @@ export function FeedArticleLoadStateView({
 	if (!hasLoadedArticles && loadState.status !== "loaded") {
 		return (
 			<div
-				className={`grid min-h-64 content-center gap-3 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+				className={`!p-4 grid min-h-64 content-center gap-3 bg-[var(--surface0)] ${boxBorderClassName}`}
 				box-="round"
 			>
 				<Command>articles.lazy {hikingId}</Command>
@@ -82,7 +82,7 @@ export function FeedArticleLoadStateView({
 export function FeedEmptyArticlesView({ hikingId }: { hikingId: HikingId }) {
 	return (
 		<div
-			className={`bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+			className={`!p-4 bg-[var(--surface0)] ${boxBorderClassName}`}
 			box-="round"
 		>
 			<Command>articles.empty {hikingId}</Command>

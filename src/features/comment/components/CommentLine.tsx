@@ -88,7 +88,7 @@ export function CommentLine({
 								·
 							</span>
 							<DateTimeLabel
-								className="font-mono text-[0.8125rem] whitespace-nowrap text-[var(--subtext0)]"
+								className="whitespace-nowrap font-mono text-[0.8125rem] text-[var(--subtext0)]"
 								value={comment.createdAt}
 							/>
 						</div>
@@ -130,14 +130,14 @@ export function CommentLine({
 									>
 										<summary
 											aria-label="댓글 관리 메뉴"
-											className="inline-flex !h-auto !min-h-[1.75rem] min-w-[2.25rem] cursor-pointer list-none items-center justify-center !border !border-[var(--overlay0)] !bg-[var(--surface0)] !bg-none px-2 py-1 font-mono !text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] [&::-webkit-details-marker]:hidden"
+											className="!h-auto !min-h-[1.75rem] !border !border-[var(--overlay0)] !bg-[var(--surface0)] !bg-none !text-sm !text-[var(--foreground0)] hover:!bg-[var(--surface1)] active:!bg-[var(--surface2)] active:!text-[var(--foreground0)] inline-flex min-w-[2.25rem] cursor-pointer list-none items-center justify-center whitespace-nowrap px-2 py-1 font-mono leading-[1.2] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden"
 											title="댓글 관리 메뉴"
 										>
 											⋮
 										</summary>
 										<div className="grid min-w-24 gap-1 border border-[var(--overlay0)] bg-[var(--background1)] p-1 shadow-[0_0.35rem_0_var(--background0)]">
 											<button
-												className="!h-auto !min-h-0 w-full appearance-none !border-0 !bg-transparent !bg-none px-3 py-1.5 text-left font-mono text-sm leading-[1.2] whitespace-nowrap !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+												className="!h-auto !min-h-0 !border-0 !bg-transparent !bg-none !text-[var(--foreground0)] hover:!bg-[var(--surface1)] w-full appearance-none whitespace-nowrap px-3 py-1.5 text-left font-mono text-sm leading-[1.2] focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2"
 												onClick={(event) =>
 													runMenuAction(event, () => onEdit(comment.id))
 												}
@@ -146,7 +146,7 @@ export function CommentLine({
 												수정
 											</button>
 											<button
-												className="!h-auto !min-h-0 w-full appearance-none !border-0 !bg-transparent !bg-none px-3 py-1.5 text-left font-mono text-sm leading-[1.2] whitespace-nowrap !text-[var(--red)] hover:!bg-[var(--surface1)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+												className="!h-auto !min-h-0 !border-0 !bg-transparent !bg-none !text-[var(--red)] hover:!bg-[var(--surface1)] w-full appearance-none whitespace-nowrap px-3 py-1.5 text-left font-mono text-sm leading-[1.2] focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2"
 												onClick={(event) =>
 													runMenuAction(event, () => onDelete(comment))
 												}

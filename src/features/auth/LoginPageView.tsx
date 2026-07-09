@@ -202,13 +202,13 @@ export default function Home({ redirectTo = "/feed" }: HomeProps) {
 				className="grid min-h-[calc(100svh-5rem)] place-items-center overflow-hidden [--box-border-color:var(--overlay0)] [--box-border-width:1px] lg:min-h-[calc(100svh-4rem)]"
 				box-="round"
 			>
-				<span className="absolute top-[0.2ch] left-[2ch] inline-block bg-[var(--peach)] px-[1ch] leading-[1lh] text-[var(--background0)]">
+				<span className="absolute top-[0.2ch] left-[2ch] inline-block bg-[var(--peach)] px-[1ch] text-[var(--background0)] leading-[1lh]">
 					Hiking Society &gt;&gt;
 				</span>
 
 				<div className="flex min-w-0 flex-col items-center gap-[2lh] overflow-hidden px-[1ch] pt-[5lh] pb-[3lh] text-center">
 					<p
-						className="hero-title m-0 grid place-items-center bg-linear-to-r from-[var(--blue)] to-[var(--green)] bg-clip-text font-sans text-[2.5rem] leading-[1.08] tracking-normal text-balance break-keep text-transparent sm:text-[4rem] lg:text-[5.5rem]"
+						className="hero-title m-0 grid place-items-center text-balance break-keep bg-linear-to-r from-[var(--blue)] to-[var(--green)] bg-clip-text font-sans text-[2.5rem] text-transparent leading-[1.08] tracking-normal sm:text-[4rem] lg:text-[5.5rem]"
 						aria-hidden="true"
 					>
 						<span className="hero-title-reserve">

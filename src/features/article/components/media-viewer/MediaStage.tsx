@@ -107,7 +107,7 @@ export function MediaStage({
 
 	return (
 		<div
-			className="flex h-full min-h-0 w-full touch-none flex-col items-center justify-center gap-4 select-none"
+			className="flex h-full min-h-0 w-full touch-none select-none flex-col items-center justify-center gap-4"
 			data-media-modal-surface
 			onClick={handleMediaStageClick}
 			onPointerCancel={finishMediaGesture}
@@ -126,7 +126,7 @@ export function MediaStage({
 					>
 						<video
 							autoPlay
-							className={`block h-full max-h-[calc(100svh-10rem)] w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
+							className={`block h-full max-h-[calc(100svh-10rem)] w-full select-none border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform ${
 								isMediaGestureActive
 									? ""
 									: "transition-transform duration-150 ease-out"
@@ -147,7 +147,7 @@ export function MediaStage({
 				) : (
 					<video
 						autoPlay
-						className={`max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform select-none ${
+						className={`max-h-[calc(100svh-10rem)] max-w-full select-none border border-[var(--overlay0)] bg-[var(--surface0)] will-change-transform ${
 							isMediaGestureActive
 								? ""
 								: "transition-transform duration-150 ease-out"
@@ -168,7 +168,7 @@ export function MediaStage({
 			) : (
 				<img
 					alt={`${authorName}의 산행 사진이나 동영상 ${selectedMedia.order}`}
-					className={`max-h-[calc(100svh-10rem)] max-w-full border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform select-none ${
+					className={`max-h-[calc(100svh-10rem)] max-w-full select-none border border-[var(--overlay0)] bg-[var(--surface0)] object-contain will-change-transform ${
 						isMediaGestureActive
 							? ""
 							: "transition-transform duration-150 ease-out"

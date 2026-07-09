@@ -34,7 +34,7 @@ export function AuthorBadge({
 	) : (
 		<span
 			aria-label={`${name} 프로필 사진 없음`}
-			className={`${avatarClassName} grid shrink-0 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] font-mono leading-none text-[var(--blue)]`}
+			className={`${avatarClassName} grid shrink-0 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] font-mono text-[var(--blue)] leading-none`}
 		>
 			<span className="place-self-center">{getInitial(name)}</span>
 		</span>

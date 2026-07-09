@@ -25,14 +25,14 @@ export default function MembersPageView({
 	members,
 }: MembersPageViewProps) {
 	return (
-		<main className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] p-4 text-[var(--foreground0)] lg:p-8">
+		<main className="min-h-svh bg-[length:2rem_2rem] bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] p-4 text-[var(--foreground0)] lg:p-8">
 			<section
-				className="mx-auto grid w-[min(100%,72rem)] gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [--box-border-color:var(--overlay0)] [--box-border-width:1px]"
+				className="!p-5 mx-auto grid w-[min(100%,72rem)] gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] [--box-border-color:var(--overlay0)] [--box-border-width:1px]"
 				box-="round"
 			>
 				<header className="flex flex-wrap items-center justify-between gap-3">
 					<div>
-						<p className="m-0 font-mono text-sm text-[var(--mauve)]">
+						<p className="m-0 font-mono text-[var(--mauve)] text-sm">
 							$ members.list
 						</p>
 						<h1 className="m-0 mt-1 text-3xl text-[var(--blue)]">회원 관리</h1>

@@ -63,7 +63,7 @@ export function useMutationRunner() {
 
 			void execute();
 		},
-		[setError, singleFlightAction, startTransition],
+		[setError, singleFlightAction],
 	);
 
 	return {

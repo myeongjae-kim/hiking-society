@@ -20,7 +20,7 @@ export function getSafeRedirectTarget(
 ) {
 	const target = getSingleValue(value);
 
-	if (!target || !target.startsWith("/") || target.startsWith("//")) {
+	if (!target?.startsWith("/") || target.startsWith("//")) {
 		return defaultRedirectTarget;
 	}
 

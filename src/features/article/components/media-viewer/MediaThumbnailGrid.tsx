@@ -33,7 +33,7 @@ export function MediaThumbnailGrid({
 					>
 						<Dialog.Trigger asChild>
 							<button
-								className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+								className="group block h-auto w-full appearance-none bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2"
 								onClick={() => {
 									onOpenAt(index);
 								}}
@@ -50,7 +50,7 @@ export function MediaThumbnailGrid({
 									{item.mediaType === "video" ? (
 										<>
 											<VideoPlayOverlay />
-											<span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+											<span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-[var(--foreground0)] text-xs">
 												video
 											</span>
 										</>
@@ -58,7 +58,7 @@ export function MediaThumbnailGrid({
 								</span>
 							</button>
 						</Dialog.Trigger>
-						<figcaption className="flex min-w-0 items-center justify-between gap-2 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+						<figcaption className="flex min-w-0 items-center justify-between gap-2 px-2 py-1 font-mono text-[0.8125rem] text-[var(--subtext0)] leading-snug">
 							<span>
 								{item.mediaType} {item.order}/{media.length}
 							</span>

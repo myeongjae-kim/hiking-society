@@ -132,7 +132,7 @@ export function MediaViewerDialog({
 					{hasMultipleMedia && !selectedMediaIsVideo ? (
 						<button
 							aria-label="이전 사진이나 동영상"
-							className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
+							className={`${mediaControlClassName} !size-11 sm:!size-14 hidden font-mono text-2xl sm:grid`}
 							data-media-modal-surface
 							onClick={onPrevious}
 							type="button"
@@ -172,7 +172,7 @@ export function MediaViewerDialog({
 					{hasMultipleMedia && !selectedMediaIsVideo ? (
 						<button
 							aria-label="다음 사진이나 동영상"
-							className={`${mediaControlClassName} hidden !size-11 font-mono text-2xl sm:grid sm:!size-14`}
+							className={`${mediaControlClassName} !size-11 sm:!size-14 hidden font-mono text-2xl sm:grid`}
 							data-media-modal-surface
 							onClick={onNext}
 							type="button"

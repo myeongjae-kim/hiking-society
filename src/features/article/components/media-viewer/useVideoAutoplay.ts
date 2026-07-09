@@ -29,5 +29,5 @@ export function useVideoAutoplay({
 		void selectedMediaSurface.play().catch(() => {
 			// Some browsers can still block autoplay. Controls remain available.
 		});
-	}, [media.mediaType, media.url, open, selectedMediaSurfaceRef]);
+	}, [media.mediaType, open, selectedMediaSurfaceRef]);
 }

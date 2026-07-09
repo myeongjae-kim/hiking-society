@@ -8,7 +8,7 @@ export function StatusRow({
 	value: ReactNode;
 }) {
 	return (
-		<div className="flex justify-between gap-4 border-b border-dotted border-[var(--overlay0)] pb-1.5">
+		<div className="flex justify-between gap-4 border-[var(--overlay0)] border-b border-dotted pb-1.5">
 			<dt className="m-0 text-[var(--subtext0)]">{label}</dt>
 			<dd className="m-0 text-[var(--green)]">{value}</dd>
 		</div>

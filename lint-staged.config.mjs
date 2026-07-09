@@ -8,7 +8,7 @@ const config = {
       return [];
     }
 
-    return [`pnpx biome check --fix ${filteredFilenames.join(' ')}`];
+    return [`pnpx biome check --write --unsafe ${filteredFilenames.join(' ')}`];
   },
 };
 

@@ -26,7 +26,7 @@ const HikingLocationPicker = lazy(() =>
 
 function HikingLocationPickerLoading() {
 	return (
-		<div className="grid h-[20rem] place-items-center border border-[var(--overlay0)] bg-[var(--background1)] text-sm text-[var(--subtext0)]">
+		<div className="grid h-[20rem] place-items-center border border-[var(--overlay0)] bg-[var(--background1)] text-[var(--subtext0)] text-sm">
 			지도 불러오는 중...
 		</div>
 	);
@@ -226,7 +226,7 @@ export function HikingForm({
 
 	return (
 		<form
-			className={`grid gap-4 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+			className={`!p-4 grid gap-4 bg-[var(--surface0)] ${boxBorderClassName}`}
 			box-="round"
 			onSubmit={handleSubmit}
 		>
@@ -259,7 +259,7 @@ export function HikingForm({
 						type="file"
 					/>
 				</label>
-				<p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">
+				<p className="m-0 text-[var(--subtext0)] text-xs leading-[1.35]">
 					{metadataStatus}
 				</p>
 			</div>
@@ -397,7 +397,7 @@ export function HikingForm({
 					/>
 				</FieldLabel>
 			</div>
-			{error ? <p className="m-0 text-sm text-[var(--red)]">{error}</p> : null}
+			{error ? <p className="m-0 text-[var(--red)] text-sm">{error}</p> : null}
 			<div className="flex flex-wrap justify-end gap-2">
 				<ActionButton onClick={onCancel}>취소</ActionButton>
 				<ActionButton disabled={submitting} type="submit">

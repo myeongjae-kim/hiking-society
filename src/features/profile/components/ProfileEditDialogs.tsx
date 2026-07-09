@@ -97,11 +97,11 @@ function ProfileDialogShell({
 				<Dialog.Overlay className={dialogOverlayClassName} />
 				<Dialog.Content className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4 text-[var(--foreground0)] outline-none">
 					<div className="grid max-h-[calc(100svh-2rem)] w-full max-w-[28rem] gap-4 overflow-y-auto border border-[var(--overlay0)] bg-[var(--surface0)] p-5 shadow-[0.35rem_0.35rem_0_var(--background0)]">
-						<div className="grid gap-2 border-b border-[var(--overlay0)] pb-3">
-							<span className="font-mono text-sm text-[var(--mauve)]">
+						<div className="grid gap-2 border-[var(--overlay0)] border-b pb-3">
+							<span className="font-mono text-[var(--mauve)] text-sm">
 								profile.edit
 							</span>
-							<Dialog.Title className="m-0 text-xl leading-[1.2] text-[var(--foreground0)]">
+							<Dialog.Title className="m-0 text-[var(--foreground0)] text-xl leading-[1.2]">
 								{title}
 							</Dialog.Title>
 						</div>
@@ -196,7 +196,7 @@ function TextProfileEditDialog({
 	return (
 		<ProfileDialogShell open={open} setOpen={setOpen} title={title}>
 			<form className="grid gap-4" onSubmit={handleSubmit}>
-				<label className="grid min-w-0 gap-1.5 text-sm text-[var(--subtext0)]">
+				<label className="grid min-w-0 gap-1.5 text-[var(--subtext0)] text-sm">
 					<span>{fieldLabel}</span>
 					<input
 						defaultValue={defaultValue}
@@ -208,9 +208,9 @@ function TextProfileEditDialog({
 					/>
 				</label>
 				{state.error ? (
-					<p className="m-0 text-sm text-[var(--red)]">{state.error}</p>
+					<p className="m-0 text-[var(--red)] text-sm">{state.error}</p>
 				) : null}
-				<div className="flex flex-wrap justify-end gap-2 border-t border-[var(--overlay0)] pt-3">
+				<div className="flex flex-wrap justify-end gap-2 border-[var(--overlay0)] border-t pt-3">
 					<Dialog.Close asChild>
 						<button
 							className={inlineButtonClassName}
@@ -521,7 +521,7 @@ export function ProfileImageEditDialog({
 						</div>
 					)}
 					<div className="grid min-w-0 gap-3">
-						<div className="grid min-w-0 gap-1.5 text-sm text-[var(--subtext0)]">
+						<div className="grid min-w-0 gap-1.5 text-[var(--subtext0)] text-sm">
 							<span>이미지 파일</span>
 							<div className="flex min-w-0 flex-wrap items-center gap-2">
 								<label
@@ -541,14 +541,14 @@ export function ProfileImageEditDialog({
 										type="file"
 									/>
 								</label>
-								<span className="min-w-0 font-mono text-xs [overflow-wrap:anywhere] text-[var(--subtext1)]">
+								<span className="min-w-0 font-mono text-[var(--subtext1)] text-xs [overflow-wrap:anywhere]">
 									{profileImageFile
 										? profileImageFile.name
 										: "선택된 파일 없음"}
 								</span>
 							</div>
 						</div>
-						<label className="inline-flex min-w-0 items-center gap-2 text-sm text-[var(--subtext0)]">
+						<label className="inline-flex min-w-0 items-center gap-2 text-[var(--subtext0)] text-sm">
 							<input
 								checked={removeProfileImage}
 								name="removeProfileImage"
@@ -560,18 +560,18 @@ export function ProfileImageEditDialog({
 					</div>
 				</div>
 				{profileImageFile ? (
-					<p className="m-0 min-w-0 font-mono text-xs [overflow-wrap:anywhere] text-[var(--green)]">
+					<p className="m-0 min-w-0 font-mono text-[var(--green)] text-xs [overflow-wrap:anywhere]">
 						{profileImageFile.name} / {Math.ceil(profileImageFile.size / 1024)}
 						KB / WEBP 640px
 					</p>
 				) : null}
 				{imageError ? (
-					<p className="m-0 text-sm text-[var(--red)]">{imageError}</p>
+					<p className="m-0 text-[var(--red)] text-sm">{imageError}</p>
 				) : null}
 				{state.error ? (
-					<p className="m-0 text-sm text-[var(--red)]">{state.error}</p>
+					<p className="m-0 text-[var(--red)] text-sm">{state.error}</p>
 				) : null}
-				<div className="flex flex-wrap justify-end gap-2 border-t border-[var(--overlay0)] pt-3">
+				<div className="flex flex-wrap justify-end gap-2 border-[var(--overlay0)] border-t pt-3">
 					<Dialog.Close asChild>
 						<button
 							className={inlineButtonClassName}

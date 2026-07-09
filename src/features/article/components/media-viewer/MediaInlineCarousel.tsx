@@ -74,7 +74,7 @@ export function MediaInlineCarousel({
 		>
 			<button
 				aria-label={`${authorName}의 산행 사진이나 동영상 ${activeInlineMedia.order}`}
-				className="group relative block h-auto w-full appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+				className="group relative block h-auto w-full appearance-none overflow-hidden bg-transparent p-0 text-left leading-none focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2"
 				onClick={handleInlineTriggerClick}
 				onPointerCancel={handleInlinePointerCancel}
 				onPointerDown={handleInlinePointerDown}
@@ -116,7 +116,7 @@ export function MediaInlineCarousel({
 				) : null}
 			</button>
 
-			<figcaption className="grid min-w-0 gap-1 px-2 py-1 font-mono text-[0.8125rem] leading-snug text-[var(--subtext0)]">
+			<figcaption className="grid min-w-0 gap-1 px-2 py-1 font-mono text-[0.8125rem] text-[var(--subtext0)] leading-snug">
 				<div className="flex min-w-0 items-center justify-between gap-2">
 					<span>
 						{activeInlineMedia.mediaType} {activeInlineMedia.order}/
@@ -127,7 +127,7 @@ export function MediaInlineCarousel({
 				{hasMultipleMedia ? (
 					<div
 						aria-label="글 미디어 위치"
-						className="flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1.5 overflow-hidden px-2 py-1"
+						className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-1.5 overflow-hidden px-2 py-1"
 					>
 						{media.map((item, index) => (
 							<span

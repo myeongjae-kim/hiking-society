@@ -20,7 +20,7 @@ export function StatusPanel({
 }: StatusPanelProps) {
 	return (
 		<aside
-			className={`grid gap-3 self-start bg-[var(--surface0)] !p-4 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
+			className={`!p-4 lg:![position:sticky] grid gap-3 self-start bg-[var(--surface0)] lg:top-2 ${boxBorderClassName}`}
 			box-="round"
 			aria-label="피드 상태"
 		>

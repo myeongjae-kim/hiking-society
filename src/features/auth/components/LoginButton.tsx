@@ -36,7 +36,7 @@ export const LoginButton = ({ redirectTo = "/feed" }: LoginButtonProps) => {
 				});
 		},
 		onError: (e) => {
-			toast.error("Login Failed. " + e.error_description, { richColors: true });
+			toast.error(`Login Failed. ${e.error_description}`, { richColors: true });
 			console.error(e);
 		},
 	});

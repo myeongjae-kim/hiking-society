@@ -140,7 +140,7 @@ export function ArticlePanel({
 
 	return (
 		<article
-			className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
+			className={`!p-5 grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] [contain-intrinsic-size:auto_48rem] [content-visibility:auto] ${boxBorderClassName}`}
 			box-="round"
 		>
 			<header className="grid gap-2">
@@ -151,7 +151,7 @@ export function ArticlePanel({
 							{onCopyArticleLink ? (
 								<button
 									aria-label="글 링크 복사"
-									className={`${inlineButtonClassName} aspect-square !min-h-[1.75rem] !min-w-[1.75rem] !px-1 !py-1`}
+									className={`${inlineButtonClassName} !min-h-[1.75rem] !min-w-[1.75rem] !px-1 !py-1 aspect-square`}
 									onClick={onCopyArticleLink}
 									title="글 링크 복사"
 									type="button"
@@ -212,7 +212,7 @@ export function ArticlePanel({
 				/>
 			</div>
 
-			<p className="m-0 text-[1.05rem] leading-[1.6] break-keep whitespace-pre-wrap text-[var(--foreground0)]">
+			<p className="m-0 whitespace-pre-wrap break-keep text-[1.05rem] text-[var(--foreground0)] leading-[1.6]">
 				{article.body}
 			</p>
 
@@ -239,7 +239,7 @@ export function ArticlePanel({
 			) : null}
 
 			<section
-				className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5"
+				className="grid gap-3 border-[var(--overlay0)] border-t pt-3.5"
 				aria-label={`${article.authorName} 글 댓글`}
 			>
 				<Command>

@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { $api } from "#/api/client/$api";
 import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
+import type { Comment } from "@/core/comment/domain";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
 
 import {
@@ -310,7 +310,7 @@ export function useFeedArticleLoader({
 		}
 
 		return () => observer.disconnect();
-	}, [articlesByHikingId, getHikingArticleCount, groups, loadHikingArticles]);
+	}, [articlesByHikingId, getHikingArticleCount, loadHikingArticles]);
 
 	useEffect(() => {
 		if (!selectedHikingId || scrolledHikingIdRef.current === selectedHikingId) {

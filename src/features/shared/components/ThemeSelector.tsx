@@ -71,7 +71,7 @@ export function ThemeSelector({
 		>
 			<Select.Trigger
 				aria-label="테마 선택"
-				className="inline-flex h-7 w-full min-w-0 items-center justify-between gap-2 !border !border-[var(--overlay0)] !bg-[var(--background1)] !bg-none px-2 font-mono !text-xs leading-none !text-[var(--foreground0)] hover:!bg-[var(--background2)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)] sm:min-w-[12rem]"
+				className="!border !border-[var(--overlay0)] !bg-[var(--background1)] !bg-none !text-xs !text-[var(--foreground0)] hover:!bg-[var(--background2)] inline-flex h-7 w-full min-w-0 items-center justify-between gap-2 px-2 font-mono leading-none focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2 sm:min-w-[12rem]"
 			>
 				<span className="text-[var(--subtext0)]">테마</span>
 				<span className="min-w-0 truncate">
@@ -90,12 +90,12 @@ export function ThemeSelector({
 					<Select.Viewport className="p-1">
 						{webtuiThemeGroups.map((group) => (
 							<Select.Group key={group.label}>
-								<Select.Label className="px-2 pt-2 pb-1 font-mono text-[0.68rem] leading-none text-[var(--subtext0)] uppercase">
+								<Select.Label className="px-2 pt-2 pb-1 font-mono text-[0.68rem] text-[var(--subtext0)] uppercase leading-none">
 									{group.label}
 								</Select.Label>
 								{group.options.map((option) => (
 									<Select.Item
-										className="relative flex min-h-7 cursor-pointer items-center px-7 py-1.5 font-mono text-xs leading-none outline-none select-none data-[highlighted]:bg-[var(--surface0)] data-[highlighted]:text-[var(--foreground0)]"
+										className="relative flex min-h-7 cursor-pointer select-none items-center px-7 py-1.5 font-mono text-xs leading-none outline-none data-[highlighted]:bg-[var(--surface0)] data-[highlighted]:text-[var(--foreground0)]"
 										key={option.id}
 										value={option.id}
 									>

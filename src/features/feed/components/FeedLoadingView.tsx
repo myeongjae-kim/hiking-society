@@ -17,7 +17,7 @@ function SkeletonBlock({ className }: { className: string }) {
 function FeedArticleSkeleton() {
 	return (
 		<article
-			className={`grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-5 ${boxBorderClassName}`}
+			className={`!p-5 grid min-w-0 gap-5 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] ${boxBorderClassName}`}
 			box-="round"
 		>
 			<header className="grid gap-2">
@@ -48,7 +48,7 @@ function FeedArticleSkeleton() {
 
 			<SkeletonBlock className="h-[1.75rem] w-16 border border-[var(--overlay0)]" />
 
-			<section className="grid gap-3 border-t border-[var(--overlay0)] pt-3.5">
+			<section className="grid gap-3 border-[var(--overlay0)] border-t pt-3.5">
 				<SkeletonBlock className="h-[1.2rem] w-36" />
 				<div className="grid gap-2">
 					<SkeletonBlock className="h-[1rem] w-[72%]" />
@@ -64,7 +64,7 @@ function FeedStatusSkeleton() {
 	return (
 		<aside
 			aria-hidden="true"
-			className={`grid gap-3 self-start bg-[var(--surface0)] !p-4 lg:![position:sticky] lg:top-2 ${boxBorderClassName}`}
+			className={`!p-4 lg:![position:sticky] grid gap-3 self-start bg-[var(--surface0)] lg:top-2 ${boxBorderClassName}`}
 			box-="round"
 		>
 			<SkeletonBlock className="h-[1.2rem] w-36" />
@@ -87,7 +87,7 @@ export function FeedLoadingView() {
 	return (
 		<main
 			aria-labelledby="feed-loading-title"
-			className="min-h-svh bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] bg-[length:2rem_2rem] text-[var(--foreground0)]"
+			className="min-h-svh bg-[length:2rem_2rem] bg-[linear-gradient(var(--surface0)_1px,transparent_1px),linear-gradient(90deg,var(--surface0)_1px,transparent_1px),var(--background0)] text-[var(--foreground0)]"
 		>
 			<h1 id="feed-loading-title" className="sr-only">
 				피드로 이동 중
@@ -96,7 +96,7 @@ export function FeedLoadingView() {
 			<div aria-live="polite" role="status">
 				<span className="sr-only">산행 기록을 불러오고 있습니다.</span>
 
-				<header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
+				<header className="border-[var(--overlay0)] border-b bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
 					<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
 						<SkeletonBlock className="h-[1.35rem] w-48 max-w-full" />
 						<nav
@@ -114,7 +114,7 @@ export function FeedLoadingView() {
 				<div className="mx-auto grid w-[min(100%,78rem)] grid-cols-1 gap-4 px-1.5 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:p-5">
 					<section className={gridStackClassName} aria-hidden="true">
 						<section
-							className={`grid gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] !p-4 ${boxBorderClassName}`}
+							className={`!p-4 grid gap-4 bg-[color-mix(in_srgb,var(--background0)_94%,var(--surface0))] ${boxBorderClassName}`}
 							box-="round"
 						>
 							<div className="flex flex-wrap items-center justify-between gap-3">
@@ -132,7 +132,7 @@ export function FeedLoadingView() {
 									<SkeletonBlock className="h-[1.75rem] w-9 border border-[var(--overlay0)]" />
 								</div>
 							</header>
-							<div className="grid gap-2 border border-t-0 border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--surface0)_68%,transparent)] px-3 py-2 sm:px-4">
+							<div className="grid gap-2 border border-[var(--overlay0)] border-t-0 bg-[color-mix(in_srgb,var(--surface0)_68%,transparent)] px-3 py-2 sm:px-4">
 								<SkeletonBlock className="h-[1rem] w-[min(100%,34rem)]" />
 								<SkeletonBlock className="h-[1rem] w-[min(86%,28rem)]" />
 								<SkeletonBlock className="h-[1rem] w-[min(74%,24rem)]" />
@@ -148,8 +148,8 @@ export function FeedLoadingView() {
 					<FeedStatusSkeleton />
 				</div>
 
-				<footer className="mx-auto w-[min(100%,78rem)] px-4 pb-6 font-mono text-sm leading-[1.45] text-[var(--subtext0)] lg:px-5">
-					<div className="border-t border-[var(--overlay0)] pt-3 text-center">
+				<footer className="mx-auto w-[min(100%,78rem)] px-4 pb-6 font-mono text-[var(--subtext0)] text-sm leading-[1.45] lg:px-5">
+					<div className="border-[var(--overlay0)] border-t pt-3 text-center">
 						<p className="m-0 text-[var(--mauve)]">~ EOF ~</p>
 						<SkeletonBlock className="mx-auto mt-2 block h-[1rem] w-56 max-w-full" />
 					</div>

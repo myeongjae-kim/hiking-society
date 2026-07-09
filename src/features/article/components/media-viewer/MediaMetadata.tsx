@@ -12,7 +12,7 @@ function MediaFrameCounter({
 	selectedIndex,
 }: Pick<MediaMetadataProps, "itemCount" | "selectedIndex">) {
 	return (
-		<p className="m-0 shrink-0 font-mono text-[0.68rem] leading-tight tracking-[0.14em] text-[var(--subtext0)] uppercase">
+		<p className="m-0 shrink-0 font-mono text-[0.68rem] text-[var(--subtext0)] uppercase leading-tight tracking-[0.14em]">
 			frame {selectedIndex + 1}/{itemCount}
 		</p>
 	);
@@ -55,10 +55,10 @@ export function MediaMetadata({
 				<dl className="contents">
 					{items.map((item, index) => (
 						<div className="contents" key={item.label}>
-							<dt className="sr-only font-mono text-[0.68rem] leading-none tracking-[0.16em] text-[var(--subtext0)] uppercase">
+							<dt className="sr-only font-mono text-[0.68rem] text-[var(--subtext0)] uppercase leading-none tracking-[0.16em]">
 								{item.label}
 							</dt>
-							<dd className="m-0 max-w-full min-w-0 text-center font-mono text-xs leading-tight break-words text-[var(--foreground0)]">
+							<dd className="m-0 min-w-0 max-w-full break-words text-center font-mono text-[var(--foreground0)] text-xs leading-tight">
 								{item.value}
 								{index < items.length - 1 ? (
 									<span

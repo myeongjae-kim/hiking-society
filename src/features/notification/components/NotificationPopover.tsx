@@ -51,7 +51,7 @@ function NotificationAvatar({
 	return (
 		<span
 			aria-label={`${notification.actorName} 프로필 사진 없음`}
-			className="mt-0.5 grid size-7 rounded-full border border-[var(--overlay0)] bg-[var(--background0)] font-mono text-xs leading-none text-[var(--blue)]"
+			className="mt-0.5 grid size-7 rounded-full border border-[var(--overlay0)] bg-[var(--background0)] font-mono text-[var(--blue)] text-xs leading-none"
 		>
 			<span className="place-self-center">
 				{getInitial(String(notification.actorName))}
@@ -198,13 +198,13 @@ export function NotificationPopover({
 			<Popover.Trigger asChild>
 				<button
 					aria-label={hasUnreadNotifications ? "미확인 알림 있음" : "알림"}
-					className={`${inlineButtonClassName} relative aspect-square !min-h-8 !w-8 !px-0`}
+					className={`${inlineButtonClassName} !min-h-8 !w-8 !px-0 relative aspect-square`}
 					title="알림"
 					type="button"
 				>
 					<span
 						aria-hidden="true"
-						className="font-mono text-lg leading-none font-bold"
+						className="font-bold font-mono text-lg leading-none"
 					>
 						!
 					</span>
@@ -223,7 +223,7 @@ export function NotificationPopover({
 					sideOffset={8}
 				>
 					<div className="flex items-center justify-between gap-2 px-1">
-						<span className="font-mono text-sm text-[var(--foreground0)]">
+						<span className="font-mono text-[var(--foreground0)] text-sm">
 							notifications
 						</span>
 						<button
@@ -261,14 +261,14 @@ export function NotificationPopover({
 										>
 											<NotificationAvatar notification={notification} />
 											<span className="grid min-w-0 justify-items-start gap-1">
-												<span className="min-w-0 text-left text-sm leading-[1.4] [overflow-wrap:anywhere] !no-underline">
+												<span className="!no-underline min-w-0 text-left text-sm leading-[1.4] [overflow-wrap:anywhere]">
 													{getNotificationMessage(notification)}
 												</span>
-												<span className="block w-full min-w-0 truncate text-left text-xs text-[var(--subtext0)] !no-underline">
+												<span className="!no-underline block w-full min-w-0 truncate text-left text-[var(--subtext0)] text-xs">
 													{notification.contentExcerpt}
 												</span>
 												<DateTimeLabel
-													className="font-mono text-xs text-[var(--subtext0)] !no-underline"
+													className="!no-underline font-mono text-[var(--subtext0)] text-xs"
 													value={notification.createdAt}
 												/>
 											</span>
@@ -277,7 +277,7 @@ export function NotificationPopover({
 								})}
 								{hasMoreNotifications ? (
 									<button
-										className={`${inlineButtonClassName} !min-h-[2rem] w-full shrink-0 !px-3 !py-1 text-sm`}
+										className={`${inlineButtonClassName} !min-h-[2rem] !px-3 !py-1 w-full shrink-0 text-sm`}
 										disabled={
 											isPending || notificationsQuery.isFetchingNextPage
 										}
@@ -289,7 +289,7 @@ export function NotificationPopover({
 								) : null}
 							</>
 						) : (
-							<p className="m-0 border border-[var(--overlay0)] bg-[var(--background1)] px-3 py-4 text-sm text-[var(--subtext0)]">
+							<p className="m-0 border border-[var(--overlay0)] bg-[var(--background1)] px-3 py-4 text-[var(--subtext0)] text-sm">
 								아직 알림이 없습니다.
 							</p>
 						)}

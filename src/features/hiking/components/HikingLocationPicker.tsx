@@ -243,7 +243,7 @@ export function HikingLocationPicker({
 				<div className="grid max-h-44 gap-1 overflow-y-auto border border-[var(--overlay0)] bg-[var(--background1)] p-1">
 					{results.map((result) => (
 						<button
-							className="!block !h-auto !min-h-0 w-full min-w-0 appearance-none overflow-hidden !border !border-[var(--overlay0)] !bg-[var(--background0)] !bg-none !px-2 !py-2 text-left text-sm leading-[1.35] !text-[var(--foreground0)] hover:!bg-[var(--surface1)] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]"
+							className="!block !h-auto !min-h-0 !border !border-[var(--overlay0)] !bg-[var(--background0)] !bg-none !px-2 !py-2 !text-[var(--foreground0)] hover:!bg-[var(--surface1)] w-full min-w-0 appearance-none overflow-hidden text-left text-sm leading-[1.35] focus:font-normal focus:no-underline focus-visible:outline-2 focus-visible:outline-[var(--blue)] focus-visible:outline-offset-2"
 							disabled={submitting}
 							key={result.id}
 							onClick={() =>
@@ -279,13 +279,13 @@ export function HikingLocationPicker({
 						<MarkerContent className="cursor-move" />
 					</MapMarker>
 				</Map>
-				<div className="pointer-events-none absolute top-2 left-2 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background1)_86%,transparent)] px-2 py-1 font-mono text-xs text-[var(--foreground1)]">
+				<div className="pointer-events-none absolute top-2 left-2 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background1)_86%,transparent)] px-2 py-1 font-mono text-[var(--foreground1)] text-xs">
 					{formatCoordinate(markerCoordinate.latitude)},{" "}
 					{formatCoordinate(markerCoordinate.longitude)}
 				</div>
 			</div>
 			<div className="flex flex-wrap items-center gap-2">
-				<p className="m-0 text-xs leading-[1.35] text-[var(--subtext0)]">
+				<p className="m-0 text-[var(--subtext0)] text-xs leading-[1.35]">
 					{status}
 				</p>
 			</div>

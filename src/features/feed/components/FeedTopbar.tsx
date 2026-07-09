@@ -33,7 +33,7 @@ export function FeedTopbar({
 		: "empty";
 
 	return (
-		<header className="border-b border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
+		<header className="border-[var(--overlay0)] border-b bg-[color-mix(in_srgb,var(--background0)_92%,transparent)] px-4 py-3">
 			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
 				<Command>
 					<a href="/" className="">
@@ -42,7 +42,7 @@ export function FeedTopbar({
 					/feed
 				</Command>
 				<nav className="ml-auto flex flex-wrap items-center gap-2">
-					<span className="font-mono text-xs leading-[1.4] text-[var(--subtext0)]">
+					<span className="font-mono text-[var(--subtext0)] text-xs leading-[1.4]">
 						{String(currentAuthorName)} · {roleLabels[user.role]}
 					</span>
 					<NotificationPopover
@@ -51,7 +51,7 @@ export function FeedTopbar({
 					/>
 					<Link
 						aria-label="마이페이지"
-						className={`${inlineButtonClassName} aspect-square !min-h-8 !w-8 !px-0`}
+						className={`${inlineButtonClassName} !min-h-8 !w-8 !px-0 aspect-square`}
 						href="/me"
 						title="마이페이지"
 					>
@@ -62,7 +62,7 @@ export function FeedTopbar({
 							<Popover.Trigger asChild>
 								<button
 									aria-label="테마 선택"
-									className={`${inlineButtonClassName} aspect-square !min-h-8 !w-8 !px-0`}
+									className={`${inlineButtonClassName} !min-h-8 !w-8 !px-0 aspect-square`}
 									title="테마 선택"
 									type="button"
 								>

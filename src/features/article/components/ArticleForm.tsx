@@ -344,7 +344,7 @@ export function ArticleForm({
 			(media) => media.order === order,
 		);
 
-		if (!target || target.mediaType !== "image" || !target.preparedSource) {
+		if (target?.mediaType !== "image" || !target.preparedSource) {
 			return;
 		}
 
@@ -454,7 +454,7 @@ export function ArticleForm({
 	return (
 		<>
 			<form
-				className={`grid gap-4 bg-[var(--surface0)] !p-4 ${boxBorderClassName}`}
+				className={`!p-4 grid gap-4 bg-[var(--surface0)] ${boxBorderClassName}`}
 				box-="round"
 				onSubmit={handleSubmit}
 			>
@@ -495,11 +495,11 @@ export function ArticleForm({
 							/>
 						</label>
 					</FieldLabel>
-					<p className="m-0 hidden text-xs leading-[1.35] text-[var(--subtext0)] sm:block">
+					<p className="m-0 hidden text-[var(--subtext0)] text-xs leading-[1.35] sm:block">
 						파일을 이 영역에 드롭해도 추가됩니다.
 					</p>
 					{mediaError ? (
-						<p className="m-0 text-sm text-[var(--red)]">{mediaError}</p>
+						<p className="m-0 text-[var(--red)] text-sm">{mediaError}</p>
 					) : null}
 					{values.media.length > 0 ? (
 						<ol className="m-0 flex list-none flex-wrap gap-3 p-0">
@@ -549,12 +549,12 @@ export function ArticleForm({
 												<span className="relative block">
 													<img
 														alt={`선택한 글 사진이나 동영상 ${media.order}`}
-														className="aspect-4/3 w-full border-b border-[var(--overlay0)] bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
+														className="aspect-4/3 w-full border-[var(--overlay0)] border-b bg-[var(--background0)] object-contain transition-[filter] group-hover:brightness-110"
 														draggable={false}
 														src={media.thumbnailUrl ?? media.url}
 													/>
 													{media.mediaType === "video" ? (
-														<span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-xs text-[var(--foreground0)]">
+														<span className="absolute right-2 bottom-2 border border-[var(--overlay0)] bg-[var(--surface0)] px-1.5 py-0.5 font-mono text-[var(--foreground0)] text-xs">
 															video
 														</span>
 													) : null}
@@ -565,17 +565,17 @@ export function ArticleForm({
 											viewerLabel="선택한 글 사진이나 동영상"
 										/>
 										<div className="grid gap-2 px-3 py-2">
-											<span className="min-w-0 font-mono text-sm [overflow-wrap:anywhere] text-[var(--foreground1)]">
+											<span className="min-w-0 font-mono text-[var(--foreground1)] text-sm [overflow-wrap:anywhere]">
 												order={media.order} {media.fileName}
 											</span>
-											<span className="flex min-w-0 items-center justify-between gap-2 font-mono text-sm leading-none text-[var(--subtext0)]">
+											<span className="flex min-w-0 items-center justify-between gap-2 font-mono text-[var(--subtext0)] text-sm leading-none">
 												<span>
 													{media.mediaType} {media.order}/{values.media.length}
 												</span>
 												{takenTime ? <span>{takenTime}</span> : null}
 											</span>
 											{isDuplicate ? (
-												<span className="text-sm leading-[1.35] text-[var(--peach)]">
+												<span className="text-[var(--peach)] text-sm leading-[1.35]">
 													동일한 사진이나 동영상이 선택되었습니다.
 												</span>
 											) : null}
@@ -623,7 +623,7 @@ export function ArticleForm({
 							})}
 						</ol>
 					) : (
-						<p className="m-0 text-sm text-[var(--subtext0)]">
+						<p className="m-0 text-[var(--subtext0)] text-sm">
 							사진이나 동영상을 1개 이상 선택해야 합니다.
 						</p>
 					)}
@@ -644,7 +644,7 @@ export function ArticleForm({
 					/>
 				</FieldLabel>
 				{error ? (
-					<p className="m-0 text-sm text-[var(--red)]">{error}</p>
+					<p className="m-0 text-[var(--red)] text-sm">{error}</p>
 				) : null}
 				<div className="flex flex-wrap justify-end gap-2">
 					<ActionButton disabled={submitting} onClick={handleCancel}>
