@@ -4,9 +4,9 @@ import {
 	HeadContent,
 	Scripts,
 } from "@tanstack/react-router";
-import { getCurrentTheme } from "#/app-features/auth/session.functions";
-import ClientDependencyContainer from "#/features/shared/components/ClientDependencyContainer";
-import NotFound from "#/features/shared/NotFoundView";
+import { getCurrentTheme } from "#/society-app/auth/session.functions";
+import ClientDependencyContainer from "#/society/shared/components/ClientDependencyContainer";
+import NotFound from "#/society/shared/NotFoundView";
 import appCss from "#/styles/global.css?url";
 import { DEFAULT_WEBTUI_THEME } from "#/theme/webtuiThemes";
 

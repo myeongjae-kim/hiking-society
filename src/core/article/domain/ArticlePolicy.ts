@@ -16,8 +16,34 @@ export class ArticleMediaCollection<TMedia = unknown> {
 		return this.count > 0;
 	}
 
+	toPublishable() {
+		return PublishableArticleMedia.from(this.media);
+	}
+
 	sortByOrder<TOrderedMedia extends { readonly order: number }>(
 		this: ArticleMediaCollection<TOrderedMedia>,
+	) {
+		return [...this.media].toSorted((left, right) => left.order - right.order);
+	}
+}
+
+export class PublishableArticleMedia<TMedia = unknown> {
+	private constructor(private readonly media: readonly TMedia[]) {}
+
+	static from<TMedia>(media: readonly TMedia[]) {
+		if (media.length === 0) {
+			return null;
+		}
+
+		return new PublishableArticleMedia(media);
+	}
+
+	get count() {
+		return this.media.length;
+	}
+
+	sortByOrder<TOrderedMedia extends { readonly order: number }>(
+		this: PublishableArticleMedia<TOrderedMedia>,
 	) {
 		return [...this.media].toSorted((left, right) => left.order - right.order);
 	}

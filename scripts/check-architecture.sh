@@ -2,21 +2,21 @@
 set -euo pipefail
 
 feature_server_files="$(
-	find src/features -type f \( -name '*.functions.ts' -o -name '*.actions.ts' \) -print
+	find src/society -type f \( -name '*.functions.ts' -o -name '*.actions.ts' \) -print
 )"
 
 if [[ -n "$feature_server_files" ]]; then
-	echo "Server function/action files must live under src/app-features, not src/features:" >&2
+	echo "Server function/action files must live under src/society-app, not src/society:" >&2
 	echo "$feature_server_files" >&2
 	exit 1
 fi
 
 app_feature_ui_files="$(
-	find src/app-features -type f \( -name '*.tsx' -o -name '*.css' \) -print
+	find src/society-app -type f \( -name '*.tsx' -o -name '*.css' \) -print
 )"
 
 if [[ -n "$app_feature_ui_files" ]]; then
-	echo "src/app-features is a server-function boundary and must not contain UI/style files:" >&2
+	echo "src/society-app is a server-function boundary and must not contain UI/style files:" >&2
 	echo "$app_feature_ui_files" >&2
 	exit 1
 fi

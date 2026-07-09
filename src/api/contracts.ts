@@ -1,67 +1,169 @@
-import type { Article } from "@/core/article/domain";
-import type { ArticleMediaUploadTarget } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
-import type { ArticleDetailSnapshot } from "@/core/article/model/ArticleDetailSnapshot";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import type { Comment } from "@/core/comment/domain";
-import type {
-	FeedSummarySnapshot,
-	HikingArticlesSnapshot,
-} from "@/core/feed/model/FeedSnapshot";
-import type { Hiking } from "@/core/hiking/domain";
-import type { MemberListItem } from "@/core/member/model/MemberListItem";
-import type {
-	Notification,
-	NotificationListSnapshot,
-} from "@/core/notification/model/Notification";
-import type { ProfileImageUploadTarget } from "@/core/profile/application/port/in/ProfileImageUploadUseCase";
+export type UserRoleContract = "associate" | "member" | "admin";
 
-// core 모델 타입을 JSON API 응답 형태로 변환하고,
-// Zod 스키마가 해당 계약을 만족하는지 컴파일 타임에 확인하게 해준다.
-// Date는 string으로, 배열은 항목 타입을 재귀 변환한 배열로,
-// 객체는 readonly를 제거한 뒤 각 필드를 재귀 변환한다.
-type ApiContract<T> = T extends Date
-	? string
-	: T extends string
-		? string
-		: T extends number
-			? number
-			: T extends boolean
-				? boolean
-				: T extends null
-					? null
-					: T extends undefined
-						? undefined
-						: T extends readonly (infer TItem)[]
-							? ApiContract<TItem>[]
-							: T extends object
-								? { -readonly [TKey in keyof T]: ApiContract<T[TKey]> }
-								: T;
+export type CurrentUserContract = {
+	displayName: string | null;
+	email: string;
+	id: number;
+	name: string | null;
+	profileImageUrl: string | null;
+	provider: string | null;
+	role: UserRoleContract;
+};
 
-export type CurrentUserContract = Omit<
-	ApiContract<AuthenticatedUser>,
-	"lastLoginAt"
->;
-export type ArticleContract = ApiContract<Article>;
-export type CommentContract = ApiContract<Comment>;
-export type HikingContract = ApiContract<Hiking>;
-export type FeedResponseContract = ApiContract<FeedSummarySnapshot>;
-export type HikingArticlesResponseContract =
-	ApiContract<HikingArticlesSnapshot>;
-export type ArticleDetailResponseContract = ApiContract<
-	Pick<ArticleDetailSnapshot, "article" | "comments">
->;
+export type ArticleMediaMetadataContract = {
+	dateTime?: string | null;
+	exposureTime?: string | null;
+	fNumber?: string | null;
+	focalLengthIn35mmFilm?: string | null;
+	isoSpeedRatings?: string | null;
+	make?: string | null;
+	model?: string | null;
+	shutterSpeedValue?: string | null;
+} | null;
+
+export type ArticleMediaContract = {
+	byteSize?: number;
+	contentType?: string;
+	durationMs?: number | null;
+	height?: number | null;
+	mediaType: "image" | "video";
+	metadata?: ArticleMediaMetadataContract;
+	objectKey?: string;
+	order: number;
+	thumbnailUrl?: string | null;
+	url: string;
+	width?: number | null;
+};
+
+export type ArticleContract = {
+	authorName: string;
+	authorProfileImageUrl: string | null;
+	authorUserId?: number;
+	body: string;
+	createdAt: string;
+	deletedAt: string | null;
+	edited: boolean;
+	hikingId: string;
+	id: string;
+	likeCount: number;
+	likedByCurrentUser: boolean;
+	media: ArticleMediaContract[];
+	updatedAt: string;
+};
+
+export type CommentContract = {
+	articleId: string;
+	authorName: string;
+	authorProfileImageUrl: string | null;
+	authorUserId?: number;
+	body: string;
+	createdAt: string;
+	deletedAt: string | null;
+	id: string;
+	likeCount: number;
+	likedByCurrentUser: boolean;
+	parentCommentId: string | null;
+	updatedAt: string;
+};
+
+export type HikingContract = {
+	altitude: number | null;
+	authorName: string;
+	authorUserId?: number;
+	completedAt: string;
+	createdAt: string;
+	hikingDate: string;
+	id: string;
+	latitude: number;
+	longitude: number;
+	mountainName: string;
+	order: number;
+	participantsCsv: string;
+	restaurantAddress: string | null;
+	startedAt: string;
+	timezone: string;
+	updatedAt: string;
+};
+
+export type NotificationContract = {
+	actorName: string;
+	actorProfileImageUrl: string | null;
+	actorUserId: number;
+	articleId: string;
+	commentId: string | null;
+	contentExcerpt: string;
+	createdAt: string;
+	id: string;
+	readAt: string | null;
+	type:
+		| "article_created"
+		| "article_comment"
+		| "article_reply"
+		| "comment_reply"
+		| "article_like"
+		| "comment_like";
+};
+
+export type FeedResponseContract = {
+	articleCount: number;
+	commentCount: number;
+	hikingArticleCounts: {
+		articleCount: number;
+		hikingId: string;
+	}[];
+	hikings: HikingContract[];
+};
+
+export type HikingArticlesResponseContract = {
+	articles: ArticleContract[];
+	comments: CommentContract[];
+};
+
+export type ArticleDetailResponseContract = {
+	article: ArticleContract;
+	comments: CommentContract[];
+};
+
 export type CommentsResponseContract = {
 	comments: CommentContract[];
 };
-export type NotificationContract = ApiContract<Notification>;
-export type NotificationListResponseContract =
-	ApiContract<NotificationListSnapshot>;
-export type MemberContract = ApiContract<MemberListItem>;
+
+export type NotificationListResponseContract = {
+	hasMoreNotifications: boolean;
+	hasUnreadNotifications: boolean;
+	notifications: NotificationContract[];
+};
+
+export type MemberContract = {
+	createdAt: string;
+	displayName: string | null;
+	email: string | null;
+	id: number;
+	lastLoginAt: string | null;
+	name: string | null;
+	provider: string | null;
+	role: UserRoleContract;
+};
+
 export type MembersResponseContract = {
 	members: MemberContract[];
 };
+
 export type ArticleMediaUploadTargetsResponseContract = {
-	targets: ApiContract<ArticleMediaUploadTarget>[];
+	targets: {
+		objectKey: string;
+		thumbnail?: {
+			objectKey: string;
+			uploadUrl: string;
+			url: string;
+		};
+		uploadUrl: string;
+		url: string;
+	}[];
 };
-export type ProfileImageUploadTargetResponseContract =
-	ApiContract<ProfileImageUploadTarget>;
+
+export type ProfileImageUploadTargetResponseContract = {
+	objectKey: string;
+	uploadUrl: string;
+	url: string;
+};

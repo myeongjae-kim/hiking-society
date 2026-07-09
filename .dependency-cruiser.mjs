@@ -31,7 +31,7 @@ export default {
 					"^src/core/[^/]+/(application|adapter|config)/",
 					"^src/core/config/",
 					"^drizzle/",
-					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
+					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
@@ -47,7 +47,7 @@ export default {
 					"^src/core/[^/]+/adapter/",
 					"^src/core/config/",
 					"^drizzle/",
-					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
+					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
@@ -62,7 +62,7 @@ export default {
 				path: [
 					"^src/core/[^/]+/adapter/",
 					"^drizzle/",
-					"^src/(api|app-features|features|integrations|routes|styles|theme)/",
+					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
 				],
 			},
@@ -70,24 +70,24 @@ export default {
 		{
 			name: "web-not-to-outbound-ports",
 			comment:
-				"Routes, API controllers, app-features, and features should call in-ports only.",
+				"Routes, API controllers, society-app, and society UI should call in-ports only.",
 			severity: "error",
-			from: { path: "^src/(api|app-features|features|routes)/" },
+			from: { path: "^src/(api|routes|society|society-app)/" },
 			to: { path: "^src/core/[^/]+/application/port/out/" },
 		},
 		{
 			name: "web-not-to-database",
 			comment: "Web adapters should not import DB schema or DB connection directly.",
 			severity: "error",
-			from: { path: "^src/(api|app-features|features|routes)/" },
+			from: { path: "^src/(api|routes|society|society-app)/" },
 			to: { path: ["^drizzle/", "^src/core/config/drizzle[.]server[.]ts$"] },
 		},
 		{
 			name: "web-not-to-composition-internals",
 			comment:
-				"Routes, API controllers, and features should use the typed use case context instead of DI internals.",
+				"Routes, API controllers, and society modules should use the typed use case context instead of DI internals.",
 			severity: "error",
-			from: { path: "^src/(api|app-features|features|routes)/" },
+			from: { path: "^src/(api|routes|society|society-app)/" },
 			to: {
 				path: [
 					"^src/core/config/applicationContext[.]server[.]ts$",
@@ -97,36 +97,36 @@ export default {
 			},
 		},
 		{
-			name: "shared-feature-not-to-product-features",
-			comment: "Shared feature code should not depend on product features.",
+			name: "society-shared-not-to-product-society-modules",
+			comment: "Shared society UI code should not depend on product modules.",
 			severity: "error",
-			from: { path: "^src/features/shared/" },
+			from: { path: "^src/society/shared/" },
 			to: {
-				path: "^src/features/(article|auth|comment|feed|hiking|media|member|notification|profile)/",
+				path: "^src/society/(article|auth|comment|feed|hiking|media|member|notification|profile)/",
 			},
 		},
 		{
-			name: "app-features-not-to-ui-features",
+			name: "society-app-not-to-society-ui",
 			comment:
-				"App feature server-function boundaries should orchestrate core use cases, not depend on UI feature modules.",
+				"Society app server-function boundaries should orchestrate core use cases, not depend on UI modules.",
 			severity: "error",
-			from: { path: "^src/app-features/" },
-			to: { path: "^src/features/" },
+			from: { path: "^src/society-app/" },
+			to: { path: "^src/society/" },
 		},
 		{
-			name: "features-not-to-app-features",
+			name: "society-ui-not-to-society-app",
 			comment:
-				"UI feature modules should receive data/actions from routes or props instead of importing server-function boundaries directly.",
+				"Society UI modules should receive data/actions from routes or props instead of importing server-function boundaries directly.",
 			severity: "error",
-			from: { path: "^src/features/" },
-			to: { path: "^src/app-features/" },
+			from: { path: "^src/society/" },
+			to: { path: "^src/society-app/" },
 		},
 		{
-			name: "features-not-to-server-functions",
+			name: "society-ui-not-to-server-functions",
 			comment:
-				"Server functions belong in src/app-features so src/features stays a UI/client feature boundary.",
+				"Server functions belong in src/society-app so src/society stays a UI/client product boundary.",
 			severity: "error",
-			from: { path: "^src/features/.*[.]functions[.]ts$" },
+			from: { path: "^src/society/.*[.]functions[.]ts$" },
 			to: { path: "^" },
 		},
 	],

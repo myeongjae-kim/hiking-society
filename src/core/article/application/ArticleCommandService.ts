@@ -57,9 +57,9 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 
 	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
 		await this.transactionPort.run(async () => {
-			const media = ArticleMediaCollection.from(input.media);
+			const media = ArticleMediaCollection.from(input.media).toPublishable();
 
-			if (!media.isPublishable()) {
+			if (!media) {
 				throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 			}
 
@@ -99,9 +99,9 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 		const media = ArticleMediaCollection.from([
 			...input.existingMedia,
 			...input.uploadedMedia,
-		]);
+		]).toPublishable();
 
-		if (!media.isPublishable()) {
+		if (!media) {
 			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
 		}
 
