@@ -23,8 +23,8 @@ import { createPortal } from "react-dom";
 import { cn } from "#/features/shared/classNames";
 
 const defaultStyles = {
-	dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-	light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+	dark: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+	light: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
 };
 
 // A tile-less, dependency-free style with a transparent background. Use it for
@@ -2261,7 +2261,6 @@ function MapClusterLayer<
 	return null;
 }
 
-export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };
 export {
 	HikingMap as Map,
 	MapArc,
@@ -2277,3 +2276,4 @@ export {
 	MarkerTooltip,
 	useMap,
 };
+export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };
