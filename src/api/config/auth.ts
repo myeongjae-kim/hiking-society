@@ -1,7 +1,6 @@
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { UserRole } from '@/core/auth/model/roles';
 import { applicationContext } from '@/core/config/applicationContext.server';
-import type { Context } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { createMiddleware } from 'hono/factory';
 import { ApiError } from './ApiError';
@@ -33,62 +32,45 @@ function forbidden(message = '권한이 없습니다.') {
 }
 
 async function getUserByToken(accessToken: string | undefined) {
-  const accessPayload = accessToken
-    ? await applicationContext().get('VerifyAccessTokenUseCase').verifyAccessToken(accessToken)
-    : null;
-
-  if (!accessPayload) {
-    return null;
-  }
-
-  return applicationContext().get('AuthQueryPort').getUserByUserId(accessPayload.userId);
-}
-
-async function refreshApiAccessToken(c: Context) {
-  const refreshToken = getCookie(c, refreshTokenCookieName);
-  const refreshPayload = refreshToken
-    ? await applicationContext().get('VerifyRefreshTokenUseCase').verifyRefreshToken(refreshToken)
-    : null;
-
-  if (!refreshPayload) {
-    return null;
-  }
-
-  const session = await applicationContext()
-    .get('AuthQueryPort')
-    .getSessionSnapshotByUserId(refreshPayload.userId);
-
-  if (!session) {
-    return null;
-  }
-
-  const { accessToken } = await applicationContext().get('CreateSessionTokenUseCase').create({
-    email: session.email,
-    provider: session.provider,
-    role: session.role,
-    userId: session.userId,
-  });
-  const options = applicationContext()
-    .get('GetCookieOptionsUseCase')
-    .getCookieOptions(accessTokenMaxAgeSeconds);
-
-  setCookie(c, accessTokenCookieName, accessToken, options);
-
-  return getUserByToken(accessToken);
+  return applicationContext()
+    .get('ResolveSessionUseCase')
+    .resolve({ accessToken, refreshToken: null });
 }
 
 export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(async (c, next) => {
-  let user = await getUserByToken(getCookie(c, accessTokenCookieName));
+  let session = await getUserByToken(getCookie(c, accessTokenCookieName));
 
-  if (!user) {
-    user = await refreshApiAccessToken(c);
+  if (!session.user) {
+    session = await applicationContext().get('ResolveSessionUseCase').resolve({
+      accessToken: null,
+      refreshToken: getCookie(c, refreshTokenCookieName),
+    });
   }
 
-  if (!user && !isPublicRoute(c.req.method, c.req.path)) {
+  if (session.refreshedTokens) {
+    const context = applicationContext();
+    const { refreshTokenMaxAgeSeconds } = context.get('CookieConfig');
+    const getCookieOptionsUseCase = context.get('GetCookieOptionsUseCase');
+
+    setCookie(
+      c,
+      accessTokenCookieName,
+      session.refreshedTokens.accessToken,
+      getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+    );
+    setCookie(
+      c,
+      refreshTokenCookieName,
+      session.refreshedTokens.refreshToken,
+      getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+    );
+  }
+
+  if (!session.user && !isPublicRoute(c.req.method, c.req.path)) {
     throw unauthorized();
   }
 
-  c.set('currentUser', user);
+  c.set('currentUser', session.user);
 
   return next();
 });

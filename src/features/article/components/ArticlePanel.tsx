@@ -7,6 +7,7 @@ import { CommentForm } from '#/features/comment/components/CommentForm';
 import { CommentLine } from '#/features/comment/components/CommentLine';
 import { getThreadedComments, getVisibleCommentCount } from '#/features/comment/components/commentUtils';
 import { ActionButton } from '#/features/shared/components/ActionButton';
+import type { AuthorAvatarRenderer } from '#/features/shared/components/AuthorBadge';
 import { AuthorBadge } from '#/features/shared/components/AuthorBadge';
 import { Command } from '#/features/shared/components/Command';
 import { InlineMeta } from '#/features/shared/components/InlineMeta';
@@ -106,6 +107,19 @@ export function ArticlePanel({
   const lastVisibleCommentId = visibleCommentIds.at(-1) ?? null;
   const getCommentMenuPosition = (commentId: CommentId) =>
     commentId === lastVisibleCommentId ? 'top left' : 'bottom left';
+  const renderProfileAvatar =
+    (name: string, profileImageUrl: string | null): AuthorAvatarRenderer | undefined =>
+    profileImageUrl
+      ? (avatar) => (
+          <MediaViewer
+            articleId={`profile-${name}`}
+            authorName={name}
+            media={[{ mediaType: 'image', order: 1, url: profileImageUrl }]}
+            trigger={avatar}
+            viewerLabel={`${name} 프로필 사진`}
+          />
+        )
+      : undefined;
 
   return (
     <article
@@ -155,6 +169,7 @@ export function ArticlePanel({
           <AuthorBadge
             name={article.authorName}
             profileImageUrl={article.authorProfileImageUrl}
+            renderAvatar={renderProfileAvatar(article.authorName, article.authorProfileImageUrl)}
             size="md"
           />
         </div>
@@ -217,6 +232,10 @@ export function ArticlePanel({
               likeDisabled={isCommentLikePending(comment.id)}
               prompt="comment>"
               replies={visibleReplies}
+              renderAuthorAvatar={renderProfileAvatar(
+                comment.authorName,
+                comment.authorProfileImageUrl,
+              )}
             />
             {replyingCommentId === comment.id ? (
               <div className="ml-4">
@@ -246,6 +265,10 @@ export function ArticlePanel({
                 likeDisabled={isCommentLikePending(reply.id)}
                 prompt="reply>"
                 replies={[]}
+                renderAuthorAvatar={renderProfileAvatar(
+                  reply.authorName,
+                  reply.authorProfileImageUrl,
+                )}
                 reply
               />
             ))}

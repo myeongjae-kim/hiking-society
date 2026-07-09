@@ -1,0 +1,104 @@
+import type { ArticleId } from '@/core/article/domain';
+import type { CommentCommandPort } from '@/core/comment/application/port/out/CommentCommandPort';
+import type { CommentId } from '@/core/comment/domain';
+import { db } from '@/core/config/drizzle.server';
+import { articleTable, commentTable } from '@/lib/db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
+
+function toNumericId(id: string) {
+  const numericId = Number(id);
+
+  if (!Number.isInteger(numericId) || numericId <= 0) {
+    throw new Error('잘못된 id입니다.');
+  }
+
+  return numericId;
+}
+
+export class CommentCommandDrizzleAdapter implements CommentCommandPort {
+  async create(input: Parameters<CommentCommandPort['create']>[0]) {
+    const [comment] = await db
+      .insert(commentTable)
+      .values({
+        articleId: toNumericId(input.articleId),
+        authorUserId: input.authorUserId,
+        body: input.body,
+        parentCommentId: input.parentCommentId ? toNumericId(input.parentCommentId) : null,
+      })
+      .returning({ id: commentTable.id });
+
+    if (!comment) {
+      throw new Error('댓글을 저장하지 못했습니다.');
+    }
+
+    return String(comment.id) as CommentId;
+  }
+
+  async delete(input: Parameters<CommentCommandPort['delete']>[0]) {
+    const [updated] = await db
+      .update(commentTable)
+      .set({ body: input.body, deletedAt: input.now, updatedAt: input.now })
+      .where(eq(commentTable.id, toNumericId(input.commentId)))
+      .returning({ id: commentTable.id });
+
+    return Boolean(updated);
+  }
+
+  async findActiveArticleById(articleId: ArticleId) {
+    const [article] = await db
+      .select({
+        authorUserId: articleTable.authorUserId,
+        body: articleTable.body,
+        id: articleTable.id,
+      })
+      .from(articleTable)
+      .where(and(eq(articleTable.id, toNumericId(articleId)), isNull(articleTable.deletedAt)))
+      .limit(1);
+
+    if (!article) {
+      return null;
+    }
+
+    return {
+      authorUserId: article.authorUserId,
+      body: article.body,
+      id: String(article.id) as ArticleId,
+    };
+  }
+
+  async findCommentById(commentId: CommentId) {
+    const [comment] = await db
+      .select({
+        articleId: commentTable.articleId,
+        authorUserId: commentTable.authorUserId,
+        body: commentTable.body,
+        deletedAt: commentTable.deletedAt,
+        id: commentTable.id,
+      })
+      .from(commentTable)
+      .where(eq(commentTable.id, toNumericId(commentId)))
+      .limit(1);
+
+    if (!comment) {
+      return null;
+    }
+
+    return {
+      articleId: String(comment.articleId) as ArticleId,
+      authorUserId: comment.authorUserId,
+      body: comment.body,
+      deleted: comment.deletedAt !== null,
+      id: String(comment.id) as CommentId,
+    };
+  }
+
+  async update(input: Parameters<CommentCommandPort['update']>[0]) {
+    const [updated] = await db
+      .update(commentTable)
+      .set({ body: input.body, updatedAt: input.now })
+      .where(eq(commentTable.id, toNumericId(input.commentId)))
+      .returning({ id: commentTable.id });
+
+    return Boolean(updated);
+  }
+}

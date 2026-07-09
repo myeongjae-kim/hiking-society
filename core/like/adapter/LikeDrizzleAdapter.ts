@@ -1,11 +1,11 @@
-import { createNotificationContentExcerpt } from '@/core/notification/model/NotificationContentExcerpt';
+import type { ArticleId } from '@/core/article/domain';
+import type { CommentId } from '@/core/comment/domain';
 import { db } from '@/core/config/drizzle.server';
 import {
   articleLikeTable,
   articleTable,
   commentLikeTable,
   commentTable,
-  notificationTable,
 } from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { LikeCommandPort } from '../application/port/out/LikeCommandPort';
@@ -24,7 +24,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
   async toggleArticleLike(input: Parameters<LikeCommandPort['toggleArticleLike']>[0]) {
     const articleId = toNumericId(input.articleId);
 
-    await db.transaction(async (tx) => {
+    return db.transaction(async (tx) => {
       const [article] = await tx
         .select({
           authorUserId: articleTable.authorUserId,
@@ -36,7 +36,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
         .limit(1);
 
       if (!article) {
-        throw new Error('좋아요할 글을 찾을 수 없습니다.');
+        return null;
       }
 
       const [existingLike] = await tx
@@ -49,28 +49,29 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 
       if (existingLike) {
         await tx.delete(articleLikeTable).where(eq(articleLikeTable.id, existingLike.id));
-        return;
+        return {
+          articleAuthorUserId: article.authorUserId,
+          articleBody: article.body,
+          articleId: String(article.id) as ArticleId,
+          liked: false,
+        };
       }
 
       await tx.insert(articleLikeTable).values({ articleId, userId: input.userId });
 
-      if (article.authorUserId !== input.userId) {
-        await tx.insert(notificationTable).values({
-          actorUserId: input.userId,
-          articleId,
-          commentId: null,
-          contentExcerpt: createNotificationContentExcerpt(article.body),
-          recipientUserId: article.authorUserId,
-          type: 'article_like',
-        });
-      }
+      return {
+        articleAuthorUserId: article.authorUserId,
+        articleBody: article.body,
+        articleId: String(article.id) as ArticleId,
+        liked: true,
+      };
     });
   }
 
   async toggleCommentLike(input: Parameters<LikeCommandPort['toggleCommentLike']>[0]) {
     const commentId = toNumericId(input.commentId);
 
-    await db.transaction(async (tx) => {
+    return db.transaction(async (tx) => {
       const [comment] = await tx
         .select({
           articleId: commentTable.articleId,
@@ -90,7 +91,7 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
         .limit(1);
 
       if (!comment) {
-        throw new Error('좋아요할 댓글을 찾을 수 없습니다.');
+        return null;
       }
 
       const [existingLike] = await tx
@@ -103,21 +104,24 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 
       if (existingLike) {
         await tx.delete(commentLikeTable).where(eq(commentLikeTable.id, existingLike.id));
-        return;
+        return {
+          articleId: String(comment.articleId) as ArticleId,
+          commentAuthorUserId: comment.authorUserId,
+          commentBody: comment.body,
+          commentId: String(comment.id) as CommentId,
+          liked: false,
+        };
       }
 
       await tx.insert(commentLikeTable).values({ commentId, userId: input.userId });
 
-      if (comment.authorUserId !== input.userId) {
-        await tx.insert(notificationTable).values({
-          actorUserId: input.userId,
-          articleId: comment.articleId,
-          commentId,
-          contentExcerpt: createNotificationContentExcerpt(comment.body),
-          recipientUserId: comment.authorUserId,
-          type: 'comment_like',
-        });
-      }
+      return {
+        articleId: String(comment.articleId) as ArticleId,
+        commentAuthorUserId: comment.authorUserId,
+        commentBody: comment.body,
+        commentId: String(comment.id) as CommentId,
+        liked: true,
+      };
     });
   }
 }

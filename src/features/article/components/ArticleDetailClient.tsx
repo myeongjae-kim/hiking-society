@@ -15,6 +15,7 @@ import { useMutationRunner } from '#/features/shared/hooks/useMutationRunner';
 import { FeedTopbar } from '#/features/feed/components/FeedTopbar';
 import { getAuthorName } from '#/features/feed/utils/feed-crud-utils';
 import { getHikingDisplay } from '#/features/hiking/components/hikingFormUtils';
+import { createArticleMutationPayload } from '#/features/article/utils/articleMutationPayload';
 import type { Article, ArticleId } from '@/core/article/domain';
 import type { AuthenticatedUser } from '@/core/auth/model/AuthenticatedUser';
 import type { Comment, CommentId } from '@/core/comment/domain';
@@ -148,24 +149,9 @@ export function ArticleDetailClient({
 
   const createArticleFormData = async (values: ArticleFormValues) => {
     const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(values, setLoadingLabel);
-    const existingMedia = values.media
-      .filter((media) => !media.file)
-      .map((media) => ({
-        byteSize: media.byteSize,
-        contentType: media.contentType,
-        durationMs: media.durationMs,
-        height: media.height,
-        mediaType: media.mediaType,
-        metadata: media.metadata,
-        objectKey: media.objectKey,
-        order: media.order,
-        thumbnailUrl: media.thumbnailUrl,
-        url: media.url,
-        width: media.width,
-      }));
 
     return {
-      body: { body: values.body, existingMedia, uploadedMedia },
+      body: createArticleMutationPayload(values, uploadedMedia),
       uploadedObjectKeys,
     };
   };

@@ -1,5 +1,5 @@
 import { ActionButton } from '#/features/shared/components/ActionButton';
-import { AuthorBadge } from '#/features/shared/components/AuthorBadge';
+import { AuthorBadge, type AuthorAvatarRenderer } from '#/features/shared/components/AuthorBadge';
 import { DateTimeLabel } from '#/features/shared/components/DateTimeLabel';
 import type { Comment, CommentId } from '@/core/comment/domain';
 
@@ -20,6 +20,7 @@ type CommentLineProps = {
   likeDisabled: boolean;
   prompt: string;
   replies: readonly Comment[];
+  renderAuthorAvatar?: AuthorAvatarRenderer;
   reply?: boolean;
 };
 
@@ -38,6 +39,7 @@ export function CommentLine({
   likeDisabled,
   prompt,
   replies,
+  renderAuthorAvatar,
   reply,
 }: CommentLineProps) {
   const isDeleted = comment.deletedAt !== null;
@@ -140,6 +142,7 @@ export function CommentLine({
                 <AuthorBadge
                   name={comment.authorName}
                   profileImageUrl={comment.authorProfileImageUrl}
+                  renderAvatar={renderAuthorAvatar}
                 />
                 <span aria-hidden="true" className="mx-1 text-[var(--overlay1)]">
                   :

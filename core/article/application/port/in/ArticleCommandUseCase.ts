@@ -1,29 +1,8 @@
+import type { ArticleId, CreateArticleInput } from '@/core/article/domain';
 import type {
-  ArticleId,
-  ArticleMedia,
-  ArticleMediaType,
-  CreateArticleInput,
-} from '@/core/article/domain';
-
-export type ArticleMediaUpload = {
-  readonly byteSize: number;
-  readonly contentType: string;
-  readonly durationMs?: number | null;
-  readonly height?: number | null;
-  readonly mediaType: ArticleMediaType;
-  readonly objectKey: string;
-  readonly originalMetadata?: Record<string, unknown> | null;
-  readonly order: number;
-  readonly thumbnailUrl?: string | null;
-  readonly url: string;
-  readonly width?: number | null;
-};
-
-export type ExistingArticleMediaInput = ArticleMedia & {
-  readonly objectKey?: string;
-  readonly byteSize?: number;
-  readonly contentType?: string;
-};
+  ArticleMediaUpload,
+  ExistingArticleMediaInput,
+} from '@/core/article/model/ArticleMediaCommand';
 
 export interface ArticleCommandUseCase {
   create(

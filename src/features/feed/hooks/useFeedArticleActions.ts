@@ -4,7 +4,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import type { ArticleFormValues } from '#/features/article/components/articleFormTypes';
 import { useArticleMediaUploader } from '#/features/article/hooks/useArticleMediaUploader';
-import type { UploadedArticleMedia } from '#/features/article/utils/article-media-upload';
+import { createArticleMutationPayload } from '#/features/article/utils/articleMutationPayload';
 import { $api } from '#/api/client/$api';
 import { apiQueryKeys } from '#/api/client/queryKeys';
 import type { Article, ArticleId } from '@/core/article/domain';
@@ -59,45 +59,15 @@ export function useFeedArticleActions({
     values: ArticleFormValues,
     identifiers: { articleId?: ArticleId; hikingId?: HikingId },
   ) => {
-    const body = {
-      existingMedia: [] as {
-        byteSize?: number;
-        contentType?: string;
-        durationMs?: number | null;
-        height?: number | null;
-        mediaType: 'image' | 'video';
-        metadata?: Record<string, string | null | undefined> | null;
-        objectKey?: string;
-        order: number;
-        thumbnailUrl?: string | null;
-        url: string;
-        width?: number | null;
-      }[],
-      uploadedMedia: [] as UploadedArticleMedia[],
-      body: values.body,
-      ...identifiers,
-    };
     const { uploadedMedia, uploadedObjectKeys } = await uploadArticleMedia(
       values,
       runner.setLoadingLabel,
     );
-    const existingMedia = values.media
-      .filter((media) => !media.file)
-      .map((media) => ({
-        byteSize: media.byteSize,
-        contentType: media.contentType,
-        durationMs: media.durationMs,
-        height: media.height,
-        mediaType: media.mediaType,
-        metadata: media.metadata,
-        objectKey: media.objectKey,
-        order: media.order,
-        thumbnailUrl: media.thumbnailUrl,
-        url: media.url,
-        width: media.width,
-      }));
 
-    return { body: { ...body, existingMedia, uploadedMedia }, uploadedObjectKeys };
+    return {
+      body: createArticleMutationPayload(values, uploadedMedia, identifiers),
+      uploadedObjectKeys,
+    };
   };
 
   const createArticle = (hikingId: HikingId, values: ArticleFormValues) => {

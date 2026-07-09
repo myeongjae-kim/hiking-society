@@ -31,6 +31,23 @@ function toAuthorName(row: {
 }
 
 export class NotificationDrizzleAdapter implements NotificationCommandPort, NotificationQueryPort {
+  async createMany(input: Parameters<NotificationCommandPort['createMany']>[0]) {
+    if (input.notifications.length === 0) {
+      return;
+    }
+
+    await db.insert(notificationTable).values(
+      input.notifications.map((notification) => ({
+        actorUserId: notification.actorUserId,
+        articleId: toNumericId(notification.articleId),
+        commentId: notification.commentId ? toNumericId(notification.commentId) : null,
+        contentExcerpt: notification.contentExcerpt,
+        recipientUserId: notification.recipientUserId,
+        type: notification.type,
+      })),
+    );
+  }
+
   async list(input: Parameters<NotificationQueryPort['list']>[0]) {
     const limit = input.limit ?? 20;
     const offset = input.offset ?? 0;

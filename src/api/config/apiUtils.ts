@@ -2,7 +2,7 @@ import type { ArticleId } from '@/core/article/domain';
 import type {
   ArticleMediaUpload,
   ExistingArticleMediaInput,
-} from '@/core/article/application/port/in/ArticleCommandUseCase';
+} from '@/core/article/model/ArticleMediaCommand';
 import type { UserRole } from '@/core/auth/model/roles';
 import type {
   Altitude,

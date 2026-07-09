@@ -10,6 +10,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getCommentsByArticleId, getFeedGroups } from '../utils/feed-crud-utils';
 import type { HikingArticleLoadState } from '../utils/feedCrudTypes';
 import { hasRecordKey } from '../utils/feedCrudTypes';
+import {
+  createArticleHikingIdByArticleId,
+  createCommentArticleIdByCommentId,
+  createHikingArticleCountById,
+  filterRecordByActiveHikingIds,
+} from './feedArticleLoaderState';
 
 type UseFeedArticleLoaderInput = {
   hikingArticleCounts: readonly {
@@ -40,10 +46,7 @@ export function useFeedArticleLoader({
   >({});
 
   const hikingArticleCountById = useMemo(
-    () =>
-      new Map<HikingId, number>(
-        hikingArticleCounts.map((item) => [item.hikingId, item.articleCount]),
-      ),
+    () => createHikingArticleCountById(hikingArticleCounts),
     [hikingArticleCounts],
   );
   const loadedArticles = useMemo(
@@ -60,15 +63,11 @@ export function useFeedArticleLoader({
     [loadedComments],
   );
   const articleHikingIdByArticleId = useMemo(
-    () =>
-      new Map<ArticleId, HikingId>(loadedArticles.map((article) => [article.id, article.hikingId])),
+    () => createArticleHikingIdByArticleId(loadedArticles),
     [loadedArticles],
   );
   const commentArticleIdByCommentId = useMemo(
-    () =>
-      new Map<CommentId, ArticleId>(
-        loadedComments.map((comment) => [comment.id, comment.articleId]),
-      ),
+    () => createCommentArticleIdByCommentId(loadedComments),
     [loadedComments],
   );
 
@@ -201,25 +200,13 @@ export function useFeedArticleLoader({
       }
 
       setArticlesByHikingId((currentArticles) =>
-        Object.fromEntries(
-          Object.entries(currentArticles).filter(([hikingId]) =>
-            activeHikingIds.has(hikingId as HikingId),
-          ),
-        ),
+        filterRecordByActiveHikingIds(currentArticles, activeHikingIds),
       );
       setCommentsByHikingId((currentComments) =>
-        Object.fromEntries(
-          Object.entries(currentComments).filter(([hikingId]) =>
-            activeHikingIds.has(hikingId as HikingId),
-          ),
-        ),
+        filterRecordByActiveHikingIds(currentComments, activeHikingIds),
       );
       setHikingArticleLoadStateById((currentStates) =>
-        Object.fromEntries(
-          Object.entries(currentStates).filter(([hikingId]) =>
-            activeHikingIds.has(hikingId as HikingId),
-          ),
-        ),
+        filterRecordByActiveHikingIds(currentStates, activeHikingIds),
       );
     });
 

@@ -1,10 +1,12 @@
 import { BeanConfig } from 'inversify-typesafe-spring-like';
+import { ArticleCommandDrizzleAdapter } from '../article/adapter/ArticleCommandDrizzleAdapter';
 import { ArticleDetailDrizzleAdapter } from '../article/adapter/ArticleDetailDrizzleAdapter';
 import { S3MediaStorageAdapter } from '../article/adapter/S3MediaStorageAdapter';
 import { ArticleCommandService } from '../article/application/ArticleCommandService';
 import { GetArticleDetailService } from '../article/application/GetArticleDetailService';
 import { ArticleCommandUseCase } from '../article/application/port/in/ArticleCommandUseCase';
 import { GetArticleDetailUseCase } from '../article/application/port/in/GetArticleDetailUseCase';
+import { ArticleCommandPort } from '../article/application/port/out/ArticleCommandPort';
 import { ArticleDetailQueryPort } from '../article/application/port/out/ArticleDetailQueryPort';
 import { MediaStoragePort } from '../article/application/port/out/MediaStoragePort';
 import { AuthCommandAdapter } from '../auth/adapter/AuthCommandAdapter';
@@ -16,25 +18,30 @@ import { LoginWithGoogleCodeService } from '../auth/application/LoginWithGoogleC
 import { CreateSessionTokenUseCase } from '../auth/application/port/in/CreateSessionTokenUseCase';
 import { GetCookieOptionsUseCase } from '../auth/application/port/in/GetCookieOptionsUseCase';
 import { LoginWithGoogleCodeUseCase } from '../auth/application/port/in/LoginWithGoogleCodeUseCase';
+import { ResolveSessionUseCase } from '../auth/application/port/in/ResolveSessionUseCase';
 import { VerifyAccessTokenUseCase } from '../auth/application/port/in/VerifyAccessTokenUseCase';
 import { VerifyRefreshTokenUseCase } from '../auth/application/port/in/VerifyRefreshTokenUseCase';
 import { AuthCommandPort } from '../auth/application/port/out/AuthCommandPort';
 import { AuthQueryPort } from '../auth/application/port/out/AuthQueryPort';
 import { GoogleOAuthPort } from '../auth/application/port/out/GoogleOAuthPort';
+import { ResolveSessionService } from '../auth/application/ResolveSessionService';
 import { VerifyTokenService } from '../auth/application/VerifyTokenService';
 import { CookieConfig } from '../auth/config/CookieConfig';
 import { CommentCommandService } from '../comment/application/CommentCommandService';
 import { ListArticleCommentsService } from '../comment/application/ListArticleCommentsService';
 import { CommentCommandUseCase } from '../comment/application/port/in/CommentCommandUseCase';
 import { ListArticleCommentsUseCase } from '../comment/application/port/in/ListArticleCommentsUseCase';
+import { CommentCommandPort } from '../comment/application/port/out/CommentCommandPort';
 import { CommentQueryPort } from '../comment/application/port/out/CommentQueryPort';
+import { CommentCommandDrizzleAdapter } from '../comment/adapter/CommentCommandDrizzleAdapter';
 import { FeedDrizzleAdapter } from '../feed/adapter/FeedDrizzleAdapter';
 import { ListFeedService } from '../feed/application/ListFeedService';
 import { ListFeedUseCase } from '../feed/application/port/in/ListFeedUseCase';
-import { FeedCommandPort } from '../feed/application/port/out/FeedCommandPort';
 import { FeedQueryPort } from '../feed/application/port/out/FeedQueryPort';
+import { HikingDrizzleAdapter } from '../hiking/adapter/HikingDrizzleAdapter';
 import { HikingCommandService } from '../hiking/application/HikingCommandService';
 import { HikingCommandUseCase } from '../hiking/application/port/in/HikingCommandUseCase';
+import { HikingCommandPort } from '../hiking/application/port/out/HikingCommandPort';
 import { LikeDrizzleAdapter } from '../like/adapter/LikeDrizzleAdapter';
 import { LikeCommandService } from '../like/application/LikeCommandService';
 import { LikeCommandUseCase } from '../like/application/port/in/LikeCommandUseCase';
@@ -65,15 +72,17 @@ import { ProfileQueryPort } from '../profile/application/port/out/ProfileQueryPo
 import { env } from './env.server';
 
 export type Beans = {
+  ArticleCommandPort: ArticleCommandPort;
   ArticleDetailQueryPort: ArticleDetailQueryPort;
   ArticleCommandUseCase: ArticleCommandUseCase;
   AuthCommandPort: AuthCommandPort;
   AuthQueryPort: AuthQueryPort;
+  CommentCommandPort: CommentCommandPort;
   CommentCommandUseCase: CommentCommandUseCase;
   CommentQueryPort: CommentQueryPort;
-  FeedCommandPort: FeedCommandPort;
   FeedQueryPort: FeedQueryPort;
   GoogleOAuthPort: GoogleOAuthPort;
+  HikingCommandPort: HikingCommandPort;
   HikingCommandUseCase: HikingCommandUseCase;
   LikeCommandPort: LikeCommandPort;
   LikeCommandUseCase: LikeCommandUseCase;
@@ -81,6 +90,7 @@ export type Beans = {
   ListFeedUseCase: ListFeedUseCase;
   LoginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
   MediaStoragePort: MediaStoragePort;
+  ResolveSessionUseCase: ResolveSessionUseCase;
   VerifyAccessTokenUseCase: VerifyAccessTokenUseCase;
   VerifyRefreshTokenUseCase: VerifyRefreshTokenUseCase;
   CreateSessionTokenUseCase: CreateSessionTokenUseCase;
@@ -108,15 +118,17 @@ export type Beans = {
 };
 
 export const beanConfig: BeanConfig<Beans> = {
+  ArticleCommandPort: (bind) => bind().to(ArticleCommandDrizzleAdapter),
   ArticleDetailQueryPort: (bind) => bind().to(ArticleDetailDrizzleAdapter),
   ArticleCommandUseCase: (bind) => bind().to(ArticleCommandService),
   AuthCommandPort: (bind) => bind().to(AuthCommandAdapter),
   AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
+  CommentCommandPort: (bind) => bind().to(CommentCommandDrizzleAdapter),
   CommentCommandUseCase: (bind) => bind().to(CommentCommandService),
   CommentQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
-  FeedCommandPort: (bind) => bind().to(FeedDrizzleAdapter),
   FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
   GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
+  HikingCommandPort: (bind) => bind().to(HikingDrizzleAdapter),
   HikingCommandUseCase: (bind) => bind().to(HikingCommandService),
   LikeCommandPort: (bind) => bind().to(LikeDrizzleAdapter),
   LikeCommandUseCase: (bind) => bind().to(LikeCommandService),
@@ -124,6 +136,7 @@ export const beanConfig: BeanConfig<Beans> = {
   ListArticleCommentsUseCase: (bind) => bind().to(ListArticleCommentsService),
   LoginWithGoogleCodeUseCase: (bind) => bind().to(LoginWithGoogleCodeService),
   MediaStoragePort: (bind) => bind().to(S3MediaStorageAdapter),
+  ResolveSessionUseCase: (bind) => bind().to(ResolveSessionService),
   VerifyAccessTokenUseCase: (bind) => bind().to(VerifyTokenService),
   VerifyRefreshTokenUseCase: (bind) => bind().to(VerifyTokenService),
   CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),
