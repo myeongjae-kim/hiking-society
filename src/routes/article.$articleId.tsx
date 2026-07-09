@@ -1,7 +1,7 @@
-import ArticleDetailPageView from '#/article/ArticleDetailPageView';
+import ArticleDetailPageView from '#/features/article/ArticleDetailPageView';
 import type { CommentId } from '@/core/comment/domain';
-import { getArticleRouteData } from '#/article/articleRouteData.functions';
-import { getLoginRedirectHref } from '#/auth/session.shared';
+import { getArticleRouteData } from '#/features/article/articleRouteData.functions';
+import { getLoginRedirectHref } from '#/features/auth/session.shared';
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router';
 
 function getSingleSearchParam(value: unknown) {

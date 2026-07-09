@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "#/shared/components",
-    "utils": "#/shared/classNames",
-    "ui": "#/shared/components",
-    "lib": "#/shared",
-    "hooks": "#/shared/hooks"
+    "components": "#/features/shared/components",
+    "utils": "#/features/shared/classNames",
+    "ui": "#/features/shared/components",
+    "lib": "#/features/shared",
+    "hooks": "#/features/shared/hooks"
   },
   "registries": {
     "@mapcn": "https://mapcn.dev/r/{name}.json"

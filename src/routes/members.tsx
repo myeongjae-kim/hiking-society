@@ -1,6 +1,6 @@
-import MembersPageView from '#/member/MemberManagementPageView';
-import { getMembersRouteData } from '#/member/memberRouteData.functions';
-import { getLoginRedirectHref } from '#/auth/session.shared';
+import MembersPageView from '#/features/member/MemberManagementPageView';
+import { getMembersRouteData } from '#/features/member/memberRouteData.functions';
+import { getLoginRedirectHref } from '#/features/auth/session.shared';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/members')({
