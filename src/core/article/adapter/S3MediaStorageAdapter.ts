@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { MediaStoragePort } from "@/core/article/application/port/out/MediaStoragePort";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { env } from "@/core/config/env.server";
 
 function sanitizeFileName(fileName: string) {
@@ -31,7 +32,7 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
 
 	private assertOwnedObjectKey(objectKey: string, userId: number) {
 		if (!objectKey.startsWith(`article-media/users/${userId}/`)) {
-			throw new Error("삭제할 수 없는 업로드 파일입니다.");
+			throw applicationError.forbidden("삭제할 수 없는 업로드 파일입니다.");
 		}
 	}
 

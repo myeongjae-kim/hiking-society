@@ -1,4 +1,5 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import type { HikingCommandPort } from "@/core/hiking/application/port/out/HikingCommandPort";
 import type { HikingId } from "@/core/hiking/domain";
@@ -8,7 +9,7 @@ function toNumericId(id: string) {
 	const numericId = Number(id);
 
 	if (!Number.isInteger(numericId) || numericId <= 0) {
-		throw new Error("잘못된 id입니다.");
+		throw applicationError.badRequest("잘못된 id입니다.");
 	}
 
 	return numericId;

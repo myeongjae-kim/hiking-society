@@ -28,8 +28,8 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		await applicationContext()
-			.get("MediaStoragePort")
-			.deleteObjects({
+			.get("ArticleMediaUploadUseCase")
+			.deleteUploads({
 				objectKeys: c.req.valid("json").objectKeys,
 				userId: user.id,
 			});

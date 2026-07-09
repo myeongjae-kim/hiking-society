@@ -1,4 +1,5 @@
 import { Autowired } from "@/core/config/Autowired";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import type { UpdateProfileUseCase } from "./port/in/UpdateProfileUseCase";
 import type { ProfileCommandPort } from "./port/out/ProfileCommandPort";
 import type { ProfileQueryPort } from "./port/out/ProfileQueryPort";
@@ -19,7 +20,7 @@ export class UpdateProfileService implements UpdateProfileUseCase {
 			});
 
 		if (emailExists) {
-			throw new Error("이미 사용 중인 이메일입니다.");
+			throw applicationError.conflict("이미 사용 중인 이메일입니다.");
 		}
 
 		const profileImageUrl = input.profileImage

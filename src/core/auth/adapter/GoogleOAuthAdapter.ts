@@ -1,4 +1,5 @@
 import { OAuth2Client, type TokenPayload } from "google-auth-library";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { GoogleOAuthPort } from "../application/port/out/GoogleOAuthPort";
 import type { GoogleAccountPayload } from "../model/GoogleAccountPayload";
@@ -20,8 +21,8 @@ export class GoogleOAuthAdapter implements GoogleOAuthPort {
 		const { tokens } = await client.getToken(code);
 
 		if (!tokens.id_token) {
-			throw new Error(
-				"Google account payload is missing required identity fields.",
+			throw applicationError.unauthorized(
+				"Google 계정 정보를 확인하지 못했습니다.",
 			);
 		}
 
@@ -32,8 +33,8 @@ export class GoogleOAuthAdapter implements GoogleOAuthPort {
 		const payload = ticket.getPayload();
 
 		if (!payload?.sub || !payload.email) {
-			throw new Error(
-				"Google account payload is missing required identity fields.",
+			throw applicationError.unauthorized(
+				"Google 계정 정보를 확인하지 못했습니다.",
 			);
 		}
 

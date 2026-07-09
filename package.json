@@ -13,7 +13,7 @@
     "format": "biome format",
     "lint": "biome lint && tsc --noEmit && pnpm check-architecture",
     "check": "biome check --write --unsafe",
-    "check-architecture": "bash scripts/check-architecture.sh",
+    "check-architecture": "depcruise --config .dependency-cruiser.mjs src",
     "api:sync": "openapi-typescript http://localhost:3000/api/swagger -o ./src/api/schema.d.ts",
     "find-deadcode": "bash scripts/find-deadcode.sh",
     "db:generate": "drizzle-kit generate",
@@ -70,6 +70,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/vite": "4.3.2",
     "@tanstack/router-cli": "1.167.18",
@@ -80,7 +81,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "6.0.3",
-    "@biomejs/biome": "^2.4.5",
+    "dependency-cruiser": "^18.0.0",
     "drizzle-kit": "1.0.0-rc.4",
     "eslint": "^9",
     "openapi-typescript": "^7.13.0",

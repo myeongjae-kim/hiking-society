@@ -37,7 +37,7 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const target = await applicationContext()
-			.get("ProfileImageStoragePort")
+			.get("ProfileImageUploadUseCase")
 			.createUploadTarget({ ...c.req.valid("json"), userId: user.id });
 
 		return c.json(profileImageUploadTargetResponseSchema.parse(target), 200);

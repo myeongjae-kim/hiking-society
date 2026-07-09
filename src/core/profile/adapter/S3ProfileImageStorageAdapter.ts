@@ -4,6 +4,7 @@ import {
 	S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { env } from "@/core/config/env.server";
 import type { ProfileImageStoragePort } from "../application/port/out/ProfileImageStoragePort";
 
@@ -31,7 +32,7 @@ export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 
 	private assertOwnedObjectKey(objectKey: string, userId: number) {
 		if (!objectKey.startsWith(`profile-images/users/${userId}/`)) {
-			throw new Error("삭제할 수 없는 프로필 이미지입니다.");
+			throw applicationError.forbidden("삭제할 수 없는 프로필 이미지입니다.");
 		}
 	}
 

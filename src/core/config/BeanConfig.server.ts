@@ -3,8 +3,10 @@ import { ArticleCommandDrizzleAdapter } from "../article/adapter/ArticleCommandD
 import { ArticleDetailDrizzleAdapter } from "../article/adapter/ArticleDetailDrizzleAdapter";
 import { S3MediaStorageAdapter } from "../article/adapter/S3MediaStorageAdapter";
 import { ArticleCommandService } from "../article/application/ArticleCommandService";
+import { ArticleMediaUploadService } from "../article/application/ArticleMediaUploadService";
 import { GetArticleDetailService } from "../article/application/GetArticleDetailService";
 import type { ArticleCommandUseCase } from "../article/application/port/in/ArticleCommandUseCase";
+import type { ArticleMediaUploadUseCase } from "../article/application/port/in/ArticleMediaUploadUseCase";
 import type { GetArticleDetailUseCase } from "../article/application/port/in/GetArticleDetailUseCase";
 import type { ArticleCommandPort } from "../article/application/port/out/ArticleCommandPort";
 import type { ArticleDetailQueryPort } from "../article/application/port/out/ArticleDetailQueryPort";
@@ -65,6 +67,8 @@ import type { NotificationCommandPort } from "../notification/application/port/o
 import type { NotificationQueryPort } from "../notification/application/port/out/NotificationQueryPort";
 import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
 import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
+import { ProfileImageUploadService } from "../profile/application/ProfileImageUploadService";
+import type { ProfileImageUploadUseCase } from "../profile/application/port/in/ProfileImageUploadUseCase";
 import type { UpdateProfileUseCase } from "../profile/application/port/in/UpdateProfileUseCase";
 import type { ProfileCommandPort } from "../profile/application/port/out/ProfileCommandPort";
 import type { ProfileImageStoragePort } from "../profile/application/port/out/ProfileImageStoragePort";
@@ -76,6 +80,7 @@ export type Beans = {
 	ArticleCommandPort: ArticleCommandPort;
 	ArticleDetailQueryPort: ArticleDetailQueryPort;
 	ArticleCommandUseCase: ArticleCommandUseCase;
+	ArticleMediaUploadUseCase: ArticleMediaUploadUseCase;
 	AuthCommandPort: AuthCommandPort;
 	AuthQueryPort: AuthQueryPort;
 	CommentCommandPort: CommentCommandPort;
@@ -108,6 +113,7 @@ export type Beans = {
 	MarkNotificationReadUseCase: MarkNotificationReadUseCase;
 	UpdateMemberRoleUseCase: UpdateMemberRoleUseCase;
 	ProfileCommandPort: ProfileCommandPort;
+	ProfileImageUploadUseCase: ProfileImageUploadUseCase;
 	ProfileImageStoragePort: ProfileImageStoragePort;
 	ProfileQueryPort: ProfileQueryPort;
 	UpdateProfileUseCase: UpdateProfileUseCase;
@@ -122,6 +128,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	ArticleCommandPort: (bind) => bind().to(ArticleCommandDrizzleAdapter),
 	ArticleDetailQueryPort: (bind) => bind().to(ArticleDetailDrizzleAdapter),
 	ArticleCommandUseCase: (bind) => bind().to(ArticleCommandService),
+	ArticleMediaUploadUseCase: (bind) => bind().to(ArticleMediaUploadService),
 	AuthCommandPort: (bind) => bind().to(AuthCommandAdapter),
 	AuthQueryPort: (bind) => bind().to(AuthQueryAdapter),
 	CommentCommandPort: (bind) => bind().to(CommentCommandDrizzleAdapter),
@@ -155,6 +162,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	MarkNotificationReadUseCase: (bind) => bind().to(MarkNotificationReadService),
 	UpdateMemberRoleUseCase: (bind) => bind().to(UpdateMemberRoleService),
 	ProfileCommandPort: (bind) => bind().to(ProfileDrizzleAdapter),
+	ProfileImageUploadUseCase: (bind) => bind().to(ProfileImageUploadService),
 	ProfileImageStoragePort: (bind) => bind().to(S3ProfileImageStorageAdapter),
 	ProfileQueryPort: (bind) => bind().to(ProfileDrizzleAdapter),
 	UpdateProfileUseCase: (bind) => bind().to(UpdateProfileService),

@@ -2,6 +2,7 @@ export type ApplicationErrorCode =
 	| "BAD_REQUEST"
 	| "CONFLICT"
 	| "FORBIDDEN"
+	| "INTERNAL_SERVER_ERROR"
 	| "NOT_FOUND"
 	| "UNAUTHORIZED";
 
@@ -18,6 +19,8 @@ export const applicationError = {
 	badRequest: (message: string) => new ApplicationError("BAD_REQUEST", message),
 	conflict: (message: string) => new ApplicationError("CONFLICT", message),
 	forbidden: (message: string) => new ApplicationError("FORBIDDEN", message),
+	internal: (message: string) =>
+		new ApplicationError("INTERNAL_SERVER_ERROR", message),
 	notFound: (message: string) => new ApplicationError("NOT_FOUND", message),
 	unauthorized: (message: string) =>
 		new ApplicationError("UNAUTHORIZED", message),

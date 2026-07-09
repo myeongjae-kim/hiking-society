@@ -1,4 +1,5 @@
 import { SignJWT } from "jose";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { CookieConfig } from "../config/CookieConfig";
 import type { SessionTokensInput } from "../model/SessionTokensInput";
@@ -48,7 +49,7 @@ export class CreateSessionTokenService implements CreateSessionTokenUseCase {
 		const jwtSecret = this.JWT_SECRET;
 
 		if (!jwtSecret) {
-			throw new Error("JWT_SECRET is required.");
+			throw applicationError.internal("서버 인증 설정이 올바르지 않습니다.");
 		}
 
 		return this.encoder.encode(jwtSecret);

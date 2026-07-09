@@ -8,6 +8,7 @@ import type {
 	ExistingArticleMediaInput,
 	StoredArticleMedia,
 } from "@/core/article/model/ArticleMediaCommand";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import type { HikingId } from "@/core/hiking/domain";
 import {
@@ -22,7 +23,7 @@ function toNumericId(id: string) {
 	const numericId = Number(id);
 
 	if (!Number.isInteger(numericId) || numericId <= 0) {
-		throw new Error("잘못된 id입니다.");
+		throw applicationError.badRequest("잘못된 id입니다.");
 	}
 
 	return numericId;
@@ -162,7 +163,7 @@ export class ArticleCommandDrizzleAdapter implements ArticleCommandPort {
 				.returning({ id: articleTable.id });
 
 			if (!article) {
-				throw new Error("글을 저장하지 못했습니다.");
+				throw applicationError.internal("글을 저장하지 못했습니다.");
 			}
 
 			const insertedMedia = await tx

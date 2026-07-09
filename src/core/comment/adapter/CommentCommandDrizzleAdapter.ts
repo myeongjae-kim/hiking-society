@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentCommandPort } from "@/core/comment/application/port/out/CommentCommandPort";
 import type { CommentId } from "@/core/comment/domain";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import { articleTable, commentTable } from "@/drizzle/schema";
 
@@ -9,7 +10,7 @@ function toNumericId(id: string) {
 	const numericId = Number(id);
 
 	if (!Number.isInteger(numericId) || numericId <= 0) {
-		throw new Error("잘못된 id입니다.");
+		throw applicationError.badRequest("잘못된 id입니다.");
 	}
 
 	return numericId;
@@ -30,7 +31,7 @@ export class CommentCommandDrizzleAdapter implements CommentCommandPort {
 			.returning({ id: commentTable.id });
 
 		if (!comment) {
-			throw new Error("댓글을 저장하지 못했습니다.");
+			throw applicationError.internal("댓글을 저장하지 못했습니다.");
 		}
 
 		return String(comment.id) as CommentId;

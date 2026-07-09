@@ -2,6 +2,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
 import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import type { NotificationQueryPort } from "@/core/notification/application/port/out/NotificationQueryPort";
@@ -12,7 +13,7 @@ function toNumericId(id: string) {
 	const numericId = Number(id);
 
 	if (!Number.isInteger(numericId) || numericId <= 0) {
-		throw new Error("잘못된 id입니다.");
+		throw applicationError.badRequest("잘못된 id입니다.");
 	}
 
 	return numericId;

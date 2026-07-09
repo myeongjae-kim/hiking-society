@@ -1,8 +1,7 @@
 "use client";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type PropsWithChildren, useState } from "react";
+import type { PropsWithChildren } from "react";
 import { Toaster } from "sonner";
 import { clientEnv } from "@/core/config/clientEnv";
 
@@ -14,32 +13,15 @@ const toasterMobileOffset = {
 };
 
 const ClientDependencyContainer = (props: PropsWithChildren) => {
-	const [queryClient] = useState(
-		() =>
-			new QueryClient({
-				defaultOptions: {
-					mutations: {
-						retry: false,
-					},
-					queries: {
-						refetchOnWindowFocus: false,
-						staleTime: 30_000,
-					},
-				},
-			}),
-	);
-
 	return (
-		<QueryClientProvider client={queryClient}>
-			<GoogleOAuthProvider clientId={clientEnv.VITE_GOOGLE_LOGIN_CLIENT_ID}>
-				{props.children}
-				<Toaster
-					mobileOffset={toasterMobileOffset}
-					offset={toasterOffset}
-					position="top-center"
-				/>
-			</GoogleOAuthProvider>
-		</QueryClientProvider>
+		<GoogleOAuthProvider clientId={clientEnv.VITE_GOOGLE_LOGIN_CLIENT_ID}>
+			{props.children}
+			<Toaster
+				mobileOffset={toasterMobileOffset}
+				offset={toasterOffset}
+				position="top-center"
+			/>
+		</GoogleOAuthProvider>
 	);
 };
 

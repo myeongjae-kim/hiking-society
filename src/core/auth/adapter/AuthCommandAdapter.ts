@@ -1,4 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthCommandPort } from "../application/port/out/AuthCommandPort";
@@ -82,7 +83,7 @@ export class AuthCommandAdapter implements AuthCommandPort {
 				)[0];
 
 			if (!userForSocialAccount) {
-				throw new Error("Failed to create user.");
+				throw applicationError.internal("사용자를 생성하지 못했습니다.");
 			}
 
 			if (existingUserByEmail) {

@@ -28,8 +28,8 @@ controller.openapi(
 	async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		await applicationContext()
-			.get("ProfileImageStoragePort")
-			.deleteObjects({
+			.get("ProfileImageUploadUseCase")
+			.deleteUploads({
 				objectKeys: c.req.valid("json").objectKeys,
 				userId: user.id,
 			});

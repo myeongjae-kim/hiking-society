@@ -18,6 +18,7 @@ import type {
 	Longitude,
 	Timezone,
 } from "@/core/common/domain";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/config/drizzle.server";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
 import {
@@ -37,7 +38,7 @@ function toNumericId(id: string) {
 	const numericId = Number(id);
 
 	if (!Number.isInteger(numericId) || numericId <= 0) {
-		throw new Error("잘못된 id입니다.");
+		throw applicationError.badRequest("잘못된 id입니다.");
 	}
 
 	return numericId;

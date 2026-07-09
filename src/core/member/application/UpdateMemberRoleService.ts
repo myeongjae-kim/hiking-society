@@ -1,4 +1,5 @@
 import { canChangeRole } from "@/core/auth/model/roles";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { UpdateMemberRoleUseCase } from "./port/in/UpdateMemberRoleUseCase";
 import type { MemberCommandPort } from "./port/out/MemberCommandPort";
@@ -18,11 +19,11 @@ export class UpdateMemberRoleService implements UpdateMemberRoleUseCase {
 		);
 
 		if (!targetRole) {
-			throw new Error("Member not found.");
+			throw applicationError.notFound("회원을 찾을 수 없습니다.");
 		}
 
 		if (!canChangeRole(input.actorRole, targetRole, input.nextRole)) {
-			throw new Error("You cannot change this member role.");
+			throw applicationError.forbidden("이 회원 권한을 변경할 수 없습니다.");
 		}
 
 		await this.memberCommandPort.updateActiveMemberRole({

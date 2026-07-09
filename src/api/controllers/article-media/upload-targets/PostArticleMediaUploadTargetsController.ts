@@ -36,13 +36,12 @@ controller.openapi(
 	}),
 	async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const targets = await Promise.all(
-			c.req.valid("json").map((value) =>
-				applicationContext()
-					.get("MediaStoragePort")
-					.createUploadTarget({ ...value, userId: user.id }),
-			),
-		);
+		const targets = await applicationContext()
+			.get("ArticleMediaUploadUseCase")
+			.createUploadTargets({
+				targets: c.req.valid("json"),
+				userId: user.id,
+			});
 
 		return c.json(
 			articleMediaUploadTargetsResponseSchema.parse({ targets }),
