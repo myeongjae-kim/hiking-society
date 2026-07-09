@@ -5,8 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { $api } from "#/api/client/$api";
 import {
-	// biome-ignore lint/suspicious/noShadowRestrictedNames: TODO: fix
-	Map,
+	Map as HikingMap,
 	MapMarker,
 	type MapViewport,
 	MarkerContent,
@@ -263,7 +262,7 @@ export function HikingLocationPicker({
 				</div>
 			) : null}
 			<div className="relative h-[20rem] min-h-0 overflow-hidden border border-[var(--overlay0)] bg-[var(--background1)]">
-				<Map
+				<HikingMap
 					center={[initialCoordinate.longitude, initialCoordinate.latitude]}
 					className="h-full"
 					onViewportChange={setViewport}
@@ -279,7 +278,7 @@ export function HikingLocationPicker({
 					>
 						<MarkerContent className="cursor-move" />
 					</MapMarker>
-				</Map>
+				</HikingMap>
 				<div className="pointer-events-none absolute top-2 left-2 border border-[var(--overlay0)] bg-[color-mix(in_srgb,var(--background1)_86%,transparent)] px-2 py-1 font-mono text-[var(--foreground1)] text-xs">
 					{formatCoordinate(markerCoordinate.latitude)},{" "}
 					{formatCoordinate(markerCoordinate.longitude)}

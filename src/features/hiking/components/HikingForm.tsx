@@ -231,8 +231,8 @@ export function HikingForm({
 			onSubmit={handleSubmit}
 		>
 			<Command>{hiking ? `hiking.edit: ${hiking.id}` : "hiking.new"}</Command>
-			{/** biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix */}
-			<div
+			<section
+				aria-label="사진 메타정보 드롭 영역"
 				className={`grid gap-1.5 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
 					submitting ? "opacity-70" : ""
 				} ${
@@ -263,7 +263,7 @@ export function HikingForm({
 				<p className="m-0 text-[var(--subtext0)] text-xs leading-[1.35]">
 					{metadataStatus}
 				</p>
-			</div>
+			</section>
 			<div className="grid gap-3 sm:grid-cols-2">
 				<FieldLabel label="산 이름">
 					<input

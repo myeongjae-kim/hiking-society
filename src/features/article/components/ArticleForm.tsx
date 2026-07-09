@@ -1,5 +1,7 @@
 "use client";
 
+import type { ChangeEvent, DragEvent, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PreparedImageSource } from "#/features/media/imageCompression";
 import { ActionButton } from "#/features/shared/components/ActionButton";
 import { Command } from "#/features/shared/components/Command";
@@ -13,8 +15,6 @@ import {
 } from "#/features/shared/components/styles";
 import type { Article } from "@/core/article/domain";
 import type { Hiking } from "@/core/hiking/domain";
-import type { ChangeEvent, DragEvent, FormEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ArticleFormValues, DraftMedia } from "./articleFormTypes";
 import {
@@ -462,8 +462,8 @@ export function ArticleForm({
 					{article ? `article.edit ${article.id}` : "article.new"}{" "}
 					{hiking ? `(hiking #${hiking.order} ${hiking.mountainName})` : ""}
 				</Command>
-				{/** biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix */}
-				<div
+				<section
+					aria-label="글 미디어 드롭 영역"
 					className={`grid gap-3 border border-dashed p-3 transition-[background-color,border-color,opacity] ${
 						disabled ? "opacity-70" : ""
 					} ${
@@ -628,7 +628,7 @@ export function ArticleForm({
 							사진이나 동영상을 1개 이상 선택해야 합니다.
 						</p>
 					)}
-				</div>
+				</section>
 				<FieldLabel label="본문">
 					<textarea
 						className={`${fieldClassName} min-h-[8rem] resize-y`}

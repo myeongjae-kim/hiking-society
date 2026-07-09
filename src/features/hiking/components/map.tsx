@@ -143,7 +143,7 @@ const MapContext = createContext<MapContextValue | null>(null);
 function useMap() {
 	const context = useContext(MapContext);
 	if (!context) {
-		throw new Error("useMap must be used within a Map component");
+		throw new Error("useMap must be used within a HikingMap component");
 	}
 	return context;
 }
@@ -225,8 +225,7 @@ function getViewport(map: MapLibreGL.Map): MapViewport {
 	};
 }
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: TODO: fix
-const Map = forwardRef<MapRef, MapProps>(function Map(
+const HikingMap = forwardRef<MapRef, MapProps>(function HikingMap(
 	{
 		children,
 		className,
@@ -269,6 +268,12 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 		}
 		return defaultStyles;
 	}, [styles, blank]);
+	const initialMapOptionsRef = useRef(props);
+	const initialProjectionRef = useRef(projection);
+	const initialStyleRef = useRef<MapStyleOption>(
+		resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light,
+	);
+	const initialViewportRef = useRef(viewport);
 
 	// Expose the map instance to the parent component
 	useImperativeHandle(ref, () => mapInstance as MapLibreGL.Map, [mapInstance]);
@@ -284,8 +289,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 	useEffect(() => {
 		if (!containerRef.current) return;
 
-		const initialStyle =
-			resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
+		const initialStyle = initialStyleRef.current;
 		currentStyleRef.current = initialStyle;
 
 		const map = new MapLibreGL.Map({
@@ -295,8 +299,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 			attributionControl: {
 				compact: true,
 			},
-			...props,
-			...viewport,
+			...initialMapOptionsRef.current,
+			...initialViewportRef.current,
 		});
 
 		const styleDataHandler = () => {
@@ -306,8 +310,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 			// else we have to force update every layer on setStyle change
 			styleTimeoutRef.current = setTimeout(() => {
 				setIsStyleLoaded(true);
-				if (projection) {
-					map.setProjection(projection);
+				if (initialProjectionRef.current) {
+					map.setProjection(initialProjectionRef.current);
 				}
 			}, 100);
 		};
@@ -334,17 +338,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 			setIsStyleLoaded(false);
 			setMapInstance(null);
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [
-		viewport,
-		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
-		props,
-		projection,
-		resolvedTheme,
-		mapStyles.light,
-		mapStyles.dark,
-		clearStyleTimeout,
-	]);
+	}, [clearStyleTimeout]);
 
 	// Sync controlled viewport to map
 	useEffect(() => {
@@ -469,6 +463,9 @@ function MapMarker({
 	...markerOptions
 }: MapMarkerProps) {
 	const { map } = useMap();
+	const initialMarkerOptionsRef = useRef(markerOptions);
+	const initialMarkerCoordinateRef = useRef({ latitude, longitude });
+	const initialDraggableRef = useRef(draggable);
 
 	const callbacksRef = useRef({
 		onClick,
@@ -489,10 +486,13 @@ function MapMarker({
 
 	const marker = useMemo(() => {
 		const markerInstance = new MapLibreGL.Marker({
-			...markerOptions,
+			...initialMarkerOptionsRef.current,
 			element: document.createElement("div"),
-			draggable,
-		}).setLngLat([longitude, latitude]);
+			draggable: initialDraggableRef.current,
+		}).setLngLat([
+			initialMarkerCoordinateRef.current.longitude,
+			initialMarkerCoordinateRef.current.latitude,
+		]);
 
 		const handleClick = (e: MouseEvent) => callbacksRef.current.onClick?.(e);
 		const handleMouseEnter = (e: MouseEvent) =>
@@ -528,8 +528,7 @@ function MapMarker({
 		return markerInstance;
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
-	}, [draggable, longitude, latitude, markerOptions]);
+	}, []);
 
 	useEffect(() => {
 		if (!map) return;
@@ -539,9 +538,7 @@ function MapMarker({
 		return () => {
 			marker.remove();
 		};
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [map, marker.addTo, marker.remove]);
+	}, [map, marker]);
 
 	const { offset, rotation, rotationAlignment, pitchAlignment } = markerOptions;
 
@@ -645,12 +642,13 @@ function MarkerPopup({
 }: MarkerPopupProps) {
 	const { marker, map } = useMarkerContext();
 	const container = useMemo(() => document.createElement("div"), []);
+	const initialPopupOptionsRef = useRef(popupOptions);
 	const { offset, maxWidth } = popupOptions;
 
 	const popup = useMemo(() => {
 		const popupInstance = new MapLibreGL.Popup({
 			offset: 16,
-			...popupOptions,
+			...initialPopupOptionsRef.current,
 			closeButton: false,
 		})
 			.setMaxWidth("none")
@@ -658,8 +656,7 @@ function MarkerPopup({
 
 		return popupInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
-	}, [container, popupOptions]);
+	}, [container]);
 
 	useEffect(() => {
 		if (!map) return;
@@ -712,20 +709,20 @@ function MarkerTooltip({
 }: MarkerTooltipProps) {
 	const { marker, map } = useMarkerContext();
 	const container = useMemo(() => document.createElement("div"), []);
+	const initialPopupOptionsRef = useRef(popupOptions);
 	const { offset, maxWidth } = popupOptions;
 
 	const tooltip = useMemo(() => {
 		const tooltipInstance = new MapLibreGL.Popup({
 			offset: 16,
-			...popupOptions,
+			...initialPopupOptionsRef.current,
 			closeOnClick: true,
 			closeButton: false,
 		}).setMaxWidth("none");
 
 		return tooltipInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
-	}, [popupOptions]);
+	}, []);
 
 	useEffect(() => {
 		if (!map) return;
@@ -1008,13 +1005,13 @@ function CompassButton({ onClick }: { onClick: () => void }) {
 
 	return (
 		<ControlButton onClick={onClick} label="Reset bearing to north">
-			{/** biome-ignore lint/a11y/noSvgWithoutTitle: TODO: fix */}
 			<svg
 				ref={compassRef}
 				viewBox="0 0 24 24"
 				className="size-5 transition-transform duration-200"
 				style={{ transformStyle: "preserve-3d" }}
 			>
+				<title>Compass bearing indicator</title>
 				<path d="M12 2L16 12H12V2Z" className="fill-red-500" />
 				<path d="M12 2L8 12H12V2Z" className="fill-red-300" />
 				<path d="M12 22L16 12H12V22Z" className="fill-muted-foreground/60" />
@@ -1052,12 +1049,13 @@ function MapPopup({
 	const onCloseRef = useRef(onClose);
 	onCloseRef.current = onClose;
 	const container = useMemo(() => document.createElement("div"), []);
+	const initialPopupOptionsRef = useRef(popupOptions);
 	const { offset, maxWidth } = popupOptions;
 
 	const popup = useMemo(() => {
 		const popupInstance = new MapLibreGL.Popup({
 			offset: 16,
-			...popupOptions,
+			...initialPopupOptionsRef.current,
 			closeButton: false,
 		})
 			.setMaxWidth("none")
@@ -1065,8 +1063,7 @@ function MapPopup({
 
 		return popupInstance;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		// biome-ignore lint/correctness/useExhaustiveDependencies: TODO: fix
-	}, [latitude, popupOptions, longitude]);
+	}, [latitude, longitude]);
 
 	useEffect(() => {
 		if (!map) return;
@@ -2239,8 +2236,9 @@ function MapClusterLayer<
 	return null;
 }
 
+export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };
 export {
-	Map,
+	HikingMap as Map,
 	MapArc,
 	MapClusterLayer,
 	MapControls,
@@ -2254,4 +2252,3 @@ export {
 	MarkerTooltip,
 	useMap,
 };
-export type { MapArcDatum, MapArcEvent, MapGeoJSONEvent, MapRef, MapViewport };

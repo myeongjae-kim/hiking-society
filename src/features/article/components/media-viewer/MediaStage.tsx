@@ -106,16 +106,15 @@ export function MediaStage({
 	});
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: TODO: fix
-		// biome-ignore lint/a11y/useKeyWithClickEvents: TODO: fix
 		<div
 			className="flex h-full min-h-0 w-full touch-none select-none flex-col items-center justify-center gap-4"
 			data-media-modal-surface
-			onClick={handleMediaStageClick}
+			onClickCapture={handleMediaStageClick}
 			onPointerCancel={finishMediaGesture}
 			onPointerDown={startMediaGesture}
 			onPointerMove={updateMediaGesture}
 			onPointerUp={finishMediaGesture}
+			role="presentation"
 		>
 			{selectedMedia.mediaType === "video" ? (
 				selectedVideoAspectRatio ? (

@@ -32,10 +32,10 @@ export function AuthorBadge({
 			src={profileImageUrl}
 		/>
 	) : (
-		// biome-ignore lint/a11y/useAriaPropsSupportedByRole: TODO: fix
 		<span
 			aria-label={`${name} 프로필 사진 없음`}
 			className={`${avatarClassName} grid shrink-0 rounded-full border border-[var(--overlay0)] bg-[var(--background1)] font-mono text-[var(--blue)] leading-none`}
+			role="img"
 		>
 			<span className="place-self-center">{getInitial(name)}</span>
 		</span>
