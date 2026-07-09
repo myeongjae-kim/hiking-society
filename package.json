@@ -13,7 +13,7 @@
     "format": "biome format",
     "lint": "biome lint && tsc --noEmit",
     "check": "biome check --fix",
-    "api:sync": "openapi-typescript http://localhost:3000/api/swagger -o ./lib/api/schema.d.ts",
+    "api:sync": "openapi-typescript http://localhost:3000/api/swagger -o ./src/api/schema.d.ts",
     "find-deadcode": "bash scripts/find-deadcode.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

@@ -1,6 +1,6 @@
-import MyPageView from '@/app/me/page';
-import { getCurrentTheme, getCurrentUser } from '#/lib/server/session.functions';
-import { getLoginRedirectHref } from '#/lib/server/session.shared';
+import MyPageView from '#/profile/ProfilePageView';
+import { getCurrentTheme, getCurrentUser } from '#/auth/session.functions';
+import { getLoginRedirectHref } from '#/auth/session.shared';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/me')({

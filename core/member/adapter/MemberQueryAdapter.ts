@@ -1,4 +1,4 @@
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import { socialAccountTable, userTable } from '@/lib/db/schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { MemberQueryPort } from '../application/port/out/MemberQueryPort';

@@ -1,5 +1,5 @@
 import { createNotificationContentExcerpt } from '@/core/notification/model/NotificationContentExcerpt';
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import {
   articleLikeTable,
   articleTable,

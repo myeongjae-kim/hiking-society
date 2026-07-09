@@ -17,7 +17,7 @@ import type {
   Timezone,
 } from '@/core/common/domain';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import {
   articleLikeTable,
   articleMediaMetadataTable,

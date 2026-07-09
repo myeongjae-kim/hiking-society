@@ -1,7 +1,7 @@
-import FeedPageView from '@/app/feed/page';
+import FeedPageView from '#/feed/FeedPageView';
 import type { HikingId } from '@/core/hiking/domain';
-import { getFeedRouteData } from '#/lib/server/pageData.functions';
-import { getLoginRedirectHref } from '#/lib/server/session.shared';
+import { getFeedRouteData } from '#/feed/feedRouteData.functions';
+import { getLoginRedirectHref } from '#/auth/session.shared';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 function getSingleSearchParam(value: unknown) {

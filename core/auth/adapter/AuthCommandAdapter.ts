@@ -1,4 +1,4 @@
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import { socialAccountTable, userTable } from '@/lib/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { AuthCommandPort } from '../application/port/out/AuthCommandPort';

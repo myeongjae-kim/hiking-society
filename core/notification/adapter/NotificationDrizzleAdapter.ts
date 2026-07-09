@@ -4,7 +4,7 @@ import type { CommentId } from '@/core/comment/domain';
 import type { NotificationCommandPort } from '@/core/notification/application/port/out/NotificationCommandPort';
 import type { NotificationQueryPort } from '@/core/notification/application/port/out/NotificationQueryPort';
 import type { NotificationId } from '@/core/notification/model/Notification';
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import { notificationTable, userTable } from '@/lib/db/schema';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 

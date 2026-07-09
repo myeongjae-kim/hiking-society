@@ -1,4 +1,4 @@
-import { lazy } from '@/lib/utils/lazy';
+import { lazy } from '@/core/config/lazy';
 import { ApplicationContext } from 'inversify-typesafe-spring-like';
 import { beanConfig } from './BeanConfig.server';
 

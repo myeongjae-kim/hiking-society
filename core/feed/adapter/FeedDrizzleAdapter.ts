@@ -24,7 +24,7 @@ import type {
 import type { FeedQueryPort } from '@/core/feed/application/port/out/FeedQueryPort';
 import type { Hiking, HikingId } from '@/core/hiking/domain';
 import { createNotificationContentExcerpt } from '@/core/notification/model/NotificationContentExcerpt';
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import {
   articleLikeTable,
   articleMediaMetadataTable,

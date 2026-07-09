@@ -1,10 +1,10 @@
-import ClientDependencyContainer from '@/app/common/components/ClientDependencyContainer';
-import NotFound from '@/app/not-found';
-import { DEFAULT_WEBTUI_THEME } from '@/app/common/theme/webtuiThemes';
-import { getCurrentTheme } from '#/lib/server/session.functions';
+import ClientDependencyContainer from '#/shared/components/ClientDependencyContainer';
+import NotFound from '#/shared/NotFoundView';
+import { DEFAULT_WEBTUI_THEME } from '#/theme/webtuiThemes';
+import { getCurrentTheme } from '#/auth/session.functions';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/react-router';
-import appCss from '../../app/globals.css?url';
+import appCss from '#/styles/global.css?url';
 
 const siteUrl =
   import.meta.env.VITE_SITE_URL ||

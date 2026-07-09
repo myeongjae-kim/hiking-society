@@ -1,4 +1,4 @@
-import { serverApp } from '@/app/api/[...route]/serverApp';
+import { serverApp } from '#/api/serverApp';
 import { createFileRoute } from '@tanstack/react-router';
 
 const handler = ({ request }: { request: Request }) => serverApp.fetch(request);

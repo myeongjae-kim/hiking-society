@@ -1,4 +1,4 @@
-import { db } from '@/lib/db/drizzle';
+import { db } from '@/core/config/drizzle.server';
 import { userTable } from '@/lib/db/schema';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import type { ProfileCommandPort } from '../application/port/out/ProfileCommandPort';
