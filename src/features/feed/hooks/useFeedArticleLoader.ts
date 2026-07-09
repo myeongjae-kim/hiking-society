@@ -342,7 +342,9 @@ export function useFeedArticleLoader({
 
 		return () => {
 			window.cancelAnimationFrame(animationFrameId);
-			timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+			for (const timeoutId of timeoutIds) {
+				window.clearTimeout(timeoutId);
+			}
 		};
 	}, [selectedHikingId]);
 

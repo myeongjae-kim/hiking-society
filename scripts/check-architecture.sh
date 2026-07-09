@@ -17,7 +17,7 @@ check_no_matches() {
 check_no_matches \
   "core must not import web/framework modules" \
   "from ['\"](#/|@/src|react($|/)|react-dom($|/)|@tanstack/|hono($|/))" \
-  core
+  src/core
 
 check_no_matches \
   "src/features/shared must not import other product features" \
@@ -25,9 +25,9 @@ check_no_matches \
   src/features/shared
 
 check_no_matches \
-  "src must not directly depend on outbound ports" \
+  "web adapters must not directly depend on outbound ports" \
   "application/port/out|applicationContext\\(\\)\\.get\\(['\"][^'\"]*Port['\"]\\)" \
-  src
+  src/routes src/api src/features
 
 if (( failures > 0 )); then
   exit 1

@@ -7,28 +7,27 @@
 이 프로젝트의 구조는 다음 원칙을 기준으로 잡습니다.
 
 - **Screaming Architecture**: 최상위 구조가 기술 스택보다 제품의 기능을 먼저 드러내야 합니다.
-- **Port and Adapter Architecture**: 핵심 정책은 `core`의 application/domain/model이 소유하고, DB/S3/OAuth 같은 외부 I/O는 adapter 뒤에 둡니다.
+- **Port and Adapter Architecture**: 핵심 정책은 `src/core`의 application/domain/model이 소유하고, DB/S3/OAuth 같은 외부 I/O는 adapter 뒤에 둡니다.
 - **Core는 객체지향**: use case service가 객체로 협력하며 정책을 명시합니다.
 - **Web 영역은 함수형**: route, controller, server function, React hook은 요청/응답 변환과 순수 계산, effect orchestration을 분리합니다.
 
-HTTP 경로, OpenAPI wire shape, DB schema는 아키텍처 리팩터링의 대상이 아닙니다. 이 경계들은 외부 계약으로 취급합니다.
+HTTP 경로, OpenAPI wire shape, DB schema는 외부 계약입니다. 구조 변경 시에도 호환성을 유지합니다.
 
 ## Directory Layout
 
 ```txt
-core/
-  {feature}/
-    domain/              # 도메인 식별자, 값 타입, 핵심 모델
-    model/               # application에서 쓰는 feature별 모델/팩토리
-    application/
-      *Service.ts        # use case 정책
-      port/in/           # 웹/외부에서 호출하는 use case 인터페이스
-      port/out/          # application이 필요로 하는 I/O 인터페이스
-    adapter/             # Drizzle, S3, OAuth 등 구체 구현
-  common/                # 공통 domain/application 타입
-  config/                # DI wiring
-
 src/
+  core/
+    {feature}/
+      domain/            # 도메인 식별자, 값 타입, 핵심 모델
+      model/             # application에서 쓰는 feature별 모델/팩토리
+      application/
+        *Service.ts      # use case 정책
+        port/in/         # 웹/외부에서 호출하는 use case 인터페이스
+        port/out/        # application이 필요로 하는 I/O 인터페이스
+      adapter/           # Drizzle, S3, OAuth 등 구체 구현
+    common/              # 공통 domain/application 타입
+    config/              # DI wiring
   routes/                # TanStack Start file routes
   api/                   # Hono/OpenAPI HTTP adapter
   features/              # React UI와 server functions를 기능 단위로 배치
@@ -36,13 +35,14 @@ src/
   styles/                # 전역 스타일
   theme/                 # 테마 정의
 
-lib/db/schema.ts         # DB schema source of truth
+drizzle/schema.ts        # DB schema source of truth
+drizzle/migrations/      # Drizzle migration output
 scripts/                 # 정적/아키텍처 검증 스크립트
 ```
 
 ## Core Boundary
 
-`core`는 제품 정책의 중심입니다. React, TanStack, Hono, `src`를 import하지 않습니다.
+`src/core`는 제품 정책의 중심입니다. React, TanStack, Hono, `src/features`, `src/routes`, `src/api`를 import하지 않습니다.
 
 의존 방향은 항상 안쪽으로 향합니다.
 
@@ -50,16 +50,16 @@ scripts/                 # 정적/아키텍처 검증 스크립트
 src/routes, src/api, src/features
         |
         v
-core/{feature}/application/port/in
+src/core/{feature}/application/port/in
         |
         v
-core/{feature}/application service
+src/core/{feature}/application service
         |
         v
-core/{feature}/application/port/out
+src/core/{feature}/application/port/out
         ^
         |
-core/{feature}/adapter
+src/core/{feature}/adapter
 ```
 
 application service가 판단해야 하는 정책 예시는 다음과 같습니다.
@@ -126,7 +126,7 @@ ApplicationError.CONFLICT     -> 409
 
 ## Data and Schema
 
-DB schema의 source of truth는 `lib/db/schema.ts`입니다.
+DB schema의 source of truth는 `drizzle/schema.ts`입니다.
 
 규칙:
 
@@ -137,7 +137,7 @@ DB schema의 source of truth는 `lib/db/schema.ts`입니다.
 
 ## Dependency Injection
 
-core wiring은 `core/config/BeanConfig.server.ts`에서 관리합니다.
+core wiring은 `src/core/config/BeanConfig.server.ts`에서 관리합니다.
 
 웹 영역은 `applicationContext().get('*UseCase')`로 in-port를 호출합니다. `src/**`에서 `application/port/out` 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
 
@@ -147,9 +147,9 @@ core wiring은 `core/config/BeanConfig.server.ts`에서 관리합니다.
 
 검사 내용:
 
-- `core`가 `src`, React, TanStack, Hono를 import하지 않는지 확인합니다.
+- `src/core`가 웹/프레임워크 모듈을 import하지 않는지 확인합니다.
 - `src/features/shared`가 다른 feature를 import하지 않는지 확인합니다.
-- `src/**`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
+- `src/routes`, `src/api`, `src/features`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
 
 일상 검증:
 

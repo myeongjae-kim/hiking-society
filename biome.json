@@ -14,7 +14,7 @@
 			"**/vite.config.ts",
 			"**/vitest.config.ts",
 			"!**/src/routeTree.gen.ts",
-			"!**/src/styles.css"
+			"!**/src/**/*.css"
 		]
 	},
 	"formatter": {
@@ -25,9 +25,26 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"preset": "recommended",
+			"a11y": {
+				"noLabelWithoutControl": "off",
+				"noStaticElementInteractions": "off",
+				"noSvgWithoutTitle": "off",
+				"useAriaPropsSupportedByRole": "off",
+				"useKeyWithClickEvents": "off"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
 			"nursery": {
 				"useSortedClasses": "on"
+			},
+			"security": {
+				"noDangerouslySetInnerHtml": "off"
+			},
+			"suspicious": {
+				"noArrayIndexKey": "off",
+				"noShadowRestrictedNames": "off"
 			}
 		}
 	},

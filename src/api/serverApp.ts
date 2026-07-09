@@ -49,4 +49,6 @@ if (process.env.NODE_ENV !== "production") {
 	);
 }
 
-apiControllers.forEach((controller) => serverApp.route("/", controller));
+for (const controller of apiControllers) {
+	serverApp.route("/", controller);
+}
