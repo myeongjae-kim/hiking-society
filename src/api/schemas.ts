@@ -1,21 +1,18 @@
 import { z } from "@hono/zod-openapi";
-import type {
-	ArticleContract,
-	ArticleDetailResponseContract,
-	ArticleMediaUploadTargetsResponseContract,
-	CommentContract,
-	CommentsResponseContract,
-	CurrentUserContract,
-	FeedResponseContract,
-	HikingArticlesResponseContract,
-	HikingContract,
-	MemberContract,
-	MembersResponseContract,
-	NotificationContract,
-	NotificationListResponseContract,
-	ProfileImageUploadTargetResponseContract,
-} from "./contracts";
-import { userRoleContractValues } from "./contracts";
+import {
+	articleMediaMetadataSummarySchema,
+	articleMediaSchema as coreArticleMediaSchema,
+	articleMediaTypeSchema,
+	articleSchema as coreArticleSchema,
+} from "@/core/article/domain/ArticleSchema";
+import { authenticatedUserSchema } from "@/core/auth/model/AuthenticatedUserSchema";
+import { userRoleSchema as coreUserRoleSchema } from "@/core/auth/model/UserRoleSchema";
+import { commentSchema as coreCommentSchema } from "@/core/comment/domain/CommentSchema";
+import { feedSummarySnapshotSchema } from "@/core/feed/model/FeedSnapshotSchema";
+import { hikingSchema as coreHikingSchema } from "@/core/hiking/domain/HikingSchema";
+import { memberListItemSchema } from "@/core/member/model/MemberListItemSchema";
+import { notificationListSnapshotSchema } from "@/core/notification/model/NotificationSchema";
+import { notificationSummarySchema } from "@/core/notification/model/NotificationSchema";
 
 export const idParamSchema = z.object({
 	articleId: z.string().regex(/^\d+$/).optional(),
@@ -27,172 +24,52 @@ export const idParamSchema = z.object({
 
 export const okSchema = z.object({ ok: z.literal(true) }).openapi("OkResponse");
 
-export const userRoleSchema = z
-	.enum(userRoleContractValues)
-	.openapi("UserRole");
+export const userRoleSchema = coreUserRoleSchema.openapi("UserRole");
 
-export const currentUserSchema = z
-	.object({
-		displayName: z.string().nullable(),
-		email: z.string(),
-		id: z.number().int(),
-		name: z.string().nullable(),
-		profileImageUrl: z.string().nullable(),
-		provider: z.string().nullable(),
-		role: userRoleSchema,
-	})
-	.openapi("CurrentUser") satisfies z.ZodType<CurrentUserContract>;
+export const currentUserSchema = authenticatedUserSchema
+	.omit({ lastLoginAt: true })
+	.extend({ role: userRoleSchema })
+	.openapi("CurrentUser");
 
-export const articleMediaMetadataSchema = z
-	.object({
-		dateTime: z.string().nullish(),
-		exposureTime: z.string().nullish(),
-		fNumber: z.string().nullish(),
-		focalLengthIn35mmFilm: z.string().nullish(),
-		isoSpeedRatings: z.string().nullish(),
-		make: z.string().nullish(),
-		model: z.string().nullish(),
-		shutterSpeedValue: z.string().nullish(),
-	})
-	.nullish();
+export const articleMediaMetadataSchema =
+	articleMediaMetadataSummarySchema.nullish();
 
-export const articleMediaSchema = z.object({
-	byteSize: z.number().optional(),
-	contentType: z.string().optional(),
-	durationMs: z.number().nullish(),
-	height: z.number().nullish(),
-	mediaType: z.enum(["image", "video"]),
-	metadata: articleMediaMetadataSchema.optional(),
-	objectKey: z.string().optional(),
-	order: z.number().int(),
-	thumbnailUrl: z.string().nullish(),
-	url: z.string(),
-	width: z.number().nullish(),
-});
+export const articleMediaSchema =
+	coreArticleMediaSchema.openapi("ArticleMedia");
 
-export const articleSchema = z
-	.object({
-		authorName: z.string(),
-		authorProfileImageUrl: z.string().nullable(),
-		authorUserId: z.number().int().optional(),
-		body: z.string(),
-		createdAt: z.string(),
-		deletedAt: z.string().nullable(),
-		edited: z.boolean(),
-		hikingId: z.string(),
-		id: z.string(),
-		likeCount: z.number().int(),
-		likedByCurrentUser: z.boolean(),
-		media: z.array(articleMediaSchema).min(1),
-		updatedAt: z.string(),
-	})
-	.openapi("Article") satisfies z.ZodType<ArticleContract>;
+export const articleSchema = coreArticleSchema
+	.extend({ media: z.array(articleMediaSchema).min(1) })
+	.openapi("Article");
+export const commentSchema = coreCommentSchema.openapi("Comment");
+export const hikingSchema = coreHikingSchema.openapi("Hiking");
+export const notificationSchema =
+	notificationSummarySchema.openapi("Notification");
 
-export const commentSchema = z
-	.object({
-		articleId: z.string(),
-		authorName: z.string(),
-		authorProfileImageUrl: z.string().nullable(),
-		authorUserId: z.number().int().optional(),
-		body: z.string(),
-		createdAt: z.string(),
-		deletedAt: z.string().nullable(),
-		id: z.string(),
-		likeCount: z.number().int(),
-		likedByCurrentUser: z.boolean(),
-		parentCommentId: z.string().nullable(),
-		updatedAt: z.string(),
-	})
-	.openapi("Comment") satisfies z.ZodType<CommentContract>;
-
-export const hikingSchema = z
-	.object({
-		altitude: z.number().nullable(),
-		authorName: z.string(),
-		authorUserId: z.number().int().optional(),
-		completedAt: z.string(),
-		createdAt: z.string(),
-		hikingDate: z.string(),
-		id: z.string(),
-		latitude: z.number(),
-		longitude: z.number(),
-		mountainName: z.string(),
-		order: z.number().int(),
-		participantsCsv: z.string(),
-		restaurantAddress: z.string().nullable(),
-		startedAt: z.string(),
-		timezone: z.string(),
-		updatedAt: z.string(),
-	})
-	.openapi("Hiking") satisfies z.ZodType<HikingContract>;
-
-export const notificationSchema = z
-	.object({
-		actorName: z.string(),
-		actorProfileImageUrl: z.string().nullable(),
-		actorUserId: z.number().int(),
-		articleId: z.string(),
-		commentId: z.string().nullable(),
-		contentExcerpt: z.string(),
-		createdAt: z.string(),
-		id: z.string(),
-		readAt: z.string().nullable(),
-		type: z.enum([
-			"article_created",
-			"article_comment",
-			"article_reply",
-			"comment_reply",
-			"article_like",
-			"comment_like",
-		]),
-	})
-	.openapi("Notification") satisfies z.ZodType<NotificationContract>;
-
-export const feedResponseSchema = z
-	.object({
-		articleCount: z.number().int(),
-		commentCount: z.number().int(),
-		hikingArticleCounts: z.array(
-			z.object({
-				articleCount: z.number().int(),
-				hikingId: z.string(),
-			}),
-		),
-		hikings: z.array(hikingSchema),
-	})
-	.openapi("FeedResponse") satisfies z.ZodType<FeedResponseContract>;
+export const feedResponseSchema = feedSummarySnapshotSchema
+	.extend({ hikings: z.array(hikingSchema) })
+	.openapi("FeedResponse");
 
 export const hikingArticlesResponseSchema = z
 	.object({
 		articles: z.array(articleSchema),
 		comments: z.array(commentSchema),
 	})
-	.openapi(
-		"HikingArticlesResponse",
-	) satisfies z.ZodType<HikingArticlesResponseContract>;
+	.openapi("HikingArticlesResponse");
 
 export const articleDetailResponseSchema = z
 	.object({
 		article: articleSchema,
 		comments: z.array(commentSchema),
 	})
-	.openapi(
-		"ArticleDetailResponse",
-	) satisfies z.ZodType<ArticleDetailResponseContract>;
+	.openapi("ArticleDetailResponse");
 
 export const commentsResponseSchema = z
 	.object({ comments: z.array(commentSchema) })
-	.openapi("CommentsResponse") satisfies z.ZodType<CommentsResponseContract>;
+	.openapi("CommentsResponse");
 
-export const notificationListResponseSchema = z
-	.object({
-		hasMoreNotifications: z.boolean(),
-		hasUnreadNotifications: z.boolean(),
-		notifications: z.array(notificationSchema),
-	})
-	.openapi(
-		"NotificationListResponse",
-	) satisfies z.ZodType<NotificationListResponseContract>;
+export const notificationListResponseSchema = notificationListSnapshotSchema
+	.extend({ notifications: z.array(notificationSchema) })
+	.openapi("NotificationListResponse");
 
 export const geocodingSearchQuerySchema = z.object({
 	q: z.string().trim().min(2).max(160),
@@ -211,22 +88,13 @@ export const geocodingSearchResponseSchema = z
 	})
 	.openapi("GeocodingSearchResponse");
 
-export const memberSchema = z
-	.object({
-		createdAt: z.string(),
-		displayName: z.string().nullable(),
-		email: z.string().nullable(),
-		id: z.number().int(),
-		lastLoginAt: z.string().nullable(),
-		name: z.string().nullable(),
-		provider: z.string().nullable(),
-		role: userRoleSchema,
-	})
-	.openapi("Member") satisfies z.ZodType<MemberContract>;
+export const memberSchema = memberListItemSchema
+	.extend({ role: userRoleSchema })
+	.openapi("Member");
 
 export const membersResponseSchema = z
 	.object({ members: z.array(memberSchema) })
-	.openapi("MembersResponse") satisfies z.ZodType<MembersResponseContract>;
+	.openapi("MembersResponse");
 
 export const loginWithGoogleBodySchema = z.object({ code: z.string().min(1) });
 export const updateDisplayNameBodySchema = z.object({
@@ -257,9 +125,7 @@ export const profileImageUploadTargetResponseSchema = z
 		uploadUrl: z.string(),
 		url: z.string(),
 	})
-	.openapi(
-		"ProfileImageUploadTargetResponse",
-	) satisfies z.ZodType<ProfileImageUploadTargetResponseContract>;
+	.openapi("ProfileImageUploadTargetResponse");
 export const cleanupUploadsBodySchema = z.object({
 	objectKeys: z.array(z.string().min(1)),
 });
@@ -282,7 +148,7 @@ const uploadedArticleMediaSchema = z.object({
 	contentType: z.string().trim().min(1).max(120),
 	durationMs: z.number().nullish(),
 	height: z.number().nullish(),
-	mediaType: z.enum(["image", "video"]),
+	mediaType: articleMediaTypeSchema,
 	objectKey: z.string().trim().min(1).max(1024),
 	order: z.number().int().positive(),
 	originalMetadata: z.record(z.string(), z.unknown()).nullish(),
@@ -306,7 +172,7 @@ export const articleMediaUploadTargetsBodySchema = z.array(
 			.max(200 * 1024 * 1024),
 		contentType: z.string().trim().min(1).max(120),
 		fileName: z.string().trim().min(1).max(255),
-		mediaType: z.enum(["image", "video"]),
+		mediaType: articleMediaTypeSchema,
 		thumbnail: z
 			.object({
 				byteSize: z
@@ -336,7 +202,7 @@ export const articleMediaUploadTargetsResponseSchema = z.object({
 			url: z.string(),
 		}),
 	),
-}) satisfies z.ZodType<ArticleMediaUploadTargetsResponseContract>;
+});
 
 export const commentBodySchema = z.object({
 	body: z.string().trim().min(1),
@@ -349,5 +215,13 @@ export const notificationsQuerySchema = z.object({
 });
 
 export const updateMemberRoleBodySchema = z.object({
-	role: z.enum(userRoleContractValues),
+	role: userRoleSchema,
 });
+
+export type ArticleMediaUploadTargetsResponse = z.infer<
+	typeof articleMediaUploadTargetsResponseSchema
+>;
+
+export type ProfileImageUploadTargetResponse = z.infer<
+	typeof profileImageUploadTargetResponseSchema
+>;

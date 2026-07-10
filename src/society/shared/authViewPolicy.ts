@@ -1,6 +1,6 @@
-import type { UserRoleContract } from "#/api/contracts";
+import type { UserRoleView } from "./viewModels";
 
-export type UserRoleView = UserRoleContract;
+export type { UserRoleView };
 
 export const userRoleViewOptions = [
 	"associate",

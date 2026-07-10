@@ -10,7 +10,7 @@ import {
 import type { ArticleFormValues } from "#/society/article/components/articleFormTypes";
 import { useArticleMediaUploader } from "#/society/article/hooks/useArticleMediaUploader";
 import { createArticleMutationPayload } from "#/society/article/utils/articleMutationPayload";
-import { toArticleDetailSnapshotViewModel } from "#/society/shared/apiContractMappers";
+import { parseArticleDetailResponse } from "#/society/shared/apiResponseParsers";
 import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
 import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
 import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
@@ -167,7 +167,7 @@ export function useFeedArticleActions({
 						throw new Error("글을 저장하지 못했습니다.");
 					}
 
-					const snapshot = toArticleDetailSnapshotViewModel(result);
+					const snapshot = parseArticleDetailResponse(result);
 
 					setArticlesByHikingId((currentArticles) => {
 						const hikingArticles = currentArticles[snapshot.article.hikingId];

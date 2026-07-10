@@ -3,11 +3,6 @@ import { getFeedRouteData } from "#/society-app/feed/feedRouteData.functions";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
 import FeedPageView from "#/society/feed/FeedPageView";
 import { toNumericSearchId } from "#/routing/searchParams";
-import {
-	toAuthenticatedUserViewModel,
-	toFeedSummaryViewModel,
-	toNotificationListSnapshotViewModel,
-} from "#/society/shared/coreViewModelMappers";
 import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export const Route = createFileRoute("/feed")({
@@ -25,18 +20,16 @@ export const Route = createFileRoute("/feed")({
 				feedSummary: null,
 				notificationSnapshot: null,
 				selectedHikingId: null,
-				user: toAuthenticatedUserViewModel(data.user),
+				user: data.user,
 			};
 		}
 
 		return {
 			currentTheme: data.currentTheme,
-			feedSummary: toFeedSummaryViewModel(data.feedSummary),
-			notificationSnapshot: data.notificationSnapshot
-				? toNotificationListSnapshotViewModel(data.notificationSnapshot)
-				: null,
+			feedSummary: data.feedSummary,
+			notificationSnapshot: data.notificationSnapshot,
 			selectedHikingId: null,
-			user: toAuthenticatedUserViewModel(data.user),
+			user: data.user,
 		};
 	},
 	validateSearch: (search) => ({

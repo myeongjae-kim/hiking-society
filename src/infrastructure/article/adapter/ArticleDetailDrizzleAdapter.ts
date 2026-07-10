@@ -18,6 +18,7 @@ import type {
 	Longitude,
 	Timezone,
 } from "@/core/common/domain";
+import { toIsoDateTime } from "@/core/common/domain";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
@@ -43,10 +44,6 @@ function toNumericId(id: string) {
 	}
 
 	return numericId;
-}
-
-function toIsoDateTime(value: Date | null) {
-	return (value ? value.toISOString() : null) as IsoDateTimeString | null;
 }
 
 function toAuthorName(row: {
@@ -292,7 +289,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 				}),
 				authorUserId: row.hikingAuthorUserId,
 				completedAt: row.hikingCompletedAt as IsoDateTimeString,
-				createdAt: row.hikingCreatedAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(row.hikingCreatedAt),
 				hikingDate: row.hikingDate as IsoDateString,
 				id: String(row.hikingId) as HikingId,
 				latitude: row.hikingLatitude as Latitude,
@@ -304,7 +301,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 				restaurantAddress: row.hikingRestaurantAddress,
 				startedAt: row.hikingStartedAt as IsoDateTimeString,
 				timezone: row.hikingTimezone as Timezone,
-				updatedAt: row.hikingUpdatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(row.hikingUpdatedAt),
 			};
 
 			const article: Article = {
@@ -312,7 +309,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 				authorProfileImageUrl: row.profileImageUrl,
 				authorUserId: row.authorUserId,
 				body: row.body,
-				createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(row.createdAt),
 				deletedAt: toIsoDateTime(row.deletedAt),
 				edited: row.updatedAt.getTime() !== row.createdAt.getTime(),
 				hikingId: String(row.hikingId) as Article["hikingId"],
@@ -320,7 +317,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 				likeCount: articleLikeCountByArticleId.get(row.id) ?? 0,
 				likedByCurrentUser: likedArticleIdsByCurrentUser.has(row.id),
 				media,
-				updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(row.updatedAt),
 			};
 
 			const comments: Comment[] = commentRows.map((comment) => ({
@@ -329,7 +326,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 				authorProfileImageUrl: comment.profileImageUrl,
 				authorUserId: comment.authorUserId,
 				body: comment.body,
-				createdAt: comment.createdAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(comment.createdAt),
 				deletedAt: toIsoDateTime(comment.deletedAt),
 				id: String(comment.id) as CommentId,
 				likeCount: commentLikeCountByCommentId.get(comment.id) ?? 0,
@@ -338,7 +335,7 @@ export class ArticleDetailDrizzleAdapter implements ArticleDetailQueryPort {
 					comment.parentCommentId === null
 						? null
 						: (String(comment.parentCommentId) as CommentId),
-				updatedAt: comment.updatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(comment.updatedAt),
 			})) as Comment[];
 
 			return { article, comments, hiking };

@@ -4,9 +4,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { $api } from "#/api/client/$api";
 import {
-	toCommentsSnapshotViewModel,
-	toHikingArticlesSnapshotViewModel,
-} from "#/society/shared/apiContractMappers";
+	parseCommentsResponse,
+	parseHikingArticlesResponse,
+} from "#/society/shared/apiResponseParsers";
 import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
 import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
 import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
@@ -129,7 +129,7 @@ export function useFeedArticleLoader({
 				)
 				.then((data) => {
 					const { articles, comments } =
-						toHikingArticlesSnapshotViewModel(data);
+						parseHikingArticlesResponse(data);
 
 					setArticlesByHikingId((currentArticles) => ({
 						...currentArticles,
@@ -176,7 +176,7 @@ export function useFeedArticleLoader({
 					params: { path: { articleId } },
 				}),
 			);
-			const { comments } = toCommentsSnapshotViewModel(result);
+			const { comments } = parseCommentsResponse(result);
 
 			setCommentsByHikingId((currentComments) => {
 				const hikingComments = currentComments[hikingId];

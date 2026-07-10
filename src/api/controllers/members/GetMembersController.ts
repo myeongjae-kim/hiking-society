@@ -3,7 +3,6 @@ import { forbidden } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { membersResponseSchema } from "#/api/schemas";
-import { toMemberDto } from "./_memberDto";
 import type { GetMemberManagementUseCase } from "@/core/member/application/port/in/GetMemberManagementUseCase";
 
 export function createGetMembersController(
@@ -32,12 +31,7 @@ export function createGetMembersController(
 			throw forbidden();
 		}
 
-		return c.json(
-			membersResponseSchema.parse({
-				members: data.members.map(toMemberDto),
-			}),
-			200,
-		);
+		return c.json(membersResponseSchema.parse({ members: data.members }), 200);
 	});
 
 	return controller;

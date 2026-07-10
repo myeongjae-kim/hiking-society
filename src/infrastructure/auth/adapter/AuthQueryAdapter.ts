@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
+import { toIsoDateTime } from "@/core/common/domain";
 import { Autowired } from "@/core/config/Autowired";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthQueryPort } from "@/core/auth/application/port/out/AuthQueryPort";
@@ -80,7 +81,7 @@ export class AuthQueryAdapter implements AuthQueryPort {
 			displayName: row.displayName,
 			email: row.email,
 			id: row.id,
-			lastLoginAt: row.lastLoginAt,
+			lastLoginAt: toIsoDateTime(row.lastLoginAt),
 			name: row.name,
 			profileImageUrl: row.profileImageUrl,
 			provider: row.provider,

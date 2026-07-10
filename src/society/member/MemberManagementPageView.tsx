@@ -1,7 +1,8 @@
-import type { MemberContract } from "#/api/contracts";
+import type { MemberListItem } from "@/core/member/model/MemberListItem";
 import {
 	canSelectMemberRole,
 	userRoleLabels,
+	type UserRoleView,
 	userRoleViewOptions,
 } from "#/society/shared/authViewPolicy";
 import Link from "#/society/shared/components/AppLink";
@@ -14,9 +15,9 @@ function formatDate(value: string | null) {
 type MembersPageViewProps = {
 	actor: {
 		id: number;
-		role: MemberContract["role"];
+		role: UserRoleView;
 	};
-	members: readonly MemberContract[];
+	members: readonly MemberListItem[];
 };
 
 export default function MembersPageView({

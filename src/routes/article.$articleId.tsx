@@ -4,12 +4,6 @@ import ArticleDetailPageView from "#/society/article/ArticleDetailPageView";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
 import { AssociateFeedNotice } from "#/society/feed/components/AssociateFeedNotice";
 import { toNumericSearchId } from "#/routing/searchParams";
-import {
-	toArticleDetailSnapshotViewModel,
-	toAuthenticatedUserViewModel,
-	toHikingViewModel,
-	toNotificationListSnapshotViewModel,
-} from "#/society/shared/coreViewModelMappers";
 import type { CommentViewId as CommentId } from "#/society/shared/viewModels";
 
 export const Route = createFileRoute("/article/$articleId")({
@@ -30,25 +24,18 @@ export const Route = createFileRoute("/article/$articleId")({
 		if (data.status === "associate") {
 			return {
 				currentTheme: data.currentTheme,
-				currentUser: toAuthenticatedUserViewModel(data.currentUser),
+				currentUser: data.currentUser,
 				status: "associate" as const,
 			};
 		}
 
-		const articleSnapshot = toArticleDetailSnapshotViewModel({
+		return {
 			article: data.article,
 			comments: data.comments,
-		});
-
-		return {
-			article: articleSnapshot.article,
-			comments: articleSnapshot.comments,
 			currentTheme: data.currentTheme,
-			currentUser: toAuthenticatedUserViewModel(data.currentUser),
-			hiking: toHikingViewModel(data.hiking),
-			notificationSnapshot: toNotificationListSnapshotViewModel(
-				data.notificationSnapshot,
-			),
+			currentUser: data.currentUser,
+			hiking: data.hiking,
+			notificationSnapshot: data.notificationSnapshot,
 			status: "ok" as const,
 		};
 	},

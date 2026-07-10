@@ -1,5 +1,6 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
+import { toIsoDateTime } from "@/core/common/domain";
 import { Autowired } from "@/core/config/Autowired";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { MemberQueryPort } from "@/core/member/application/port/out/MemberQueryPort";
@@ -12,7 +13,7 @@ export class MemberQueryAdapter implements MemberQueryPort {
 	) {}
 
 	async listActiveMembers(): Promise<MemberListItem[]> {
-		return this.transactionRunner.read(async (tx) =>
+		const rows = await this.transactionRunner.read(async (tx) =>
 			tx
 				.select({
 					createdAt: userTable.createdAt,
@@ -35,6 +36,12 @@ export class MemberQueryAdapter implements MemberQueryPort {
 				.where(isNull(userTable.deletedAt))
 				.orderBy(asc(userTable.id)),
 		);
+
+		return rows.map((row) => ({
+			...row,
+			createdAt: toIsoDateTime(row.createdAt),
+			lastLoginAt: toIsoDateTime(row.lastLoginAt),
+		}));
 	}
 
 	async findActiveMemberRoleById(userId: number) {

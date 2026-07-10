@@ -139,7 +139,7 @@ unsafe_api_model_casts="$(
 )"
 
 if [[ -n "$unsafe_api_model_casts" ]]; then
-	echo "Feed and notification UI must map API contracts through society/shared/apiContractMappers instead of casting API data into core-shaped models:" >&2
+	echo "Feed and notification UI must parse API responses through society/shared/apiResponseParsers instead of casting API data into core-shaped models:" >&2
 	echo "$unsafe_api_model_casts" >&2
 	exit 1
 fi

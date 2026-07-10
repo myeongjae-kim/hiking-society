@@ -1,6 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import { toIsoDateTime } from "@/core/common/domain";
 import { Autowired } from "@/core/config/Autowired";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthCommandPort } from "@/core/auth/application/port/out/AuthCommandPort";
@@ -24,7 +25,7 @@ function toAuthenticatedUser(
 		displayName: user.displayName,
 		email: user.email ?? fallbackEmail,
 		id: user.id,
-		lastLoginAt: user.lastLoginAt,
+		lastLoginAt: toIsoDateTime(user.lastLoginAt),
 		name: user.name,
 		profileImageUrl: user.profileImageUrl,
 		provider,

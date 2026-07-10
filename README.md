@@ -11,7 +11,7 @@
 - **Core는 객체지향**: use case service가 객체로 협력하며 정책을 명시합니다.
 - **Web 영역은 함수형**: route, controller, server function, React hook은 요청/응답 변환과 순수 계산, effect orchestration을 분리합니다.
 
-HTTP 경로, OpenAPI wire shape, DB schema는 외부 계약입니다. 구조 변경 시에도 호환성을 유지합니다.
+HTTP 경로, OpenAPI wire shape, DB schema는 외부 계약입니다. 구조 변경 시에도 호환성을 유지합니다. 다만 앱 내부의 read model 타입과 런타임 검증 schema는 `src/core`를 canonical source로 삼고, REST/OpenAPI adapter는 그 core schema에서 wire schema를 파생합니다.
 
 ## Directory Layout
 
@@ -107,6 +107,8 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 `src/routes`는 TanStack Start route adapter입니다. route 파일은 loader, component wiring, route-level redirect 정도를 맡고 정책은 core use case로 위임합니다.
 
 `src/api`는 Hono/OpenAPI HTTP adapter입니다. controller는 request/response 변환, 인증 context 확인, use case 호출, API error 변환만 담당합니다.
+
+REST response schema는 가능한 한 `src/core/**/**Schema.ts`에서 파생합니다. API-only request body, query string, upload target 같은 wire 전용 schema만 `src/api/schemas.ts`에 직접 둡니다.
 
 `src/society-app/**.functions.ts`는 TanStack Start server function boundary입니다. cookie read/write나 form payload 변환 같은 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
 

@@ -1,10 +1,11 @@
+import type { IsoDateTimeString } from "@/core/common/domain";
 import type { UserRole } from "./roles";
 
 export type AuthenticatedUser = {
 	displayName: string | null;
 	email: string;
 	id: number;
-	lastLoginAt: Date | null;
+	lastLoginAt: IsoDateTimeString | null;
 	name: string | null;
 	provider: string | null;
 	profileImageUrl: string | null;

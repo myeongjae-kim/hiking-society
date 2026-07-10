@@ -14,8 +14,8 @@ import {
 	ProfileImageEditDialog,
 } from "./components/ProfileEditDialogs";
 
-function formatDate(value: Date | null) {
-	return value ? value.toISOString().slice(0, 19).replace("T", " ") : "null";
+function formatDate(value: string | null) {
+	return value ? value.slice(0, 19).replace("T", " ") : "null";
 }
 
 function Row({

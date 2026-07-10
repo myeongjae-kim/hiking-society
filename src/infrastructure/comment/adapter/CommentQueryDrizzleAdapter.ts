@@ -3,7 +3,7 @@ import type { ArticleId } from "@/core/article/domain";
 import type { CommentQueryPort } from "@/core/comment/application/port/out/CommentQueryPort";
 import type { Comment, CommentId } from "@/core/comment/domain";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
-import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
+import { toIsoDateTime, type AuthorName } from "@/core/common/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import {
@@ -21,10 +21,6 @@ function toNumericId(id: string) {
 	}
 
 	return numericId;
-}
-
-function toIsoDateTime(value: Date | null) {
-	return (value ? value.toISOString() : null) as IsoDateTimeString | null;
 }
 
 function toAuthorName(row: {
@@ -114,7 +110,7 @@ export class CommentQueryDrizzleAdapter implements CommentQueryPort {
 				authorProfileImageUrl: row.profileImageUrl,
 				authorUserId: row.authorUserId,
 				body: row.body,
-				createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(row.createdAt),
 				deletedAt: toIsoDateTime(row.deletedAt),
 				id: String(row.id) as CommentId,
 				likeCount: commentLikeCountByCommentId.get(row.id) ?? 0,
@@ -123,7 +119,7 @@ export class CommentQueryDrizzleAdapter implements CommentQueryPort {
 					row.parentCommentId === null
 						? null
 						: (String(row.parentCommentId) as CommentId),
-				updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(row.updatedAt),
 			})) as Comment[];
 		});
 	}

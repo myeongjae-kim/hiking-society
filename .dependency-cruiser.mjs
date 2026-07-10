@@ -121,12 +121,18 @@ export default {
 			},
 		},
 		{
-			name: "api-contracts-not-to-core",
+			name: "web-schema-boundaries-only-to-core-schemas-at-runtime",
 			comment:
-				"API wire contracts and schemas are framework boundary DTOs; they should not import core model/runtime constants.",
+				"API schemas and API response parsers may reuse canonical core schemas, but should not execute core services or domain policies.",
 			severity: "error",
-			from: { path: "^src/api/(contracts|schemas)[.]ts$" },
-			to: { path: "^src/core/" },
+			from: {
+				path: "^src/(api/schemas[.]ts|society/shared/apiResponseParsers[.]ts)$",
+			},
+			to: {
+				dependencyTypesNot: ["type-only"],
+				path: "^src/core/",
+				pathNot: "Schema[.]ts$",
+			},
 		},
 		{
 			name: "api-config-not-to-controllers",
@@ -187,7 +193,10 @@ export default {
 			comment:
 				"Routes and society UI can reference core types, but runtime execution must go through society-app or API boundaries.",
 			severity: "error",
-			from: { path: "^src/(routes|society)/" },
+			from: {
+				path: "^src/(routes|society)/",
+				pathNot: "^src/society/shared/apiResponseParsers[.]ts$",
+			},
 			to: {
 				path: "^src/core/",
 				dependencyTypesNot: ["type-only"],

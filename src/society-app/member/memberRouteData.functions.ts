@@ -2,10 +2,6 @@ import { getUseCase } from "#/infrastructure/config/getUseCase";
 import { readCurrentUser } from "#/society-app/auth/session.functions";
 import type { GetMemberManagementUseCase } from "@/core/member/application/port/in/GetMemberManagementUseCase";
 import { createServerFn } from "@tanstack/react-start";
-import {
-	toMemberContract,
-	toMemberManagementActorContract,
-} from "./memberRouteContracts";
 
 type GetMembersRouteDataDeps = {
 	readonly getMemberManagementUseCase: GetMemberManagementUseCase;
@@ -29,8 +25,11 @@ async function getMembersRouteDataHandler({
 	}
 
 	return {
-		actor: toMemberManagementActorContract(data.actor),
-		members: data.members.map(toMemberContract),
+		actor: {
+			id: data.actor.id,
+			role: data.actor.role,
+		},
+		members: data.members,
 		status: "ok" as const,
 	};
 }

@@ -6,6 +6,15 @@ export type IsoDateString = Brand<string, "IsoDateString">;
 
 export type IsoDateTimeString = Brand<string, "IsoDateTimeString">;
 
+export function toIsoDateTime(value: Date): IsoDateTimeString;
+export function toIsoDateTime(value: null): null;
+export function toIsoDateTime(value: Date | null): IsoDateTimeString | null;
+export function toIsoDateTime(
+	value: Date | null,
+): IsoDateTimeString | null {
+	return value ? (value.toISOString() as IsoDateTimeString) : null;
+}
+
 export type Timezone = Brand<string, "Timezone">;
 
 export type Altitude = Brand<number, "Altitude">;

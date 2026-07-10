@@ -16,6 +16,7 @@ import type {
 	Longitude,
 	Timezone,
 } from "@/core/common/domain";
+import { toIsoDateTime } from "@/core/common/domain";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
@@ -40,10 +41,6 @@ function toNumericId(id: string) {
 	}
 
 	return numericId;
-}
-
-function toIsoDateTime(value: Date | null) {
-	return (value ? value.toISOString() : null) as IsoDateTimeString | null;
 }
 
 function toAuthorName(row: {
@@ -142,7 +139,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 				authorName: toAuthorName(row),
 				authorUserId: row.authorUserId,
 				completedAt: row.completedAt as IsoDateTimeString,
-				createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(row.createdAt),
 				hikingDate: row.hikingDate as IsoDateString,
 				id: String(row.id) as HikingId,
 				latitude: row.latitude as Latitude,
@@ -154,7 +151,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 				restaurantAddress: row.restaurantAddress,
 				startedAt: row.startedAt as IsoDateTimeString,
 				timezone: row.timezone as Timezone,
-				updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(row.updatedAt),
 			}));
 			const hikingArticleCounts = articleCountRows.map((row) => ({
 				articleCount: row.articleCount,
@@ -367,7 +364,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 						authorProfileImageUrl: row.profileImageUrl,
 						authorUserId: row.authorUserId,
 						body: row.body,
-						createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+						createdAt: toIsoDateTime(row.createdAt),
 						deletedAt: toIsoDateTime(row.deletedAt),
 						edited: row.updatedAt.getTime() !== row.createdAt.getTime(),
 						hikingId: String(row.hikingId) as HikingId,
@@ -375,7 +372,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 						likeCount: articleLikeCountByArticleId.get(row.id) ?? 0,
 						likedByCurrentUser: likedArticleIdsByCurrentUser.has(row.id),
 						media,
-						updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+						updatedAt: toIsoDateTime(row.updatedAt),
 					},
 				];
 			});
@@ -386,7 +383,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 				authorProfileImageUrl: row.profileImageUrl,
 				authorUserId: row.authorUserId,
 				body: row.body,
-				createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+				createdAt: toIsoDateTime(row.createdAt),
 				deletedAt: toIsoDateTime(row.deletedAt),
 				id: String(row.id) as CommentId,
 				likeCount: commentLikeCountByCommentId.get(row.id) ?? 0,
@@ -395,7 +392,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 					row.parentCommentId === null
 						? null
 						: (String(row.parentCommentId) as CommentId),
-				updatedAt: row.updatedAt.toISOString() as IsoDateTimeString,
+				updatedAt: toIsoDateTime(row.updatedAt),
 			})) as Comment[];
 
 			return { articles, comments };

@@ -6,10 +6,10 @@ import { useMemo, useState, useTransition } from "react";
 
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
+import { parseNotificationListResponse } from "#/society/shared/apiResponseParsers";
 import { DateTimeLabel } from "#/society/shared/components/DateTimeLabel";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { useRouter } from "#/society/shared/hooks/useRouter";
-import { toNotificationListSnapshotViewModel } from "#/society/shared/apiContractMappers";
 import type {
 	NotificationListViewModel as NotificationListSnapshot,
 	NotificationViewModel as NotificationSummary,
@@ -135,7 +135,7 @@ export function NotificationPopover({
 	const notificationPages = useMemo(
 		() =>
 			(notificationsQuery.data?.pages ?? []).map(
-				toNotificationListSnapshotViewModel,
+				parseNotificationListResponse,
 			),
 		[notificationsQuery.data?.pages],
 	);

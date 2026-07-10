@@ -3,7 +3,7 @@ import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
 import type { DrizzleTransactionRunner } from "#/infrastructure/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
-import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
+import { toIsoDateTime, type AuthorName } from "@/core/common/domain";
 import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import type { NotificationQueryPort } from "@/core/notification/application/port/out/NotificationQueryPort";
@@ -18,10 +18,6 @@ function toNumericId(id: string) {
 	}
 
 	return numericId;
-}
-
-function toIsoDateTime(value: Date | null) {
-	return (value ? value.toISOString() : null) as IsoDateTimeString | null;
 }
 
 function toAuthorName(row: {
@@ -112,7 +108,7 @@ export class NotificationDrizzleAdapter
 							? null
 							: (String(row.commentId) as CommentId),
 					contentExcerpt: row.contentExcerpt,
-					createdAt: row.createdAt.toISOString() as IsoDateTimeString,
+					createdAt: toIsoDateTime(row.createdAt),
 					id: String(row.id) as NotificationId,
 					readAt: toIsoDateTime(row.readAt),
 					type: row.type,
