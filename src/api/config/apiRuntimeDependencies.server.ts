@@ -11,10 +11,8 @@ export type ApiRuntimeDependencies = {
 };
 
 export function createApiRuntimeDependencies(): ApiRuntimeDependencies {
-	const getCookieOptionsUseCase = getUseCase("GetCookieOptionsUseCase");
-
 	return {
-		cookieOptions: createCookieOptions({ getCookieOptionsUseCase }),
+		cookieOptions: createCookieOptions(process.env.NODE_ENV),
 		resolveSessionUseCase: getUseCase("ResolveSessionUseCase"),
 	};
 }

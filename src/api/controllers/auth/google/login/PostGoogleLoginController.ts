@@ -2,10 +2,12 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { ApiError } from "#/api/config/ApiError";
 import { Controller } from "#/api/config/Controller";
-import { sessionCookieConfig } from "#/api/config/sessionCookies";
+import {
+	type CookieOptionsFactory,
+	sessionCookieConfig,
+} from "#/api/config/sessionCookies";
 import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
 import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
-import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
 import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
 import type { LoginWithGoogleCodeUseCase } from "@/core/auth/application/port/in/LoginWithGoogleCodeUseCase";
 
@@ -17,7 +19,7 @@ const {
 } = sessionCookieConfig;
 
 export function createPostGoogleLoginController(
-	getCookieOptionsUseCase: GetCookieOptionsUseCase,
+	cookieOptions: CookieOptionsFactory,
 	createSessionTokenUseCase: CreateSessionTokenUseCase,
 	loginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase,
 ) {
@@ -71,13 +73,13 @@ export function createPostGoogleLoginController(
 			c,
 			accessTokenCookieName,
 			accessToken,
-			getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+			cookieOptions(accessTokenMaxAgeSeconds),
 		);
 		setCookie(
 			c,
 			refreshTokenCookieName,
 			refreshToken,
-			getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+			cookieOptions(refreshTokenMaxAgeSeconds),
 		);
 
 		return c.json(currentUserSchema.parse(result.user), 200);

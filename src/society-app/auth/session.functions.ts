@@ -2,16 +2,19 @@ import { getUseCase } from "#/infrastructure/config/getUseCase";
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from "#/theme/webtuiThemes";
 import type { RefreshedSessionTokens } from "@/core/auth/application/port/in/ResolveSessionUseCase";
 import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
+import { createSessionCookieOptionsFactory } from "@/core/auth/config/sessionCookieOptions";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { UserRole } from "@/core/auth/model/roles";
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 
 type ReadCurrentTheme = () => Promise<string>;
 type ReadCurrentUser = () => Promise<AuthenticatedUser | null>;
+const getSessionCookieOptions = createSessionCookieOptionsFactory(
+	process.env.NODE_ENV,
+);
 
 async function writeSessionCookies(tokens: RefreshedSessionTokens) {
 	const { setCookie } = await import("@tanstack/react-start/server");
-	const getCookieOptionsUseCase = getUseCase("GetCookieOptionsUseCase");
 	const {
 		accessTokenCookieName,
 		accessTokenMaxAgeSeconds,
@@ -22,12 +25,12 @@ async function writeSessionCookies(tokens: RefreshedSessionTokens) {
 	setCookie(
 		accessTokenCookieName,
 		tokens.accessToken,
-		getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+		getSessionCookieOptions(accessTokenMaxAgeSeconds),
 	);
 	setCookie(
 		refreshTokenCookieName,
 		tokens.refreshToken,
-		getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+		getSessionCookieOptions(refreshTokenMaxAgeSeconds),
 	);
 }
 

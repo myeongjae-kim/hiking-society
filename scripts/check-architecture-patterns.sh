@@ -121,7 +121,7 @@ if [[ -n "$direct_fetch_client_usage" ]]; then
 fi
 
 direct_use_case_context_usage="$(
-	rg -n 'applicationUseCaseContext|getUseCase\(|[.]get\("[^"]*UseCase"' src/api src/routes src/society-app \
+	rg -n 'applicationUseCaseContext|getUseCase\(|[.]get\("[^"]*UseCase"' src/api src/society-app \
 		--glob '*.{ts,tsx}' \
 		--glob '!src/api/config/ApiControllerConfig.server.ts' \
 		--glob '!src/api/config/apiRuntimeDependencies.server.ts' \
@@ -129,7 +129,7 @@ direct_use_case_context_usage="$(
 )"
 
 if [[ -n "$direct_use_case_context_usage" ]]; then
-	echo "Routes, API controllers, API middleware, and society-app server functions should receive explicit dependencies from their composition modules instead of looking up use cases directly:" >&2
+	echo "API controllers, API middleware, and shared society-app server functions should receive explicit dependencies from their composition modules instead of looking up use cases directly:" >&2
 	echo "$direct_use_case_context_usage" >&2
 	exit 1
 fi

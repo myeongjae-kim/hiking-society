@@ -12,7 +12,6 @@ import { AuthQueryAdapter } from "../auth/adapter/AuthQueryAdapter";
 import { GoogleOAuthAdapter } from "../auth/adapter/GoogleOAuthAdapter";
 import { JoseTokenCodecAdapter } from "../auth/adapter/JoseTokenCodecAdapter";
 import { CreateSessionTokenService } from "@/core/auth/application/CreateSessionTokenService";
-import { GetCookieOptionsService } from "@/core/auth/application/GetCookieOptionsService";
 import { LoginWithGoogleCodeService } from "@/core/auth/application/LoginWithGoogleCodeService";
 import { ResolveSessionService } from "@/core/auth/application/ResolveSessionService";
 import { VerifyTokenService } from "@/core/auth/application/VerifyTokenService";
@@ -80,7 +79,6 @@ export const beanConfig: BeanConfig<Beans> = {
 	VerifyRefreshTokenUseCase: (bind) => bind().to(VerifyTokenService),
 	CreateSessionTokenUseCase: (bind) => bind().to(CreateSessionTokenService),
 	CookieConfig: (bind) => bind().to(CookieConfig),
-	GetCookieOptionsUseCase: (bind) => bind().to(GetCookieOptionsService),
 	GetArticleDetailUseCase: (bind) => bind().to(GetArticleDetailService),
 	GetArticlePageUseCase: (bind) => bind().to(GetArticlePageService),
 	GetFeedHomeUseCase: (bind) => bind().to(GetFeedHomeService),

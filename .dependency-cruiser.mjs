@@ -154,7 +154,7 @@ export default {
 		{
 			name: "society-app-not-to-society-ui",
 			comment:
-				"Society app server-function boundaries should orchestrate core use cases, not depend on UI modules.",
+				"Shared society-app server helpers should orchestrate core use cases, not depend on UI modules.",
 			severity: "error",
 			from: { path: "^src/society-app/" },
 			to: { path: "^src/society/" },
@@ -170,7 +170,7 @@ export default {
 		{
 			name: "society-ui-not-to-server-functions",
 			comment:
-				"Server functions belong in src/society-app so src/society stays a UI/client product boundary.",
+				"Server functions belong in src/routes or src/society-app so src/society stays a UI/client product boundary.",
 			severity: "error",
 			from: { path: "^src/society/.*[.]functions[.]ts$" },
 			to: { path: "^" },
@@ -191,7 +191,7 @@ export default {
 		{
 			name: "routes-and-society-not-to-core-runtime",
 			comment:
-				"Routes and society UI can reference core types, but runtime execution must go through society-app or API boundaries.",
+				"Routes and society UI can reference core types, but core runtime execution should go through typed server-function/API boundaries.",
 			severity: "error",
 			from: {
 				path: "^src/(routes|society)/",

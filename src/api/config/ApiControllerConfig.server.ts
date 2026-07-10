@@ -1,4 +1,5 @@
 import { getUseCase } from "#/infrastructure/config/getUseCase";
+import { createCookieOptions } from "./sessionCookies";
 import { createPostArticleMediaUploadTargetsController } from "../controllers/article-media/upload-targets/PostArticleMediaUploadTargetsController";
 import { createDeleteArticleMediaUploadsController } from "../controllers/article-media/uploads/DeleteArticleMediaUploadsController";
 import { createPostArticlesController } from "../controllers/articles/PostArticlesController";
@@ -34,10 +35,12 @@ import { createPatchProfileImageController } from "../controllers/profile/image/
 import { createGetCurrentUserController } from "../controllers/users/me/GetCurrentUserController";
 
 export function createApiControllers() {
+	const cookieOptions = createCookieOptions(process.env.NODE_ENV);
+
 	return [
 		createGetCurrentUserController(),
 		createPostGoogleLoginController(
-			getUseCase("GetCookieOptionsUseCase"),
+			cookieOptions,
 			getUseCase("CreateSessionTokenUseCase"),
 			getUseCase("LoginWithGoogleCodeUseCase"),
 		),
@@ -74,7 +77,7 @@ export function createApiControllers() {
 			getUseCase("UpdateDisplayNameUseCase"),
 		),
 		createPatchProfileEmailController(
-			getUseCase("GetCookieOptionsUseCase"),
+			cookieOptions,
 			getUseCase("CreateSessionTokenUseCase"),
 			getUseCase("UpdateEmailUseCase"),
 		),

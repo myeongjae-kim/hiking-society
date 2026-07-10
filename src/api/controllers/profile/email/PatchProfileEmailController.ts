@@ -2,9 +2,11 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import { sessionCookieConfig } from "#/api/config/sessionCookies";
+import {
+	type CookieOptionsFactory,
+	sessionCookieConfig,
+} from "#/api/config/sessionCookies";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
-import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
 import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
 import type { UpdateEmailUseCase } from "@/core/profile/application/port/in/UpdateEmailUseCase";
 
@@ -16,7 +18,7 @@ const {
 } = sessionCookieConfig;
 
 export function createPatchProfileEmailController(
-	getCookieOptionsUseCase: GetCookieOptionsUseCase,
+	cookieOptions: CookieOptionsFactory,
 	createSessionTokenUseCase: CreateSessionTokenUseCase,
 	updateEmailUseCase: UpdateEmailUseCase,
 ) {
@@ -63,13 +65,13 @@ export function createPatchProfileEmailController(
 				c,
 				accessTokenCookieName,
 				accessToken,
-				getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+				cookieOptions(accessTokenMaxAgeSeconds),
 			);
 			setCookie(
 				c,
 				refreshTokenCookieName,
 				refreshToken,
-				getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+				cookieOptions(refreshTokenMaxAgeSeconds),
 			);
 		}
 

@@ -32,7 +32,7 @@ src/
     common/adapter/      # transaction, clock 등 공통 adapter
     config/              # DI wiring과 environment binding
   routes/                # TanStack Start file routes
-  society-app/           # route-facing server functions와 앱 서버 context
+	society-app/           # 공유 server functions와 앱 서버 context
   api/                   # Hono/OpenAPI HTTP adapter
   society/               # 등산 모임 제품 UI, client hooks, client-side utilities
   config/                # client/runtime configuration
@@ -86,7 +86,7 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 
 ## Society Boundary
 
-`src/society-app`는 제품 기능 단위의 server function boundary입니다. route loader와 REST controller가 함께 써야 하는 접근 정책/조회 조립은 먼저 `src/core/**/application/port/in` 유스케이스로 올리고, `src/society-app`는 쿠키/테마/read-current-user 같은 웹 작업만 더합니다.
+`src/society-app`는 route 여러 곳에서 공유하는 server function/context boundary입니다. route 하나에서만 쓰는 data loader server function은 route 파일에 colocate할 수 있고, 쿠키/테마/read-current-user처럼 여러 route가 공유하는 웹 서버 작업은 `src/society-app`에 둡니다. route loader와 REST controller가 함께 써야 하는 접근 정책/조회 조립은 먼저 `src/core/**/application/port/in` 유스케이스로 올립니다.
 
 `src/society`는 제품 기능 단위의 웹/UI 코드입니다.
 
@@ -98,19 +98,19 @@ adapter가 권한 없음, 대상 없음, 삭제 가능 여부, 알림 수신자 
 - feature 간 조합이 필요하면 더 구체적인 feature 쪽에서 조합합니다.
 - 예를 들어 `AuthorBadge`는 순수 badge 컴포넌트이고, 프로필 이미지 preview는 `article` 쪽에서 `MediaViewer`를 render prop으로 주입합니다.
 - 큰 hook은 순수 계산 함수와 effect orchestration hook으로 나눕니다.
-- `src/society`는 `src/society-app`를 import하지 않습니다. server function은 route나 society-app boundary를 통해 주입합니다.
+- `src/society`는 `src/society-app`를 import하지 않습니다. server function은 route boundary를 통해 주입합니다.
 
 `src/society` 아래에는 제품의 기능적 어휘를 둡니다. `integrations`, `routes`, `styles`, `theme`처럼 기술적 관심사는 `src` 최상위의 별도 디렉터리에 둡니다.
 
 ## Web Adapters
 
-`src/routes`는 TanStack Start route adapter입니다. route 파일은 loader, component wiring, route-level redirect 정도를 맡고 정책은 core use case로 위임합니다.
+`src/routes`는 TanStack Start route adapter입니다. route 파일은 loader, component wiring, route-level redirect를 맡습니다. route 하나에서만 쓰는 `createServerFn`은 route 파일에 colocate할 수 있지만, 제품 정책은 core use case로 위임합니다.
 
 `src/api`는 Hono/OpenAPI HTTP adapter입니다. controller는 request/response 변환, 인증 context 확인, use case 호출, API error 변환만 담당합니다.
 
 REST response schema는 가능한 한 `src/core/**/**Schema.ts`에서 파생합니다. API-only request body, query string, upload target 같은 wire 전용 schema만 `src/api/schemas.ts`에 직접 둡니다.
 
-`src/society-app/**.functions.ts`는 TanStack Start server function boundary입니다. cookie read/write나 form payload 변환 같은 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
+`src/society-app/**.functions.ts`는 공유 TanStack Start server function/context boundary입니다. cookie read/write나 theme/current-user 조회처럼 여러 route가 공유하는 웹 작업만 담당하고, out-port를 직접 쓰지 않습니다.
 
 route loader와 REST controller에서 같은 권한/조회 정책이 필요하면 controller와 server function 양쪽에 조건문을 복제하지 않습니다. 먼저 core in-port 유스케이스를 만들고 두 inbound adapter가 그 유스케이스를 호출합니다.
 
@@ -151,7 +151,7 @@ DB schema의 source of truth는 `drizzle/schema.ts`입니다.
 
 core의 DI token 타입과 `@Autowired` helper는 `src/core/config`에 둡니다. 실제 wiring과 환경값 binding은 `src/infrastructure/config/BeanConfig.server.ts`에서 관리합니다.
 
-웹 영역은 `src/infrastructure/config/getUseCase.ts`의 typed boundary로 in-port를 호출합니다. `src/**`에서 `application/port/out`, concrete adapter, 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
+웹 영역의 composition 지점은 `src/infrastructure/config/getUseCase.ts`의 typed boundary로 in-port를 호출합니다. route-colocated server function은 이 boundary를 직접 사용할 수 있습니다. 그 외 `src/**`에서는 `application/port/out`, concrete adapter, 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
 
 ## Architecture Checks
 

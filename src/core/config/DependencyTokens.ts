@@ -6,7 +6,6 @@ import type { ArticleCommandPort } from "@/core/article/application/port/out/Art
 import type { ArticleDetailQueryPort } from "@/core/article/application/port/out/ArticleDetailQueryPort";
 import type { MediaStoragePort } from "@/core/article/application/port/out/MediaStoragePort";
 import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
-import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
 import type { LoginWithGoogleCodeUseCase } from "@/core/auth/application/port/in/LoginWithGoogleCodeUseCase";
 import type { ResolveSessionUseCase } from "@/core/auth/application/port/in/ResolveSessionUseCase";
 import type { VerifyAccessTokenUseCase } from "@/core/auth/application/port/in/VerifyAccessTokenUseCase";
@@ -63,7 +62,6 @@ export type UseCaseBeans = {
 	VerifyAccessTokenUseCase: VerifyAccessTokenUseCase;
 	VerifyRefreshTokenUseCase: VerifyRefreshTokenUseCase;
 	CreateSessionTokenUseCase: CreateSessionTokenUseCase;
-	GetCookieOptionsUseCase: GetCookieOptionsUseCase;
 	GetArticleDetailUseCase: GetArticleDetailUseCase;
 	GetArticlePageUseCase: GetArticlePageUseCase;
 	GetFeedHomeUseCase: GetFeedHomeUseCase;
