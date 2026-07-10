@@ -10,8 +10,8 @@ export class UpdateProfileImageService implements UpdateProfileImageUseCase {
 	constructor(
 		@Autowired("ProfileCommandPort")
 		private profileCommandPort: ProfileCommandPort,
-		@Autowired("S3_PUBLIC_BASE_URL")
-		private s3PublicBaseUrl: string,
+		@Autowired("PUBLIC_MEDIA_BASE_URL")
+		private publicMediaBaseUrl: string,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
 		@Autowired("ClockPort")
@@ -28,7 +28,7 @@ export class UpdateProfileImageService implements UpdateProfileImageUseCase {
 		if (input.profileImage) {
 			const ownershipPolicy = UploadOwnershipPolicy.forUser({
 				objectPrefix: "profile-images",
-				publicBaseUrl: this.s3PublicBaseUrl,
+				publicBaseUrl: this.publicMediaBaseUrl,
 				userId: input.userId,
 			});
 

@@ -8,4 +8,8 @@ export type {
 	TopLevelComment,
 	UpdateCommentInput,
 } from "./Comment";
-export { CommentEntity } from "./Comment";
+export {
+	COMMENT_BODY_REQUIRED_MESSAGE,
+	CommentBody,
+	CommentEntity,
+} from "./Comment";

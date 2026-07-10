@@ -1,6 +1,7 @@
 export type {
 	CreateHikingInput,
 	Hiking,
+	HikingDeleteDecision,
 	HikingEntitySnapshot,
 	HikingId,
 	UpdateHikingInput,

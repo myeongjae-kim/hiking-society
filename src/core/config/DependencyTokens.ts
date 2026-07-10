@@ -115,7 +115,7 @@ export type ConfigurationBeans = {
 	GOOGLE_LOGIN_CLIENT_ID: string;
 	GOOGLE_LOGIN_CLIENT_SECRET: string;
 	NODE_ENV: typeof process.env.NODE_ENV;
-	S3_PUBLIC_BASE_URL: string;
+	PUBLIC_MEDIA_BASE_URL: string;
 };
 
 export type AutowiredBeans = UseCaseBeans &

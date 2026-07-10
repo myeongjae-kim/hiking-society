@@ -117,5 +117,6 @@ export const beanConfig: BeanConfig<Beans> = {
 	GOOGLE_LOGIN_CLIENT_SECRET: (bind) =>
 		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_SECRET),
 	NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),
-	S3_PUBLIC_BASE_URL: (bind) => bind().toConstantValue(env.S3_PUBLIC_BASE_URL),
+	PUBLIC_MEDIA_BASE_URL: (bind) =>
+		bind().toConstantValue(env.S3_PUBLIC_BASE_URL),
 };

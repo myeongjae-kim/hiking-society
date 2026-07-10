@@ -1,9 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { ArticleEntity } from "./Article";
+import type { HikingId } from "@/core/hiking/domain";
+import { ArticleBody, ArticleDraft, ArticleEntity } from "./Article";
+import type { ArticleId } from "./Article";
 import {
 	ArticleMediaCollection,
 	UploadedArticleMediaOwnership,
 } from "@/core/article/domain/ArticlePolicy";
+
+const articleId = "7" as ArticleId;
+const hikingId = "3" as HikingId;
+
+function expectPresent<T>(value: T | null) {
+	expect(value).not.toBeNull();
+
+	if (value === null) {
+		throw new Error("Expected value to be present.");
+	}
+
+	return value;
+}
 
 describe("ArticleMediaCollection", () => {
 	it("does not expose publishable media when the collection is empty", () => {
@@ -35,10 +50,93 @@ describe("ArticleMediaCollection", () => {
 
 describe("ArticleEntity", () => {
 	it("allows only the article author to manage the article", () => {
-		const article = ArticleEntity.rehydrate({ authorUserId: 1 });
+		const article = ArticleEntity.rehydrate({
+			authorUserId: 1,
+			body: "정상에서 찍은 사진",
+			hikingId,
+			id: articleId,
+		});
 
 		expect(article.canBeManagedBy(1)).toBe(true);
 		expect(article.canBeManagedBy(2)).toBe(false);
+	});
+
+	it("plans updates and deletes only for the article author", () => {
+		const body = expectPresent(ArticleBody.from(" 수정한 글 "));
+		const media = expectPresent(
+			ArticleMediaCollection.from([
+				{ order: 2, url: "/two.webp" },
+				{ order: 1, url: "/one.webp" },
+			]).toPublishable(),
+		);
+		const article = ArticleEntity.rehydrate({
+			authorUserId: 1,
+			body: "기존 글",
+			hikingId,
+			id: articleId,
+		});
+
+		expect(
+			article.planUpdate({
+				body,
+				media,
+				userId: 1,
+			}),
+		).toEqual({
+			articleId,
+			body: "수정한 글",
+			storedMedia: [
+				{ order: 1, url: "/one.webp" },
+				{ order: 2, url: "/two.webp" },
+			],
+		});
+		expect(
+			article.planUpdate({
+				body,
+				media,
+				userId: 2,
+			}),
+		).toBeNull();
+		expect(article.planDelete({ userId: 1 })).toEqual({ articleId });
+		expect(article.planDelete({ userId: 2 })).toBeNull();
+	});
+});
+
+describe("ArticleDraft", () => {
+	it("normalizes body text and exposes a create command", () => {
+		const body = expectPresent(ArticleBody.from(" 새 글 "));
+		const media = expectPresent(
+			ArticleMediaCollection.from([
+				{ order: 2, url: "/two.webp" },
+				{ order: 1, url: "/one.webp" },
+			]).toPublishable(),
+		);
+
+		const draft = ArticleDraft.create({
+			authorUserId: 1,
+			body,
+			hikingId,
+			media,
+		});
+
+		expect(draft.toCreateCommand()).toEqual({
+			authorUserId: 1,
+			body: "새 글",
+			hikingId,
+			storedMedia: [
+				{ order: 1, url: "/one.webp" },
+				{ order: 2, url: "/two.webp" },
+			],
+		});
+		expect(draft.toArticleCreatedNotification(articleId)).toEqual({
+			actorUserId: 1,
+			articleBody: "새 글",
+			articleId,
+		});
+	});
+
+	it("rejects blank article bodies", () => {
+		expect(ArticleBody.from("   ")).toBeNull();
 	});
 });
 

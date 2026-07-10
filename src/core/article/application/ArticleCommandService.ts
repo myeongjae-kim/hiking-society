@@ -5,11 +5,15 @@ import { UploadOwnershipPolicy } from "@/core/common/domain/UploadOwnershipPolic
 import { Autowired } from "@/core/config/Autowired";
 import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
 import {
+	ARTICLE_BODY_REQUIRED_MESSAGE,
+	ArticleBody,
+	ArticleDraft,
+	ArticleEntity,
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
 	ArticleMediaCollection,
 	UploadedArticleMediaOwnership,
-} from "../domain/ArticlePolicy";
-import { ArticleEntity } from "../domain";
+} from "../domain";
+import type { ArticleMediaCollection as ArticleMediaCollectionType } from "../domain/ArticlePolicy";
 import type { ArticleMediaUpload } from "../model/ArticleMediaCommand";
 import type { ArticleCommandUseCase } from "./port/in/ArticleCommandUseCase";
 import type { ArticleCommandPort } from "./port/out/ArticleCommandPort";
@@ -22,8 +26,8 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 		private createNotificationsUseCase: CreateNotificationsUseCase,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
-		@Autowired("S3_PUBLIC_BASE_URL")
-		private s3PublicBaseUrl: string,
+		@Autowired("PUBLIC_MEDIA_BASE_URL")
+		private publicMediaBaseUrl: string,
 		@Autowired("ClockPort")
 		private clockPort: ClockPort,
 	) {}
@@ -34,7 +38,7 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	) {
 		const ownershipPolicy = UploadOwnershipPolicy.forUser({
 			objectPrefix: "article-media",
-			publicBaseUrl: this.s3PublicBaseUrl,
+			publicBaseUrl: this.publicMediaBaseUrl,
 			userId,
 		});
 		const violation = UploadedArticleMediaOwnership.of({
@@ -51,40 +55,62 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 		}
 	}
 
+	private requireArticleBody(body: string) {
+		const articleBody = ArticleBody.from(body);
+
+		if (!articleBody) {
+			throw applicationError.badRequest(ARTICLE_BODY_REQUIRED_MESSAGE);
+		}
+
+		return articleBody;
+	}
+
+	private requirePublishableMedia<TMedia>(
+		mediaCollection: ArticleMediaCollectionType<TMedia>,
+	) {
+		const media = mediaCollection.toPublishable();
+
+		if (!media) {
+			throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
+		}
+
+		return media;
+	}
+
 	async create(input: Parameters<ArticleCommandUseCase["create"]>[0]) {
 		await this.transactionPort.run(
 			async () => {
-				const media = ArticleMediaCollection.from(input.media).toPublishable();
-
-				if (!media) {
-					throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-				}
+				const body = this.requireArticleBody(input.body);
+				const media = this.requirePublishableMedia(
+					ArticleMediaCollection.from(input.media),
+				);
+				const draft = ArticleDraft.create({
+					authorUserId: input.authorUserId,
+					body,
+					hikingId: input.hikingId,
+					media,
+				});
 
 				this.assertOwnedUploadedMedia(input.authorUserId, input.media);
 
 				const hasActiveHiking = await this.articleCommandPort.hasActiveHiking(
-					input.hikingId,
+					draft.hikingId,
 				);
 
 				if (!hasActiveHiking) {
 					throw applicationError.notFound("산행을 찾을 수 없습니다.");
 				}
 
-				const articleId = await this.articleCommandPort.create({
-					authorUserId: input.authorUserId,
-					body: input.body,
-					hikingId: input.hikingId,
-					storedMedia: media.sortByOrder(),
-				});
+				const articleId = await this.articleCommandPort.create(
+					draft.toCreateCommand(),
+				);
 				const recipientUserIds =
 					await this.articleCommandPort.listActiveNotificationRecipientIds({
-						excludeUserId: input.authorUserId,
+						excludeUserId: draft.authorUserId,
 					});
 
 				await this.createNotificationsUseCase.createArticleCreated({
-					actorUserId: input.authorUserId,
-					articleBody: input.body,
-					articleId,
+					...draft.toArticleCreatedNotification(articleId),
 					recipientUserIds,
 				});
 			},
@@ -95,14 +121,13 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 	async update(input: Parameters<ArticleCommandUseCase["update"]>[0]) {
 		await this.transactionPort.run(
 			async () => {
-				const media = ArticleMediaCollection.from([
-					...input.existingMedia,
-					...input.uploadedMedia,
-				]).toPublishable();
-
-				if (!media) {
-					throw applicationError.badRequest(ARTICLE_MEDIA_REQUIRED_MESSAGE);
-				}
+				const body = this.requireArticleBody(input.body);
+				const media = this.requirePublishableMedia(
+					ArticleMediaCollection.from([
+						...input.existingMedia,
+						...input.uploadedMedia,
+					]),
+				);
 
 				this.assertOwnedUploadedMedia(input.userId, input.uploadedMedia);
 
@@ -110,21 +135,26 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 					input.articleId,
 				);
 
-					if (
-						!article ||
-						!ArticleEntity.rehydrate(article).canBeManagedBy(input.userId)
-					) {
+				const updatePlan = article
+					? ArticleEntity.rehydrate(article).planUpdate({
+							body,
+							media,
+							userId: input.userId,
+						})
+					: null;
+
+				if (!updatePlan) {
 					throw applicationError.notFound(
 						"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
 					);
 				}
 
 				const updated = await this.articleCommandPort.update({
-					articleId: input.articleId,
+					articleId: updatePlan.articleId,
 					now: this.clockPort.now(),
-					storedMedia: media.sortByOrder(),
+					storedMedia: updatePlan.storedMedia,
 					values: {
-						body: input.body,
+						body: updatePlan.body,
 					},
 				});
 
@@ -145,17 +175,20 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 					input.articleId,
 				);
 
-					if (
-						!article ||
-						!ArticleEntity.rehydrate(article).canBeManagedBy(input.userId)
-					) {
+				const deletePlan = article
+					? ArticleEntity.rehydrate(article).planDelete({
+							userId: input.userId,
+						})
+					: null;
+
+				if (!deletePlan) {
 					throw applicationError.notFound(
 						"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
 					);
 				}
 
 				const deleted = await this.articleCommandPort.delete({
-					articleId: input.articleId,
+					articleId: deletePlan.articleId,
 					now: this.clockPort.now(),
 				});
 

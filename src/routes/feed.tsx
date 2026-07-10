@@ -7,7 +7,7 @@ import {
 	toAuthenticatedUserViewModel,
 	toFeedSummaryViewModel,
 	toNotificationListSnapshotViewModel,
-} from "#/society/shared/apiContractMappers";
+} from "#/society/shared/coreViewModelMappers";
 import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export const Route = createFileRoute("/feed")({

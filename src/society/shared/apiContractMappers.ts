@@ -2,6 +2,8 @@ import type {
 	ArticleContract,
 	ArticleMediaContract,
 	CommentContract,
+	CurrentUserContract,
+	FeedResponseContract,
 	HikingContract,
 	NotificationContract,
 } from "#/api/contracts";
@@ -67,7 +69,17 @@ type NotificationListResponseApiModel = {
 	readonly notifications: readonly NotificationApiModel[];
 };
 
-type AuthenticatedUserApiModel = AuthenticatedUserViewModel;
+type AuthenticatedUserApiModel = CurrentUserContract & {
+	readonly lastLoginAt?: Date | string | null;
+};
+
+function toOptionalDate(value: Date | string | null | undefined) {
+	if (!value) {
+		return null;
+	}
+
+	return value instanceof Date ? value : new Date(value);
+}
 
 export function toAuthenticatedUserViewModel(
 	input: AuthenticatedUserApiModel,
@@ -76,7 +88,7 @@ export function toAuthenticatedUserViewModel(
 		displayName: input.displayName,
 		email: input.email,
 		id: input.id,
-		lastLoginAt: input.lastLoginAt,
+		lastLoginAt: toOptionalDate(input.lastLoginAt),
 		name: input.name,
 		profileImageUrl: input.profileImageUrl,
 		provider: input.provider,
@@ -174,7 +186,7 @@ export function toHikingViewModel(input: HikingContract): HikingViewModel {
 }
 
 export function toFeedSummaryViewModel(
-	input: FeedSummaryViewModel,
+	input: FeedResponseContract,
 ): FeedSummaryViewModel {
 	return {
 		articleCount: input.articleCount,

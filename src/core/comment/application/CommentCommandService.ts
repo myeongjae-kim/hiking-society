@@ -3,7 +3,11 @@ import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
-import { CommentEntity } from "../domain";
+import {
+	COMMENT_BODY_REQUIRED_MESSAGE,
+	CommentBody,
+	CommentEntity,
+} from "../domain";
 import type { CommentCommandUseCase } from "./port/in/CommentCommandUseCase";
 import type { CommentCommandPort } from "./port/out/CommentCommandPort";
 
@@ -19,9 +23,20 @@ export class CommentCommandService implements CommentCommandUseCase {
 		private clockPort: ClockPort,
 	) {}
 
+	private requireCommentBody(body: string) {
+		const commentBody = CommentBody.from(body);
+
+		if (!commentBody) {
+			throw applicationError.badRequest(COMMENT_BODY_REQUIRED_MESSAGE);
+		}
+
+		return commentBody;
+	}
+
 	async create(input: Parameters<CommentCommandUseCase["create"]>[0]) {
 		await this.transactionPort.run(
 			async () => {
+				const body = this.requireCommentBody(input.body);
 				const article = await this.commentCommandPort.findActiveArticleById(
 					input.articleId,
 				);
@@ -37,14 +52,11 @@ export class CommentCommandService implements CommentCommandUseCase {
 				const parent = parentCommentId
 					? await this.commentCommandPort.findCommentById(parentCommentId)
 					: null;
+				const replyPlan = parent
+					? CommentEntity.rehydrate(parent).planReplyFor(input.articleId)
+					: null;
 
-					if (
-						parentCommentId !== null &&
-						(!parent ||
-							!CommentEntity.rehydrate(parent).canReceiveReplyFor(
-								input.articleId,
-							))
-					) {
+				if (parentCommentId !== null && !replyPlan) {
 					throw applicationError.notFound(
 						"답글을 작성할 댓글을 찾을 수 없습니다.",
 					);
@@ -53,7 +65,7 @@ export class CommentCommandService implements CommentCommandUseCase {
 				const commentId = await this.commentCommandPort.create({
 					articleId: input.articleId,
 					authorUserId: input.authorUserId,
-					body: input.body,
+					body: body.toString(),
 					parentCommentId,
 				});
 
@@ -61,10 +73,11 @@ export class CommentCommandService implements CommentCommandUseCase {
 					actorUserId: input.authorUserId,
 					articleAuthorUserId: article.authorUserId,
 					articleId: input.articleId,
-					commentBody: input.body,
+					commentBody: body.toString(),
 					commentId,
-					parentCommentAuthorUserId: parent?.authorUserId ?? null,
-					parentCommentId,
+					parentCommentAuthorUserId:
+						replyPlan?.parentCommentAuthorUserId ?? null,
+					parentCommentId: replyPlan?.parentCommentId ?? null,
 				});
 			},
 			{ readOnly: false },
@@ -74,26 +87,28 @@ export class CommentCommandService implements CommentCommandUseCase {
 	async update(input: Parameters<CommentCommandUseCase["update"]>[0]) {
 		await this.transactionPort.run(
 			async () => {
-				if (!input.values.body) {
-					throw applicationError.badRequest("댓글 내용을 입력해주세요.");
-				}
+				const body = this.requireCommentBody(input.values.body ?? "");
 
 				const comment = await this.commentCommandPort.findCommentById(
 					input.commentId,
 				);
 
-					if (
-						!comment ||
-						!CommentEntity.rehydrate(comment).canBeManagedBy(input.userId)
-					) {
+				const updatePlan = comment
+					? CommentEntity.rehydrate(comment).planUpdate({
+							body,
+							userId: input.userId,
+						})
+					: null;
+
+				if (!updatePlan) {
 					throw applicationError.notFound(
 						"댓글을 수정할 권한이 없거나 댓글을 찾을 수 없습니다.",
 					);
 				}
 
 				const updated = await this.commentCommandPort.update({
-					body: input.values.body,
-					commentId: input.commentId,
+					body: updatePlan.body,
+					commentId: updatePlan.commentId,
 					now: this.clockPort.now(),
 				});
 
@@ -110,22 +125,27 @@ export class CommentCommandService implements CommentCommandUseCase {
 	async delete(input: Parameters<CommentCommandUseCase["delete"]>[0]) {
 		await this.transactionPort.run(
 			async () => {
+				const deletedBody = this.requireCommentBody("삭제된 댓글");
 				const comment = await this.commentCommandPort.findCommentById(
 					input.commentId,
 				);
 
-					if (
-						!comment ||
-						!CommentEntity.rehydrate(comment).canBeManagedBy(input.userId)
-					) {
+				const deletePlan = comment
+					? CommentEntity.rehydrate(comment).planDelete({
+							deletedBody,
+							userId: input.userId,
+						})
+					: null;
+
+				if (!deletePlan) {
 					throw applicationError.notFound(
 						"댓글을 삭제할 권한이 없거나 댓글을 찾을 수 없습니다.",
 					);
 				}
 
 				const deleted = await this.commentCommandPort.delete({
-					body: "삭제된 댓글",
-					commentId: input.commentId,
+					body: deletePlan.body,
+					commentId: deletePlan.commentId,
 					now: this.clockPort.now(),
 				});
 

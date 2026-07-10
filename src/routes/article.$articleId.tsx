@@ -9,7 +9,7 @@ import {
 	toAuthenticatedUserViewModel,
 	toHikingViewModel,
 	toNotificationListSnapshotViewModel,
-} from "#/society/shared/apiContractMappers";
+} from "#/society/shared/coreViewModelMappers";
 import type { CommentViewId as CommentId } from "#/society/shared/viewModels";
 
 export const Route = createFileRoute("/article/$articleId")({

@@ -60,7 +60,16 @@ export type UpdateHikingInput = {
 export type HikingEntitySnapshot = {
 	readonly activeArticleCount: number;
 	readonly authorUserId: number;
+	readonly id: HikingId;
 };
+
+export type HikingDeleteDecision =
+	| { readonly status: "ok"; readonly hikingId: HikingId }
+	| { readonly status: "forbidden" }
+	| {
+			readonly activeArticleCount: number;
+			readonly status: "has-active-articles";
+	  };
 
 export class HikingEntity {
 	private constructor(private readonly snapshot: HikingEntitySnapshot) {}
@@ -75,5 +84,37 @@ export class HikingEntity {
 
 	canBeDeleted() {
 		return this.snapshot.activeArticleCount === 0;
+	}
+
+	planUpdate(input: {
+		readonly userId: number;
+		readonly values: UpdateHikingInput;
+	}) {
+		if (!this.canBeManagedBy(input.userId)) {
+			return null;
+		}
+
+		return {
+			hikingId: this.snapshot.id,
+			values: input.values,
+		};
+	}
+
+	planDelete(input: { readonly userId: number }): HikingDeleteDecision {
+		if (!this.canBeManagedBy(input.userId)) {
+			return { status: "forbidden" };
+		}
+
+		if (!this.canBeDeleted()) {
+			return {
+				activeArticleCount: this.snapshot.activeArticleCount,
+				status: "has-active-articles",
+			};
+		}
+
+		return {
+			hikingId: this.snapshot.id,
+			status: "ok",
+		};
 	}
 }

@@ -4,8 +4,10 @@ import type {
 	IsoDateTimeString,
 } from "@/core/common/domain";
 import type { HikingId } from "@/core/hiking/domain";
+import type { PublishableArticleMedia } from "./ArticlePolicy";
 
 export type ArticleId = Brand<string, "ArticleId">;
+export const ARTICLE_BODY_REQUIRED_MESSAGE = "글 내용을 입력해주세요.";
 
 export type ArticleMediaType = "image" | "video";
 
@@ -65,8 +67,78 @@ export type UpdateArticleInput = {
 };
 
 export type ArticleEntitySnapshot = {
+	readonly body: string;
+	readonly hikingId: HikingId;
+	readonly id: ArticleId;
 	readonly authorUserId: number;
 };
+
+export class ArticleBody {
+	private constructor(private readonly value: string) {}
+
+	static from(value: string) {
+		const normalized = value.trim();
+
+		if (normalized.length === 0) {
+			return null;
+		}
+
+		return new ArticleBody(normalized);
+	}
+
+	toString() {
+		return this.value;
+	}
+}
+
+export class ArticleDraft<TMedia extends { readonly order: number }> {
+	private constructor(
+		private readonly input: {
+			readonly authorUserId: number;
+			readonly body: ArticleBody;
+			readonly hikingId: HikingId;
+			readonly media: PublishableArticleMedia<TMedia>;
+		},
+	) {}
+
+	static create<TMedia extends { readonly order: number }>(input: {
+		readonly authorUserId: number;
+		readonly body: ArticleBody;
+		readonly hikingId: HikingId;
+		readonly media: PublishableArticleMedia<TMedia>;
+	}) {
+		return new ArticleDraft(input);
+	}
+
+	get authorUserId() {
+		return this.input.authorUserId;
+	}
+
+	get body() {
+		return this.input.body.toString();
+	}
+
+	get hikingId() {
+		return this.input.hikingId;
+	}
+
+	toCreateCommand() {
+		return {
+			authorUserId: this.input.authorUserId,
+			body: this.input.body.toString(),
+			hikingId: this.input.hikingId,
+			storedMedia: this.input.media.sortByOrder(),
+		};
+	}
+
+	toArticleCreatedNotification(articleId: ArticleId) {
+		return {
+			actorUserId: this.input.authorUserId,
+			articleBody: this.input.body.toString(),
+			articleId,
+		};
+	}
+}
 
 export class ArticleEntity {
 	private constructor(private readonly snapshot: ArticleEntitySnapshot) {}
@@ -77,5 +149,31 @@ export class ArticleEntity {
 
 	canBeManagedBy(userId: number) {
 		return this.snapshot.authorUserId === userId;
+	}
+
+	planUpdate<TMedia extends { readonly order: number }>(input: {
+		readonly body: ArticleBody;
+		readonly media: PublishableArticleMedia<TMedia>;
+		readonly userId: number;
+	}) {
+		if (!this.canBeManagedBy(input.userId)) {
+			return null;
+		}
+
+		return {
+			articleId: this.snapshot.id,
+			body: input.body.toString(),
+			storedMedia: input.media.sortByOrder(),
+		};
+	}
+
+	planDelete(input: { readonly userId: number }) {
+		if (!this.canBeManagedBy(input.userId)) {
+			return null;
+		}
+
+		return {
+			articleId: this.snapshot.id,
+		};
 	}
 }

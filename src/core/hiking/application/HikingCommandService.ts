@@ -29,19 +29,23 @@ export class HikingCommandService implements HikingCommandUseCase {
 					input.hikingId,
 				);
 
-					if (
-						!hiking ||
-						!HikingEntity.rehydrate(hiking).canBeManagedBy(input.userId)
-					) {
+				const updatePlan = hiking
+					? HikingEntity.rehydrate(hiking).planUpdate({
+							userId: input.userId,
+							values: input.values,
+						})
+					: null;
+
+				if (!updatePlan) {
 					throw applicationError.notFound(
 						"산행을 수정할 권한이 없거나 산행을 찾을 수 없습니다.",
 					);
 				}
 
 				const updated = await this.hikingCommandPort.update({
-					hikingId: input.hikingId,
+					hikingId: updatePlan.hikingId,
 					now: this.clockPort.now(),
-					values: input.values,
+					values: updatePlan.values,
 				});
 
 				if (!updated) {
@@ -61,23 +65,26 @@ export class HikingCommandService implements HikingCommandUseCase {
 					input.hikingId,
 				);
 
-					if (
-						!hiking ||
-						!HikingEntity.rehydrate(hiking).canBeManagedBy(input.userId)
-					) {
+				const deleteDecision = hiking
+					? HikingEntity.rehydrate(hiking).planDelete({
+							userId: input.userId,
+						})
+					: null;
+
+				if (!deleteDecision || deleteDecision.status === "forbidden") {
 					throw applicationError.notFound(
 						"산행을 삭제할 권한이 없거나 산행을 찾을 수 없습니다.",
 					);
 				}
 
-				if (!HikingEntity.rehydrate(hiking).canBeDeleted()) {
+				if (deleteDecision.status === "has-active-articles") {
 					throw applicationError.badRequest(
 						"글이 있는 산행은 삭제할 수 없습니다.",
 					);
 				}
 
 				const deleted = await this.hikingCommandPort.delete({
-					hikingId: input.hikingId,
+					hikingId: deleteDecision.hikingId,
 					now: this.clockPort.now(),
 				});
 
