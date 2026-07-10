@@ -8,7 +8,7 @@ import type {
 	ExistingArticleMediaInput,
 	StoredArticleMedia,
 } from "@/core/article/model/ArticleMediaCommand";
-import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { HikingId } from "@/core/hiking/domain";

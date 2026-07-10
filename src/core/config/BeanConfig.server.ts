@@ -42,7 +42,7 @@ import type { ListArticleCommentsUseCase } from "../comment/application/port/in/
 import type { CommentCommandPort } from "../comment/application/port/out/CommentCommandPort";
 import type { CommentQueryPort } from "../comment/application/port/out/CommentQueryPort";
 import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
-import { DrizzleTransactionRunner } from "../common/adapter/drizzle.server";
+import { DrizzleTransactionRunner } from "../common/adapter/DrizzleTransactionRunner";
 import { SystemClockAdapter } from "../common/adapter/SystemClockAdapter";
 import type { ClockPort } from "../common/application/port/out/ClockPort";
 import type { TransactionPort } from "../common/application/port/out/TransactionPort";

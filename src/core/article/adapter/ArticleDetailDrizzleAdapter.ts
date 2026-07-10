@@ -18,7 +18,7 @@ import type {
 	Longitude,
 	Timezone,
 } from "@/core/common/domain";
-import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { Hiking, HikingId } from "@/core/hiking/domain";

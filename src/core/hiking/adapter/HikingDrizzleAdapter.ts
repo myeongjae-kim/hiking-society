@@ -2,7 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type {
 	DrizzleTransactionRunner,
 	DrizzleExecutor,
-} from "@/core/common/adapter/drizzle.server";
+} from "@/core/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { Autowired } from "@/core/config/Autowired";
 import type { HikingCommandPort } from "@/core/hiking/application/port/out/HikingCommandPort";

@@ -1,4 +1,4 @@
-import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/DrizzleTransactionRunner";
 import { Autowired } from "@/core/config/Autowired";
 import type {
 	TransactionOptions,

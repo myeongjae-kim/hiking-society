@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/DrizzleTransactionRunner";
 import { Autowired } from "@/core/config/Autowired";
 import { userTable } from "@/drizzle/schema";
 import type { MemberCommandPort } from "../application/port/out/MemberCommandPort";

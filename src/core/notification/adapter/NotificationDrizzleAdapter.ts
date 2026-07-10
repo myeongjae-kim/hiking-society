@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
-import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/DrizzleTransactionRunner";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
 import { Autowired } from "@/core/config/Autowired";
