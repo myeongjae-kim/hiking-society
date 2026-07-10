@@ -7,11 +7,9 @@ import {
 } from "#/api/schemas";
 import type { ListNotificationsUseCase } from "@/core/notification/application/port/in/ListNotificationsUseCase";
 
-export function createGetNotificationsController({
-	listNotificationsUseCase,
-}: {
-	readonly listNotificationsUseCase: ListNotificationsUseCase;
-}) {
+export function createGetNotificationsController(
+	listNotificationsUseCase: ListNotificationsUseCase,
+) {
 	const controller = Controller();
 
 	const getNotificationsRoute = createRoute({

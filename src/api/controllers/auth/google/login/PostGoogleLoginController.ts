@@ -16,15 +16,11 @@ const {
 	refreshTokenMaxAgeSeconds,
 } = sessionCookieConfig;
 
-export function createPostGoogleLoginController({
-	getCookieOptionsUseCase,
-	createSessionTokenUseCase,
-	loginWithGoogleCodeUseCase,
-}: {
-	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
-	readonly createSessionTokenUseCase: CreateSessionTokenUseCase;
-	readonly loginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
-}) {
+export function createPostGoogleLoginController(
+	getCookieOptionsUseCase: GetCookieOptionsUseCase,
+	createSessionTokenUseCase: CreateSessionTokenUseCase,
+	loginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase,
+) {
 	const controller = Controller();
 
 	const postGoogleLoginRoute = createRoute({

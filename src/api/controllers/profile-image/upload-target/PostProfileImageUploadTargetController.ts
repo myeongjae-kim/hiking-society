@@ -7,11 +7,9 @@ import {
 } from "#/api/schemas";
 import type { ProfileImageUploadUseCase } from "@/core/profile/application/port/in/ProfileImageUploadUseCase";
 
-export function createPostProfileImageUploadTargetController({
-	profileImageUploadUseCase,
-}: {
-	readonly profileImageUploadUseCase: ProfileImageUploadUseCase;
-}) {
+export function createPostProfileImageUploadTargetController(
+	profileImageUploadUseCase: ProfileImageUploadUseCase,
+) {
 	const controller = Controller();
 
 	const postProfileImageUploadTargetRoute = createRoute({

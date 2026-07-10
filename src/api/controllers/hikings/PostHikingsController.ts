@@ -5,11 +5,9 @@ import { hikingBodySchema, okSchema } from "#/api/schemas";
 import { createRoute } from "@hono/zod-openapi";
 import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-export function createPostHikingsController({
-	hikingCommandUseCase,
-}: {
-	readonly hikingCommandUseCase: HikingCommandUseCase;
-}) {
+export function createPostHikingsController(
+	hikingCommandUseCase: HikingCommandUseCase,
+) {
 	const controller = Controller();
 
 	const postHikingsRoute = createRoute({

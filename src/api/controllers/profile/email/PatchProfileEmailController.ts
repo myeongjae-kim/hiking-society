@@ -15,15 +15,11 @@ const {
 	refreshTokenMaxAgeSeconds,
 } = sessionCookieConfig;
 
-export function createPatchProfileEmailController({
-	getCookieOptionsUseCase,
-	createSessionTokenUseCase,
-	updateEmailUseCase,
-}: {
-	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
-	readonly createSessionTokenUseCase: CreateSessionTokenUseCase;
-	readonly updateEmailUseCase: UpdateEmailUseCase;
-}) {
+export function createPatchProfileEmailController(
+	getCookieOptionsUseCase: GetCookieOptionsUseCase,
+	createSessionTokenUseCase: CreateSessionTokenUseCase,
+	updateEmailUseCase: UpdateEmailUseCase,
+) {
 	const controller = Controller();
 
 	const patchProfileEmailRoute = createRoute({

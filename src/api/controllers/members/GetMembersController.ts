@@ -6,11 +6,9 @@ import { membersResponseSchema } from "#/api/schemas";
 import { toMemberDto } from "./_memberDto";
 import type { GetMemberManagementUseCase } from "@/core/member/application/port/in/GetMemberManagementUseCase";
 
-export function createGetMembersController({
-	getMemberManagementUseCase,
-}: {
-	readonly getMemberManagementUseCase: GetMemberManagementUseCase;
-}) {
+export function createGetMembersController(
+	getMemberManagementUseCase: GetMemberManagementUseCase,
+) {
 	const controller = Controller();
 
 	const getMembersRoute = createRoute({

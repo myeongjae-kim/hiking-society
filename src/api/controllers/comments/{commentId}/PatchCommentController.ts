@@ -6,11 +6,9 @@ import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
 import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-export function createPatchCommentController({
-	commentCommandUseCase,
-}: {
-	readonly commentCommandUseCase: CommentCommandUseCase;
-}) {
+export function createPatchCommentController(
+	commentCommandUseCase: CommentCommandUseCase,
+) {
 	const controller = Controller();
 
 	const patchCommentRoute = createRoute({

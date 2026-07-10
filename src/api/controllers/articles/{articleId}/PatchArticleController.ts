@@ -10,13 +10,10 @@ import {
 import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
 import type { GetArticleDetailUseCase } from "@/core/article/application/port/in/GetArticleDetailUseCase";
 
-export function createPatchArticleController({
-	articleCommandUseCase,
-	getArticleDetailUseCase,
-}: {
-	readonly articleCommandUseCase: ArticleCommandUseCase;
-	readonly getArticleDetailUseCase: GetArticleDetailUseCase;
-}) {
+export function createPatchArticleController(
+	articleCommandUseCase: ArticleCommandUseCase,
+	getArticleDetailUseCase: GetArticleDetailUseCase,
+) {
 	const controller = Controller();
 
 	const patchArticleRoute = createRoute({

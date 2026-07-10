@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-export function createPostArticleCommentsController({
-	commentCommandUseCase,
-}: {
-	readonly commentCommandUseCase: CommentCommandUseCase;
-}) {
+export function createPostArticleCommentsController(
+	commentCommandUseCase: CommentCommandUseCase,
+) {
 	const controller = Controller();
 
 	const postArticleCommentsRoute = createRoute({

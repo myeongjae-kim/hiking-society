@@ -36,106 +36,64 @@ import { createGetCurrentUserController } from "../controllers/users/me/GetCurre
 export function createApiControllers() {
 	return [
 		createGetCurrentUserController(),
-		createPostGoogleLoginController({
-			getCookieOptionsUseCase: getUseCase("GetCookieOptionsUseCase"),
-			createSessionTokenUseCase: getUseCase("CreateSessionTokenUseCase"),
-			loginWithGoogleCodeUseCase: getUseCase("LoginWithGoogleCodeUseCase"),
-		}),
+		createPostGoogleLoginController(
+			getUseCase("GetCookieOptionsUseCase"),
+			getUseCase("CreateSessionTokenUseCase"),
+			getUseCase("LoginWithGoogleCodeUseCase"),
+		),
 		createPostLogoutController(),
-		createGetFeedController({
-			getFeedHomeUseCase: getUseCase("GetFeedHomeUseCase"),
-		}),
-		createGetHikingArticlesController({
-			listFeedUseCase: getUseCase("ListFeedUseCase"),
-		}),
-		createPostHikingsController({
-			hikingCommandUseCase: getUseCase("HikingCommandUseCase"),
-		}),
-		createPatchHikingController({
-			hikingCommandUseCase: getUseCase("HikingCommandUseCase"),
-		}),
-		createDeleteHikingController({
-			hikingCommandUseCase: getUseCase("HikingCommandUseCase"),
-		}),
-		createPostArticlesController({
-			articleCommandUseCase: getUseCase("ArticleCommandUseCase"),
-		}),
-		createGetArticleController({
-			getArticlePageUseCase: getUseCase("GetArticlePageUseCase"),
-		}),
-		createPatchArticleController({
-			articleCommandUseCase: getUseCase("ArticleCommandUseCase"),
-			getArticleDetailUseCase: getUseCase("GetArticleDetailUseCase"),
-		}),
-		createDeleteArticleController({
-			articleCommandUseCase: getUseCase("ArticleCommandUseCase"),
-		}),
-		createPostArticleLikeController({
-			likeCommandUseCase: getUseCase("LikeCommandUseCase"),
-		}),
-		createDeleteArticleLikeController({
-			likeCommandUseCase: getUseCase("LikeCommandUseCase"),
-		}),
-		createPostArticleMediaUploadTargetsController({
-			articleMediaUploadUseCase: getUseCase("ArticleMediaUploadUseCase"),
-		}),
-		createDeleteArticleMediaUploadsController({
-			articleMediaUploadUseCase: getUseCase("ArticleMediaUploadUseCase"),
-		}),
-		createGetArticleCommentsController({
-			listArticleCommentsUseCase: getUseCase("ListArticleCommentsUseCase"),
-		}),
-		createPostArticleCommentsController({
-			commentCommandUseCase: getUseCase("CommentCommandUseCase"),
-		}),
-		createPatchCommentController({
-			commentCommandUseCase: getUseCase("CommentCommandUseCase"),
-		}),
-		createDeleteCommentController({
-			commentCommandUseCase: getUseCase("CommentCommandUseCase"),
-		}),
-		createPostCommentLikeController({
-			likeCommandUseCase: getUseCase("LikeCommandUseCase"),
-		}),
-		createDeleteCommentLikeController({
-			likeCommandUseCase: getUseCase("LikeCommandUseCase"),
-		}),
-		createPatchProfileDisplayNameController({
-			updateDisplayNameUseCase: getUseCase("UpdateDisplayNameUseCase"),
-		}),
-		createPatchProfileEmailController({
-			getCookieOptionsUseCase: getUseCase("GetCookieOptionsUseCase"),
-			createSessionTokenUseCase: getUseCase("CreateSessionTokenUseCase"),
-			updateEmailUseCase: getUseCase("UpdateEmailUseCase"),
-		}),
-		createPatchProfileImageController({
-			updateProfileImageUseCase: getUseCase("UpdateProfileImageUseCase"),
-		}),
-		createPostProfileImageUploadTargetController({
-			profileImageUploadUseCase: getUseCase("ProfileImageUploadUseCase"),
-		}),
-		createDeleteProfileImageUploadsController({
-			profileImageUploadUseCase: getUseCase("ProfileImageUploadUseCase"),
-		}),
-		createGetNotificationsController({
-			listNotificationsUseCase: getUseCase("ListNotificationsUseCase"),
-		}),
-		createPatchNotificationReadController({
-			markNotificationReadUseCase: getUseCase("MarkNotificationReadUseCase"),
-		}),
-		createPatchNotificationsReadAllController({
-			markAllNotificationsReadUseCase: getUseCase(
-				"MarkAllNotificationsReadUseCase",
-			),
-		}),
-		createGetMembersController({
-			getMemberManagementUseCase: getUseCase("GetMemberManagementUseCase"),
-		}),
-		createPatchMemberRoleController({
-			updateMemberRoleUseCase: getUseCase("UpdateMemberRoleUseCase"),
-		}),
-		createGetGeocodingSearchController({
-			searchGeocodingUseCase: getUseCase("SearchGeocodingUseCase"),
-		}),
+		createGetFeedController(getUseCase("GetFeedHomeUseCase")),
+		createGetHikingArticlesController(getUseCase("ListFeedUseCase")),
+		createPostHikingsController(getUseCase("HikingCommandUseCase")),
+		createPatchHikingController(getUseCase("HikingCommandUseCase")),
+		createDeleteHikingController(getUseCase("HikingCommandUseCase")),
+		createPostArticlesController(getUseCase("ArticleCommandUseCase")),
+		createGetArticleController(getUseCase("GetArticlePageUseCase")),
+		createPatchArticleController(
+			getUseCase("ArticleCommandUseCase"),
+			getUseCase("GetArticleDetailUseCase"),
+		),
+		createDeleteArticleController(getUseCase("ArticleCommandUseCase")),
+		createPostArticleLikeController(getUseCase("LikeCommandUseCase")),
+		createDeleteArticleLikeController(getUseCase("LikeCommandUseCase")),
+		createPostArticleMediaUploadTargetsController(
+			getUseCase("ArticleMediaUploadUseCase"),
+		),
+		createDeleteArticleMediaUploadsController(
+			getUseCase("ArticleMediaUploadUseCase"),
+		),
+		createGetArticleCommentsController(
+			getUseCase("ListArticleCommentsUseCase"),
+		),
+		createPostArticleCommentsController(getUseCase("CommentCommandUseCase")),
+		createPatchCommentController(getUseCase("CommentCommandUseCase")),
+		createDeleteCommentController(getUseCase("CommentCommandUseCase")),
+		createPostCommentLikeController(getUseCase("LikeCommandUseCase")),
+		createDeleteCommentLikeController(getUseCase("LikeCommandUseCase")),
+		createPatchProfileDisplayNameController(
+			getUseCase("UpdateDisplayNameUseCase"),
+		),
+		createPatchProfileEmailController(
+			getUseCase("GetCookieOptionsUseCase"),
+			getUseCase("CreateSessionTokenUseCase"),
+			getUseCase("UpdateEmailUseCase"),
+		),
+		createPatchProfileImageController(getUseCase("UpdateProfileImageUseCase")),
+		createPostProfileImageUploadTargetController(
+			getUseCase("ProfileImageUploadUseCase"),
+		),
+		createDeleteProfileImageUploadsController(
+			getUseCase("ProfileImageUploadUseCase"),
+		),
+		createGetNotificationsController(getUseCase("ListNotificationsUseCase")),
+		createPatchNotificationReadController(
+			getUseCase("MarkNotificationReadUseCase"),
+		),
+		createPatchNotificationsReadAllController(
+			getUseCase("MarkAllNotificationsReadUseCase"),
+		),
+		createGetMembersController(getUseCase("GetMemberManagementUseCase")),
+		createPatchMemberRoleController(getUseCase("UpdateMemberRoleUseCase")),
+		createGetGeocodingSearchController(getUseCase("SearchGeocodingUseCase")),
 	] as const;
 }

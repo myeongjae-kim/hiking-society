@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
 
-export function createDeleteArticleController({
-	articleCommandUseCase,
-}: {
-	readonly articleCommandUseCase: ArticleCommandUseCase;
-}) {
+export function createDeleteArticleController(
+	articleCommandUseCase: ArticleCommandUseCase,
+) {
 	const controller = Controller();
 
 	const deleteArticleRoute = createRoute({

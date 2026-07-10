@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import type { LikeCommandUseCase } from "@/core/like/application/port/in/LikeCommandUseCase";
 
-export function createDeleteArticleLikeController({
-	likeCommandUseCase,
-}: {
-	readonly likeCommandUseCase: LikeCommandUseCase;
-}) {
+export function createDeleteArticleLikeController(
+	likeCommandUseCase: LikeCommandUseCase,
+) {
 	const controller = Controller();
 
 	const deleteArticleLikeRoute = createRoute({

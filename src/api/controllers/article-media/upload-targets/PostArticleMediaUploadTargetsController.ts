@@ -7,11 +7,9 @@ import {
 } from "#/api/schemas";
 import type { ArticleMediaUploadUseCase } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
 
-export function createPostArticleMediaUploadTargetsController({
-	articleMediaUploadUseCase,
-}: {
-	readonly articleMediaUploadUseCase: ArticleMediaUploadUseCase;
-}) {
+export function createPostArticleMediaUploadTargetsController(
+	articleMediaUploadUseCase: ArticleMediaUploadUseCase,
+) {
 	const controller = Controller();
 
 	const postArticleMediaUploadTargetsRoute = createRoute({

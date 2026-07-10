@@ -4,11 +4,9 @@ import { Controller } from "#/api/config/Controller";
 import { okSchema, profileImageBodySchema } from "#/api/schemas";
 import type { UpdateProfileImageUseCase } from "@/core/profile/application/port/in/UpdateProfileImageUseCase";
 
-export function createPatchProfileImageController({
-	updateProfileImageUseCase,
-}: {
-	readonly updateProfileImageUseCase: UpdateProfileImageUseCase;
-}) {
+export function createPatchProfileImageController(
+	updateProfileImageUseCase: UpdateProfileImageUseCase,
+) {
 	const controller = Controller();
 
 	const patchProfileImageRoute = createRoute({

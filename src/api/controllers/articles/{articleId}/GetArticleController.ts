@@ -6,11 +6,9 @@ import { Controller } from "#/api/config/Controller";
 import { articleDetailResponseSchema, idParamSchema } from "#/api/schemas";
 import type { GetArticlePageUseCase } from "@/core/article/application/port/in/GetArticlePageUseCase";
 
-export function createGetArticleController({
-	getArticlePageUseCase,
-}: {
-	readonly getArticlePageUseCase: GetArticlePageUseCase;
-}) {
+export function createGetArticleController(
+	getArticlePageUseCase: GetArticlePageUseCase,
+) {
 	const controller = Controller();
 
 	const getArticleRoute = createRoute({

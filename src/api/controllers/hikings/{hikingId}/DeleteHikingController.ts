@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-export function createDeleteHikingController({
-	hikingCommandUseCase,
-}: {
-	readonly hikingCommandUseCase: HikingCommandUseCase;
-}) {
+export function createDeleteHikingController(
+	hikingCommandUseCase: HikingCommandUseCase,
+) {
 	const controller = Controller();
 
 	const deleteHikingRoute = createRoute({

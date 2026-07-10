@@ -6,11 +6,9 @@ import { idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
 import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-export function createDeleteCommentController({
-	commentCommandUseCase,
-}: {
-	readonly commentCommandUseCase: CommentCommandUseCase;
-}) {
+export function createDeleteCommentController(
+	commentCommandUseCase: CommentCommandUseCase,
+) {
 	const controller = Controller();
 
 	const deleteCommentRoute = createRoute({

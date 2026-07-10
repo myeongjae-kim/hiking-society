@@ -8,11 +8,9 @@ import {
 } from "#/api/schemas";
 import type { SearchGeocodingUseCase } from "@/core/geocoding/application/port/in/SearchGeocodingUseCase";
 
-export function createGetGeocodingSearchController({
-	searchGeocodingUseCase,
-}: {
-	readonly searchGeocodingUseCase: SearchGeocodingUseCase;
-}) {
+export function createGetGeocodingSearchController(
+	searchGeocodingUseCase: SearchGeocodingUseCase,
+) {
 	const controller = Controller();
 
 	const getGeocodingSearchRoute = createRoute({

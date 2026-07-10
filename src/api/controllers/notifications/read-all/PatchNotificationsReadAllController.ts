@@ -4,11 +4,9 @@ import { Controller } from "#/api/config/Controller";
 import { okSchema } from "#/api/schemas";
 import type { MarkAllNotificationsReadUseCase } from "@/core/notification/application/port/in/MarkAllNotificationsReadUseCase";
 
-export function createPatchNotificationsReadAllController({
-	markAllNotificationsReadUseCase,
-}: {
-	readonly markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
-}) {
+export function createPatchNotificationsReadAllController(
+	markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase,
+) {
 	const controller = Controller();
 
 	const patchNotificationsReadAllRoute = createRoute({

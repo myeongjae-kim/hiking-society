@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { hikingBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-export function createPatchHikingController({
-	hikingCommandUseCase,
-}: {
-	readonly hikingCommandUseCase: HikingCommandUseCase;
-}) {
+export function createPatchHikingController(
+	hikingCommandUseCase: HikingCommandUseCase,
+) {
 	const controller = Controller();
 
 	const patchHikingRoute = createRoute({

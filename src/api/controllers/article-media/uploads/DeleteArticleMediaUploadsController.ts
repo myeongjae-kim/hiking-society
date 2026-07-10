@@ -4,11 +4,9 @@ import { Controller } from "#/api/config/Controller";
 import { cleanupUploadsBodySchema, okSchema } from "#/api/schemas";
 import type { ArticleMediaUploadUseCase } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
 
-export function createDeleteArticleMediaUploadsController({
-	articleMediaUploadUseCase,
-}: {
-	readonly articleMediaUploadUseCase: ArticleMediaUploadUseCase;
-}) {
+export function createDeleteArticleMediaUploadsController(
+	articleMediaUploadUseCase: ArticleMediaUploadUseCase,
+) {
 	const controller = Controller();
 
 	const deleteArticleMediaUploadsRoute = createRoute({

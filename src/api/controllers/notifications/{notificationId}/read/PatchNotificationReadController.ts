@@ -6,11 +6,9 @@ import { idParamSchema, okSchema } from "#/api/schemas";
 import type { NotificationId } from "@/core/notification/model/Notification";
 import type { MarkNotificationReadUseCase } from "@/core/notification/application/port/in/MarkNotificationReadUseCase";
 
-export function createPatchNotificationReadController({
-	markNotificationReadUseCase,
-}: {
-	readonly markNotificationReadUseCase: MarkNotificationReadUseCase;
-}) {
+export function createPatchNotificationReadController(
+	markNotificationReadUseCase: MarkNotificationReadUseCase,
+) {
 	const controller = Controller();
 
 	const patchNotificationReadRoute = createRoute({

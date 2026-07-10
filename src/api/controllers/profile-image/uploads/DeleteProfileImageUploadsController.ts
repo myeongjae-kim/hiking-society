@@ -4,11 +4,9 @@ import { Controller } from "#/api/config/Controller";
 import { cleanupUploadsBodySchema, okSchema } from "#/api/schemas";
 import type { ProfileImageUploadUseCase } from "@/core/profile/application/port/in/ProfileImageUploadUseCase";
 
-export function createDeleteProfileImageUploadsController({
-	profileImageUploadUseCase,
-}: {
-	readonly profileImageUploadUseCase: ProfileImageUploadUseCase;
-}) {
+export function createDeleteProfileImageUploadsController(
+	profileImageUploadUseCase: ProfileImageUploadUseCase,
+) {
 	const controller = Controller();
 
 	const deleteProfileImageUploadsRoute = createRoute({

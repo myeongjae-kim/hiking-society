@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { hikingArticlesResponseSchema, idParamSchema } from "#/api/schemas";
 import type { ListFeedUseCase } from "@/core/feed/application/port/in/ListFeedUseCase";
 
-export function createGetHikingArticlesController({
-	listFeedUseCase,
-}: {
-	readonly listFeedUseCase: ListFeedUseCase;
-}) {
+export function createGetHikingArticlesController(
+	listFeedUseCase: ListFeedUseCase,
+) {
 	const controller = Controller();
 
 	const getHikingArticlesRoute = createRoute({

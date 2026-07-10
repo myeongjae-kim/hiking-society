@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { articleBodySchema, okSchema } from "#/api/schemas";
 import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
 
-export function createPostArticlesController({
-	articleCommandUseCase,
-}: {
-	readonly articleCommandUseCase: ArticleCommandUseCase;
-}) {
+export function createPostArticlesController(
+	articleCommandUseCase: ArticleCommandUseCase,
+) {
 	const controller = Controller();
 
 	const postArticlesRoute = createRoute({

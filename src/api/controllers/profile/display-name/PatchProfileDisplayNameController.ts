@@ -4,11 +4,9 @@ import { Controller } from "#/api/config/Controller";
 import { okSchema, updateDisplayNameBodySchema } from "#/api/schemas";
 import type { UpdateDisplayNameUseCase } from "@/core/profile/application/port/in/UpdateDisplayNameUseCase";
 
-export function createPatchProfileDisplayNameController({
-	updateDisplayNameUseCase,
-}: {
-	readonly updateDisplayNameUseCase: UpdateDisplayNameUseCase;
-}) {
+export function createPatchProfileDisplayNameController(
+	updateDisplayNameUseCase: UpdateDisplayNameUseCase,
+) {
 	const controller = Controller();
 
 	const patchProfileDisplayNameRoute = createRoute({

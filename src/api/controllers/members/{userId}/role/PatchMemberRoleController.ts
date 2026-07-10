@@ -9,11 +9,9 @@ import {
 } from "#/api/schemas";
 import type { UpdateMemberRoleUseCase } from "@/core/member/application/port/in/UpdateMemberRoleUseCase";
 
-export function createPatchMemberRoleController({
-	updateMemberRoleUseCase,
-}: {
-	readonly updateMemberRoleUseCase: UpdateMemberRoleUseCase;
-}) {
+export function createPatchMemberRoleController(
+	updateMemberRoleUseCase: UpdateMemberRoleUseCase,
+) {
 	const controller = Controller();
 
 	const patchMemberRoleRoute = createRoute({

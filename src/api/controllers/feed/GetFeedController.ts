@@ -6,11 +6,9 @@ import { Controller } from "#/api/config/Controller";
 import { feedResponseSchema } from "#/api/schemas";
 import type { GetFeedHomeUseCase } from "@/core/feed/application/port/in/GetFeedHomeUseCase";
 
-export function createGetFeedController({
-	getFeedHomeUseCase,
-}: {
-	readonly getFeedHomeUseCase: GetFeedHomeUseCase;
-}) {
+export function createGetFeedController(
+	getFeedHomeUseCase: GetFeedHomeUseCase,
+) {
 	const controller = Controller();
 
 	const getFeedRoute = createRoute({

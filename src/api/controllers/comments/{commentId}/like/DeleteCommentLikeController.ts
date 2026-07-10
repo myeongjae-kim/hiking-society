@@ -6,11 +6,9 @@ import { idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
 import type { LikeCommandUseCase } from "@/core/like/application/port/in/LikeCommandUseCase";
 
-export function createDeleteCommentLikeController({
-	likeCommandUseCase,
-}: {
-	readonly likeCommandUseCase: LikeCommandUseCase;
-}) {
+export function createDeleteCommentLikeController(
+	likeCommandUseCase: LikeCommandUseCase,
+) {
 	const controller = Controller();
 
 	const deleteCommentLikeRoute = createRoute({

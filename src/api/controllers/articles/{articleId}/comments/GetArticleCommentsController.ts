@@ -5,11 +5,9 @@ import { Controller } from "#/api/config/Controller";
 import { commentsResponseSchema, idParamSchema } from "#/api/schemas";
 import type { ListArticleCommentsUseCase } from "@/core/comment/application/port/in/ListArticleCommentsUseCase";
 
-export function createGetArticleCommentsController({
-	listArticleCommentsUseCase,
-}: {
-	readonly listArticleCommentsUseCase: ListArticleCommentsUseCase;
-}) {
+export function createGetArticleCommentsController(
+	listArticleCommentsUseCase: ListArticleCommentsUseCase,
+) {
 	const controller = Controller();
 
 	const getArticleCommentsRoute = createRoute({
