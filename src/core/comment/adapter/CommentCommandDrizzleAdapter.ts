@@ -2,8 +2,9 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentCommandPort } from "@/core/comment/application/port/out/CommentCommandPort";
 import type { CommentId } from "@/core/comment/domain";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import { Autowired } from "@/core/config/Autowired";
 import { articleTable, commentTable } from "@/drizzle/schema";
 
 function toNumericId(id: string) {
@@ -17,48 +18,47 @@ function toNumericId(id: string) {
 }
 
 export class CommentCommandDrizzleAdapter implements CommentCommandPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async create(input: Parameters<CommentCommandPort["create"]>[0]) {
-		return runInDrizzleTransaction(
-			async (tx) => {
-				const [comment] = await tx
-					.insert(commentTable)
-					.values({
-						articleId: toNumericId(input.articleId),
-						authorUserId: input.authorUserId,
-						body: input.body,
-						parentCommentId: input.parentCommentId
-							? toNumericId(input.parentCommentId)
-							: null,
-					})
-					.returning({ id: commentTable.id });
+		return this.transactionRunner.write(async (tx) => {
+			const [comment] = await tx
+				.insert(commentTable)
+				.values({
+					articleId: toNumericId(input.articleId),
+					authorUserId: input.authorUserId,
+					body: input.body,
+					parentCommentId: input.parentCommentId
+						? toNumericId(input.parentCommentId)
+						: null,
+				})
+				.returning({ id: commentTable.id });
 
-				if (!comment) {
-					throw applicationError.internal("댓글을 저장하지 못했습니다.");
-				}
+			if (!comment) {
+				throw applicationError.internal("댓글을 저장하지 못했습니다.");
+			}
 
-				return String(comment.id) as CommentId;
-			},
-			{ readOnly: false },
-		);
+			return String(comment.id) as CommentId;
+		});
 	}
 
 	async delete(input: Parameters<CommentCommandPort["delete"]>[0]) {
-		return runInDrizzleTransaction(
-			async (tx) => {
-				const [updated] = await tx
-					.update(commentTable)
-					.set({ body: input.body, deletedAt: input.now, updatedAt: input.now })
-					.where(eq(commentTable.id, toNumericId(input.commentId)))
-					.returning({ id: commentTable.id });
+		return this.transactionRunner.write(async (tx) => {
+			const [updated] = await tx
+				.update(commentTable)
+				.set({ body: input.body, deletedAt: input.now, updatedAt: input.now })
+				.where(eq(commentTable.id, toNumericId(input.commentId)))
+				.returning({ id: commentTable.id });
 
-				return Boolean(updated);
-			},
-			{ readOnly: false },
-		);
+			return Boolean(updated);
+		});
 	}
 
 	async findActiveArticleById(articleId: ArticleId) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const [article] = await tx
 				.select({
 					authorUserId: articleTable.authorUserId,
@@ -87,7 +87,7 @@ export class CommentCommandDrizzleAdapter implements CommentCommandPort {
 	}
 
 	async findCommentById(commentId: CommentId) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const [comment] = await tx
 				.select({
 					articleId: commentTable.articleId,
@@ -120,17 +120,14 @@ export class CommentCommandDrizzleAdapter implements CommentCommandPort {
 	}
 
 	async update(input: Parameters<CommentCommandPort["update"]>[0]) {
-		return runInDrizzleTransaction(
-			async (tx) => {
-				const [updated] = await tx
-					.update(commentTable)
-					.set({ body: input.body, updatedAt: input.now })
-					.where(eq(commentTable.id, toNumericId(input.commentId)))
-					.returning({ id: commentTable.id });
+		return this.transactionRunner.write(async (tx) => {
+			const [updated] = await tx
+				.update(commentTable)
+				.set({ body: input.body, updatedAt: input.now })
+				.where(eq(commentTable.id, toNumericId(input.commentId)))
+				.returning({ id: commentTable.id });
 
-				return Boolean(updated);
-			},
-			{ readOnly: false },
-		);
+			return Boolean(updated);
+		});
 	}
 }

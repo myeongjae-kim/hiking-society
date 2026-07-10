@@ -2,9 +2,10 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentQueryPort } from "@/core/comment/application/port/out/CommentQueryPort";
 import type { Comment, CommentId } from "@/core/comment/domain";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
 import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import { Autowired } from "@/core/config/Autowired";
 import {
 	articleTable,
 	commentLikeTable,
@@ -39,10 +40,15 @@ function incrementCount(counts: Map<number, number>, id: number) {
 }
 
 export class CommentQueryDrizzleAdapter implements CommentQueryPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async listArticleComments(
 		input: Parameters<CommentQueryPort["listArticleComments"]>[0],
 	) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const articleId = toNumericId(input.articleId);
 			const commentRows = await tx
 				.select({

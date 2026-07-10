@@ -1,9 +1,10 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
+import { Autowired } from "@/core/config/Autowired";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import type { NotificationQueryPort } from "@/core/notification/application/port/out/NotificationQueryPort";
 import type { NotificationId } from "@/core/notification/model/Notification";
@@ -34,6 +35,11 @@ function toAuthorName(row: {
 export class NotificationDrizzleAdapter
 	implements NotificationCommandPort, NotificationQueryPort
 {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async createMany(
 		input: Parameters<NotificationCommandPort["createMany"]>[0],
 	) {
@@ -41,27 +47,24 @@ export class NotificationDrizzleAdapter
 			return;
 		}
 
-		await runInDrizzleTransaction(
-			async (tx) => {
-				await tx.insert(notificationTable).values(
-					input.notifications.map((notification) => ({
-						actorUserId: notification.actorUserId,
-						articleId: toNumericId(notification.articleId),
-						commentId: notification.commentId
-							? toNumericId(notification.commentId)
-							: null,
-						contentExcerpt: notification.contentExcerpt,
-						recipientUserId: notification.recipientUserId,
-						type: notification.type,
-					})),
-				);
-			},
-			{ readOnly: false },
-		);
+		await this.transactionRunner.write(async (tx) => {
+			await tx.insert(notificationTable).values(
+				input.notifications.map((notification) => ({
+					actorUserId: notification.actorUserId,
+					articleId: toNumericId(notification.articleId),
+					commentId: notification.commentId
+						? toNumericId(notification.commentId)
+						: null,
+					contentExcerpt: notification.contentExcerpt,
+					recipientUserId: notification.recipientUserId,
+					type: notification.type,
+				})),
+			);
+		});
 	}
 
 	async list(input: Parameters<NotificationQueryPort["list"]>[0]) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const limit = input.limit ?? 20;
 			const offset = input.offset ?? 0;
 			const rows = await tx
@@ -121,37 +124,31 @@ export class NotificationDrizzleAdapter
 	async markAllRead(
 		input: Parameters<NotificationCommandPort["markAllRead"]>[0],
 	) {
-		await runInDrizzleTransaction(
-			async (tx) => {
-				await tx
-					.update(notificationTable)
-					.set({ readAt: input.now })
-					.where(
-						and(
-							eq(notificationTable.recipientUserId, input.currentUserId),
-							isNull(notificationTable.readAt),
-						),
-					);
-			},
-			{ readOnly: false },
-		);
+		await this.transactionRunner.write(async (tx) => {
+			await tx
+				.update(notificationTable)
+				.set({ readAt: input.now })
+				.where(
+					and(
+						eq(notificationTable.recipientUserId, input.currentUserId),
+						isNull(notificationTable.readAt),
+					),
+				);
+		});
 	}
 
 	async markRead(input: Parameters<NotificationCommandPort["markRead"]>[0]) {
-		await runInDrizzleTransaction(
-			async (tx) => {
-				await tx
-					.update(notificationTable)
-					.set({ readAt: input.now })
-					.where(
-						and(
-							eq(notificationTable.id, toNumericId(input.notificationId)),
-							eq(notificationTable.recipientUserId, input.currentUserId),
-							isNull(notificationTable.readAt),
-						),
-					);
-			},
-			{ readOnly: false },
-		);
+		await this.transactionRunner.write(async (tx) => {
+			await tx
+				.update(notificationTable)
+				.set({ readAt: input.now })
+				.where(
+					and(
+						eq(notificationTable.id, toNumericId(input.notificationId)),
+						eq(notificationTable.recipientUserId, input.currentUserId),
+						isNull(notificationTable.readAt),
+					),
+				);
+		});
 	}
 }

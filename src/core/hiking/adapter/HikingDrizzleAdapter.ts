@@ -1,9 +1,10 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import {
-	type DrizzleExecutor,
-	runInDrizzleTransaction,
+import type {
+	DrizzleTransactionRunner,
+	DrizzleExecutor,
 } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import { Autowired } from "@/core/config/Autowired";
 import type { HikingCommandPort } from "@/core/hiking/application/port/out/HikingCommandPort";
 import type { HikingId } from "@/core/hiking/domain";
 import { articleTable, hikingTable } from "@/drizzle/schema";
@@ -42,54 +43,51 @@ async function reorderActiveHikings(tx: Pick<DrizzleExecutor, "execute">) {
 }
 
 export class HikingDrizzleAdapter implements HikingCommandPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async create(input: Parameters<HikingCommandPort["create"]>[0]) {
-		await runInDrizzleTransaction(
-			async (tx) => {
-				await tx.insert(hikingTable).values({
-					altitude: input.altitude,
-					authorUserId: input.authorUserId,
-					completedAt: input.completedAt,
-					hikingDate: input.hikingDate,
-					latitude: input.latitude,
-					longitude: input.longitude,
-					mountainName: input.mountainName,
-					participantsCsv: input.participantsCsv,
-					restaurantAddress: input.restaurantAddress,
-					startedAt: input.startedAt,
-					timezone: input.timezone,
-				});
-				await reorderActiveHikings(tx);
-			},
-			{ readOnly: false },
-		);
+		await this.transactionRunner.write(async (tx) => {
+			await tx.insert(hikingTable).values({
+				altitude: input.altitude,
+				authorUserId: input.authorUserId,
+				completedAt: input.completedAt,
+				hikingDate: input.hikingDate,
+				latitude: input.latitude,
+				longitude: input.longitude,
+				mountainName: input.mountainName,
+				participantsCsv: input.participantsCsv,
+				restaurantAddress: input.restaurantAddress,
+				startedAt: input.startedAt,
+				timezone: input.timezone,
+			});
+			await reorderActiveHikings(tx);
+		});
 	}
 
 	async delete(input: Parameters<HikingCommandPort["delete"]>[0]) {
-		return runInDrizzleTransaction(
-			async (tx) => {
-				const hikingId = toNumericId(input.hikingId);
+		return this.transactionRunner.write(async (tx) => {
+			const hikingId = toNumericId(input.hikingId);
 
-				const [updated] = await tx
-					.update(hikingTable)
-					.set({ deletedAt: input.now, order: null, updatedAt: input.now })
-					.where(
-						and(eq(hikingTable.id, hikingId), isNull(hikingTable.deletedAt)),
-					)
-					.returning({ id: hikingTable.id });
+			const [updated] = await tx
+				.update(hikingTable)
+				.set({ deletedAt: input.now, order: null, updatedAt: input.now })
+				.where(and(eq(hikingTable.id, hikingId), isNull(hikingTable.deletedAt)))
+				.returning({ id: hikingTable.id });
 
-				if (!updated) {
-					return false;
-				}
+			if (!updated) {
+				return false;
+			}
 
-				await reorderActiveHikings(tx);
-				return true;
-			},
-			{ readOnly: false },
-		);
+			await reorderActiveHikings(tx);
+			return true;
+		});
 	}
 
 	async findActiveHikingById(hikingId: HikingId) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const numericHikingId = toNumericId(hikingId);
 			const hikingRows = await tx
 				.select({
@@ -128,27 +126,24 @@ export class HikingDrizzleAdapter implements HikingCommandPort {
 	}
 
 	async update(input: Parameters<HikingCommandPort["update"]>[0]) {
-		return runInDrizzleTransaction(
-			async (tx) => {
-				const [updated] = await tx
-					.update(hikingTable)
-					.set({ ...input.values, updatedAt: input.now })
-					.where(
-						and(
-							eq(hikingTable.id, toNumericId(input.hikingId)),
-							isNull(hikingTable.deletedAt),
-						),
-					)
-					.returning({ id: hikingTable.id });
+		return this.transactionRunner.write(async (tx) => {
+			const [updated] = await tx
+				.update(hikingTable)
+				.set({ ...input.values, updatedAt: input.now })
+				.where(
+					and(
+						eq(hikingTable.id, toNumericId(input.hikingId)),
+						isNull(hikingTable.deletedAt),
+					),
+				)
+				.returning({ id: hikingTable.id });
 
-				if (!updated) {
-					return false;
-				}
+			if (!updated) {
+				return false;
+			}
 
-				await reorderActiveHikings(tx);
-				return true;
-			},
-			{ readOnly: false },
-		);
+			await reorderActiveHikings(tx);
+			return true;
+		});
 	}
 }

@@ -1,12 +1,18 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import { Autowired } from "@/core/config/Autowired";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { MemberQueryPort } from "../application/port/out/MemberQueryPort";
 import type { MemberListItem } from "../model/MemberListItem";
 
 export class MemberQueryAdapter implements MemberQueryPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async listActiveMembers(): Promise<MemberListItem[]> {
-		return runInDrizzleTransaction(async (tx) =>
+		return this.transactionRunner.read(async (tx) =>
 			tx
 				.select({
 					createdAt: userTable.createdAt,
@@ -32,7 +38,7 @@ export class MemberQueryAdapter implements MemberQueryPort {
 	}
 
 	async findActiveMemberRoleById(userId: number) {
-		const [row] = await runInDrizzleTransaction(async (tx) =>
+		const [row] = await this.transactionRunner.read(async (tx) =>
 			tx
 				.select({
 					role: userTable.role,

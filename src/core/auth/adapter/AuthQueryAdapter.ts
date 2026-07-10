@@ -1,15 +1,21 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import { Autowired } from "@/core/config/Autowired";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthQueryPort } from "../application/port/out/AuthQueryPort";
 import type { AuthenticatedUser } from "../model/AuthenticatedUser";
 import type { SessionSnapshot } from "../model/SessionSnapshot";
 
 export class AuthQueryAdapter implements AuthQueryPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async getSessionSnapshotByUserId(
 		userId: number,
 	): Promise<SessionSnapshot | null> {
-		const [row] = await runInDrizzleTransaction(async (tx) =>
+		const [row] = await this.transactionRunner.read(async (tx) =>
 			tx
 				.select({
 					email: userTable.email,
@@ -42,7 +48,7 @@ export class AuthQueryAdapter implements AuthQueryPort {
 	}
 
 	async getUserByUserId(userId: number): Promise<AuthenticatedUser | null> {
-		const [row] = await runInDrizzleTransaction(async (tx) =>
+		const [row] = await this.transactionRunner.read(async (tx) =>
 			tx
 				.select({
 					displayName: userTable.displayName,

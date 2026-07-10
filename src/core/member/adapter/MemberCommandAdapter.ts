@@ -1,25 +1,28 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
+import { Autowired } from "@/core/config/Autowired";
 import { userTable } from "@/drizzle/schema";
 import type { MemberCommandPort } from "../application/port/out/MemberCommandPort";
 
 export class MemberCommandAdapter implements MemberCommandPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async updateActiveMemberRole(
 		input: Parameters<MemberCommandPort["updateActiveMemberRole"]>[0],
 	) {
-		await runInDrizzleTransaction(
-			async (tx) => {
-				await tx
-					.update(userTable)
-					.set({
-						role: input.nextRole,
-						updatedAt: input.now,
-					})
-					.where(
-						and(eq(userTable.id, input.userId), isNull(userTable.deletedAt)),
-					);
-			},
-			{ readOnly: false },
-		);
+		await this.transactionRunner.write(async (tx) => {
+			await tx
+				.update(userTable)
+				.set({
+					role: input.nextRole,
+					updatedAt: input.now,
+				})
+				.where(
+					and(eq(userTable.id, input.userId), isNull(userTable.deletedAt)),
+				);
+		});
 	}
 }

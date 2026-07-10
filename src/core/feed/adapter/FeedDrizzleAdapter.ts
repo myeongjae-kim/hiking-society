@@ -16,8 +16,9 @@ import type {
 	Longitude,
 	Timezone,
 } from "@/core/common/domain";
-import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
+import type { DrizzleTransactionRunner } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import { Autowired } from "@/core/config/Autowired";
 import type { FeedQueryPort } from "@/core/feed/application/port/out/FeedQueryPort";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
 import {
@@ -82,8 +83,13 @@ function incrementCount(counts: Map<number, number>, id: number) {
 }
 
 export class FeedDrizzleAdapter implements FeedQueryPort {
+	constructor(
+		@Autowired("DrizzleTransactionRunner")
+		private transactionRunner: DrizzleTransactionRunner,
+	) {}
+
 	async listHikings() {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const hikingRows = await tx
 				.select({
 					authorUserId: hikingTable.authorUserId,
@@ -170,7 +176,7 @@ export class FeedDrizzleAdapter implements FeedQueryPort {
 	async listHikingArticles(
 		input: Parameters<FeedQueryPort["listHikingArticles"]>[0],
 	) {
-		return runInDrizzleTransaction(async (tx) => {
+		return this.transactionRunner.read(async (tx) => {
 			const hikingId = toNumericId(input.hikingId);
 			const articleRows = await tx
 				.select({

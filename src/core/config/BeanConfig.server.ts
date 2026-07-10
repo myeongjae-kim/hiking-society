@@ -42,6 +42,7 @@ import type { ListArticleCommentsUseCase } from "../comment/application/port/in/
 import type { CommentCommandPort } from "../comment/application/port/out/CommentCommandPort";
 import type { CommentQueryPort } from "../comment/application/port/out/CommentQueryPort";
 import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
+import { DrizzleTransactionRunner } from "../common/adapter/drizzle.server";
 import { SystemClockAdapter } from "../common/adapter/SystemClockAdapter";
 import type { ClockPort } from "../common/application/port/out/ClockPort";
 import type { TransactionPort } from "../common/application/port/out/TransactionPort";
@@ -152,6 +153,7 @@ type InfrastructureBeans = {
 	ProfileQueryPort: ProfileQueryPort;
 	TokenCodecPort: TokenCodecPort;
 	TransactionPort: TransactionPort;
+	DrizzleTransactionRunner: DrizzleTransactionRunner;
 	ClockPort: ClockPort;
 	TextEncoder: TextEncoder;
 	JWT_SECRET: string;
@@ -211,6 +213,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	ProfileQueryPort: (bind) => bind().to(ProfileDrizzleAdapter),
 	TokenCodecPort: (bind) => bind().to(JoseTokenCodecAdapter),
 	TransactionPort: (bind) => bind().to(DrizzleTransactionAdapter),
+	DrizzleTransactionRunner: (bind) => bind().to(DrizzleTransactionRunner),
 	ClockPort: (bind) => bind().to(SystemClockAdapter),
 	UpdateDisplayNameUseCase: (bind) => bind().to(UpdateDisplayNameService),
 	UpdateEmailUseCase: (bind) => bind().to(UpdateEmailService),
