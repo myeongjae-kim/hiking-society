@@ -6,6 +6,6 @@ export class DrizzleTransactionAdapter implements TransactionPort {
 		work: () => Promise<T>,
 		options?: Parameters<TransactionPort["run"]>[1],
 	) {
-		return runInDrizzleTransaction(work, options);
+		return runInDrizzleTransaction(() => work(), options);
 	}
 }

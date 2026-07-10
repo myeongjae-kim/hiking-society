@@ -8,7 +8,7 @@ import type {
 	ExistingArticleMediaInput,
 	StoredArticleMedia,
 } from "@/core/article/model/ArticleMediaCommand";
-import { db } from "@/core/common/adapter/drizzle.server";
+import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import type { HikingId } from "@/core/hiking/domain";
 import {
@@ -152,121 +152,135 @@ function getExistingMediaInput(
 
 export class ArticleCommandDrizzleAdapter implements ArticleCommandPort {
 	async create(input: Parameters<ArticleCommandPort["create"]>[0]) {
-		const [article] = await db
-			.insert(articleTable)
-			.values({
-				authorUserId: input.authorUserId,
-				body: input.body,
-				hikingId: toNumericId(input.hikingId),
-			})
-			.returning({ id: articleTable.id });
+		return runInDrizzleTransaction(
+			async (tx) => {
+				const [article] = await tx
+					.insert(articleTable)
+					.values({
+						authorUserId: input.authorUserId,
+						body: input.body,
+						hikingId: toNumericId(input.hikingId),
+					})
+					.returning({ id: articleTable.id });
 
-		if (!article) {
-			throw applicationError.internal("글을 저장하지 못했습니다.");
-		}
+				if (!article) {
+					throw applicationError.internal("글을 저장하지 못했습니다.");
+				}
 
-		const insertedMedia = await db
-			.insert(articleMediaTable)
-			.values(
-				input.storedMedia.map((media) => ({
-					articleId: article.id,
-					byteSize: media.byteSize,
-					contentType: media.contentType,
-					durationMs: media.durationMs,
-					height: media.height,
-					mediaType: media.mediaType,
-					objectKey: media.objectKey,
-					order: media.order,
-					thumbnailUrl: media.thumbnailUrl,
-					url: media.url,
-					width: media.width,
-				})),
-			)
-			.returning({
-				id: articleMediaTable.id,
-				mediaType: articleMediaTable.mediaType,
-				order: articleMediaTable.order,
-			});
+				const insertedMedia = await tx
+					.insert(articleMediaTable)
+					.values(
+						input.storedMedia.map((media) => ({
+							articleId: article.id,
+							byteSize: media.byteSize,
+							contentType: media.contentType,
+							durationMs: media.durationMs,
+							height: media.height,
+							mediaType: media.mediaType,
+							objectKey: media.objectKey,
+							order: media.order,
+							thumbnailUrl: media.thumbnailUrl,
+							url: media.url,
+							width: media.width,
+						})),
+					)
+					.returning({
+						id: articleMediaTable.id,
+						mediaType: articleMediaTable.mediaType,
+						order: articleMediaTable.order,
+					});
 
-		const metadataRows = insertedMedia.flatMap((media) => {
-			if (media.mediaType !== "image") {
-				return [];
-			}
+				const metadataRows = insertedMedia.flatMap((media) => {
+					if (media.mediaType !== "image") {
+						return [];
+					}
 
-			const storedMedia = input.storedMedia.find(
-				(item) => item.order === media.order,
-			);
-			const metadata = getMetadataInsert(
-				media.id,
-				storedMedia?.originalMetadata,
-			);
-			return metadata ? [metadata] : [];
-		});
+					const storedMedia = input.storedMedia.find(
+						(item) => item.order === media.order,
+					);
+					const metadata = getMetadataInsert(
+						media.id,
+						storedMedia?.originalMetadata,
+					);
+					return metadata ? [metadata] : [];
+				});
 
-		if (metadataRows.length > 0) {
-			await db.insert(articleMediaMetadataTable).values(metadataRows);
-		}
+				if (metadataRows.length > 0) {
+					await tx.insert(articleMediaMetadataTable).values(metadataRows);
+				}
 
-		return String(article.id) as ArticleId;
+				return String(article.id) as ArticleId;
+			},
+			{ readOnly: false },
+		);
 	}
 
 	async delete(input: Parameters<ArticleCommandPort["delete"]>[0]) {
-		const [updated] = await db
-			.update(articleTable)
-			.set({ deletedAt: input.now, updatedAt: input.now })
-			.where(
-				and(
-					eq(articleTable.id, toNumericId(input.articleId)),
-					isNull(articleTable.deletedAt),
-				),
-			)
-			.returning({ id: articleTable.id });
+		return runInDrizzleTransaction(
+			async (tx) => {
+				const [updated] = await tx
+					.update(articleTable)
+					.set({ deletedAt: input.now, updatedAt: input.now })
+					.where(
+						and(
+							eq(articleTable.id, toNumericId(input.articleId)),
+							isNull(articleTable.deletedAt),
+						),
+					)
+					.returning({ id: articleTable.id });
 
-		return Boolean(updated);
+				return Boolean(updated);
+			},
+			{ readOnly: false },
+		);
 	}
 
 	async findActiveArticleById(articleId: ArticleId) {
-		const [row] = await db
-			.select({
-				authorUserId: articleTable.authorUserId,
-				body: articleTable.body,
-				hikingId: articleTable.hikingId,
-				id: articleTable.id,
-			})
-			.from(articleTable)
-			.where(
-				and(
-					eq(articleTable.id, toNumericId(articleId)),
-					isNull(articleTable.deletedAt),
-				),
-			)
-			.limit(1);
+		return runInDrizzleTransaction(async (tx) => {
+			const [row] = await tx
+				.select({
+					authorUserId: articleTable.authorUserId,
+					body: articleTable.body,
+					hikingId: articleTable.hikingId,
+					id: articleTable.id,
+				})
+				.from(articleTable)
+				.where(
+					and(
+						eq(articleTable.id, toNumericId(articleId)),
+						isNull(articleTable.deletedAt),
+					),
+				)
+				.limit(1);
 
-		if (!row) {
-			return null;
-		}
+			if (!row) {
+				return null;
+			}
 
-		return {
-			authorUserId: row.authorUserId,
-			body: row.body,
-			hikingId: String(row.hikingId) as HikingId,
-			id: String(row.id) as ArticleId,
-		};
+			return {
+				authorUserId: row.authorUserId,
+				body: row.body,
+				hikingId: String(row.hikingId) as HikingId,
+				id: String(row.id) as ArticleId,
+			};
+		});
 	}
 
 	async hasActiveHiking(hikingId: HikingId) {
-		const [hiking] = await db
-			.select({ id: hikingTable.id })
-			.from(hikingTable)
-			.where(
-				and(
-					eq(hikingTable.id, toNumericId(hikingId)),
-					isNull(hikingTable.deletedAt),
-				),
-			)
-			.limit(1);
+		return runInDrizzleTransaction(async (tx) => {
+			const [hiking] = await tx
+				.select({ id: hikingTable.id })
+				.from(hikingTable)
+				.where(
+					and(
+						eq(hikingTable.id, toNumericId(hikingId)),
+						isNull(hikingTable.deletedAt),
+					),
+				)
+				.limit(1);
 
-		return Boolean(hiking);
+			return Boolean(hiking);
+		});
 	}
 
 	async listActiveNotificationRecipientIds(
@@ -274,109 +288,127 @@ export class ArticleCommandDrizzleAdapter implements ArticleCommandPort {
 			ArticleCommandPort["listActiveNotificationRecipientIds"]
 		>[0],
 	) {
-		const recipients = await db
-			.select({ id: userTable.id })
-			.from(userTable)
-			.where(
-				and(isNull(userTable.deletedAt), ne(userTable.id, input.excludeUserId)),
-			);
+		return runInDrizzleTransaction(async (tx) => {
+			const recipients = await tx
+				.select({ id: userTable.id })
+				.from(userTable)
+				.where(
+					and(
+						isNull(userTable.deletedAt),
+						ne(userTable.id, input.excludeUserId),
+					),
+				);
 
-		return recipients.map((recipient) => recipient.id);
+			return recipients.map((recipient) => recipient.id);
+		});
 	}
 
 	async update(input: Parameters<ArticleCommandPort["update"]>[0]) {
-		const articleId = toNumericId(input.articleId);
+		return runInDrizzleTransaction(
+			async (tx) => {
+				const articleId = toNumericId(input.articleId);
 
-		const [updated] = await db
-			.update(articleTable)
-			.set({ body: input.values.body, updatedAt: input.now })
-			.where(
-				and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)),
-			)
-			.returning({ id: articleTable.id });
+				const [updated] = await tx
+					.update(articleTable)
+					.set({ body: input.values.body, updatedAt: input.now })
+					.where(
+						and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)),
+					)
+					.returning({ id: articleTable.id });
 
-		if (!updated) {
-			return false;
-		}
+				if (!updated) {
+					return false;
+				}
 
-		const existingMediaRows = await db
-			.select({
-				objectKey: articleMediaTable.objectKey,
-				originalMetadata: articleMediaMetadataTable.originalMetadata,
-				url: articleMediaTable.url,
-			})
-			.from(articleMediaTable)
-			.leftJoin(
-				articleMediaMetadataTable,
-				eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
-			)
-			.where(eq(articleMediaTable.articleId, articleId));
-		const existingMetadataByKey = new Map<string, Record<string, unknown>>();
+				const existingMediaRows = await tx
+					.select({
+						objectKey: articleMediaTable.objectKey,
+						originalMetadata: articleMediaMetadataTable.originalMetadata,
+						url: articleMediaTable.url,
+					})
+					.from(articleMediaTable)
+					.leftJoin(
+						articleMediaMetadataTable,
+						eq(articleMediaMetadataTable.articleMediaId, articleMediaTable.id),
+					)
+					.where(eq(articleMediaTable.articleId, articleId));
+				const existingMetadataByKey = new Map<
+					string,
+					Record<string, unknown>
+				>();
 
-		for (const media of existingMediaRows) {
-			const metadata = toOriginalMetadata(media.originalMetadata);
+				for (const media of existingMediaRows) {
+					const metadata = toOriginalMetadata(media.originalMetadata);
 
-			if (!metadata) {
-				continue;
-			}
+					if (!metadata) {
+						continue;
+					}
 
-			existingMetadataByKey.set(media.objectKey, metadata);
-			existingMetadataByKey.set(media.url, metadata);
-		}
+					existingMetadataByKey.set(media.objectKey, metadata);
+					existingMetadataByKey.set(media.url, metadata);
+				}
 
-		const storedMedia: StoredArticleMedia[] = input.storedMedia.map((media) => {
-			const normalized = getExistingMediaInput(media);
-			const uploadedMetadata =
-				"originalMetadata" in media ? media.originalMetadata : null;
-			const originalMetadata =
-				uploadedMetadata ??
-				existingMetadataByKey.get(normalized.objectKey) ??
-				existingMetadataByKey.get(normalized.url) ??
-				null;
+				const storedMedia: StoredArticleMedia[] = input.storedMedia.map(
+					(media) => {
+						const normalized = getExistingMediaInput(media);
+						const uploadedMetadata =
+							"originalMetadata" in media ? media.originalMetadata : null;
+						const originalMetadata =
+							uploadedMetadata ??
+							existingMetadataByKey.get(normalized.objectKey) ??
+							existingMetadataByKey.get(normalized.url) ??
+							null;
 
-			return { ...normalized, originalMetadata };
-		});
+						return { ...normalized, originalMetadata };
+					},
+				);
 
-		await db
-			.delete(articleMediaTable)
-			.where(eq(articleMediaTable.articleId, articleId));
-		const insertedMedia = await db
-			.insert(articleMediaTable)
-			.values(
-				storedMedia.map((media) => ({
-					articleId,
-					byteSize: media.byteSize,
-					contentType: media.contentType,
-					durationMs: media.durationMs,
-					height: media.height,
-					mediaType: media.mediaType,
-					objectKey: media.objectKey,
-					order: media.order,
-					thumbnailUrl: media.thumbnailUrl,
-					url: media.url,
-					width: media.width,
-				})),
-			)
-			.returning({
-				id: articleMediaTable.id,
-				mediaType: articleMediaTable.mediaType,
-				order: articleMediaTable.order,
-			});
+				await tx
+					.delete(articleMediaTable)
+					.where(eq(articleMediaTable.articleId, articleId));
+				const insertedMedia = await tx
+					.insert(articleMediaTable)
+					.values(
+						storedMedia.map((media) => ({
+							articleId,
+							byteSize: media.byteSize,
+							contentType: media.contentType,
+							durationMs: media.durationMs,
+							height: media.height,
+							mediaType: media.mediaType,
+							objectKey: media.objectKey,
+							order: media.order,
+							thumbnailUrl: media.thumbnailUrl,
+							url: media.url,
+							width: media.width,
+						})),
+					)
+					.returning({
+						id: articleMediaTable.id,
+						mediaType: articleMediaTable.mediaType,
+						order: articleMediaTable.order,
+					});
 
-		const metadataRows = insertedMedia.flatMap((media) => {
-			if (media.mediaType !== "image") {
-				return [];
-			}
+				const metadataRows = insertedMedia.flatMap((media) => {
+					if (media.mediaType !== "image") {
+						return [];
+					}
 
-			const stored = storedMedia.find((item) => item.order === media.order);
-			const metadata = getMetadataInsert(media.id, stored?.originalMetadata);
-			return metadata ? [metadata] : [];
-		});
+					const stored = storedMedia.find((item) => item.order === media.order);
+					const metadata = getMetadataInsert(
+						media.id,
+						stored?.originalMetadata,
+					);
+					return metadata ? [metadata] : [];
+				});
 
-		if (metadataRows.length > 0) {
-			await db.insert(articleMediaMetadataTable).values(metadataRows);
-		}
+				if (metadataRows.length > 0) {
+					await tx.insert(articleMediaMetadataTable).values(metadataRows);
+				}
 
-		return true;
+				return true;
+			},
+			{ readOnly: false },
+		);
 	}
 }

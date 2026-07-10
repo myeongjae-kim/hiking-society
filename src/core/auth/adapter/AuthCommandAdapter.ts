@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { db } from "@/core/common/adapter/drizzle.server";
+import { runInDrizzleTransaction } from "@/core/common/adapter/drizzle.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import { socialAccountTable, userTable } from "@/drizzle/schema";
 import type { AuthCommandPort } from "../application/port/out/AuthCommandPort";
@@ -38,111 +38,123 @@ export class AuthCommandAdapter implements AuthCommandPort {
 	}) {
 		const { now, payload } = input;
 
-		const [existingAccount] = await db
-			.select({
-				user: userTable,
-			})
-			.from(socialAccountTable)
-			.innerJoin(userTable, eq(userTable.id, socialAccountTable.userId))
-			.where(
-				and(
-					eq(socialAccountTable.provider, payload.provider),
-					eq(socialAccountTable.providerUserId, payload.providerUserId),
-					isNull(socialAccountTable.deletedAt),
-					isNull(userTable.deletedAt),
-				),
-			)
-			.limit(1);
+		return runInDrizzleTransaction(
+			async (tx) => {
+				const [existingAccount] = await tx
+					.select({
+						user: userTable,
+					})
+					.from(socialAccountTable)
+					.innerJoin(userTable, eq(userTable.id, socialAccountTable.userId))
+					.where(
+						and(
+							eq(socialAccountTable.provider, payload.provider),
+							eq(socialAccountTable.providerUserId, payload.providerUserId),
+							isNull(socialAccountTable.deletedAt),
+							isNull(userTable.deletedAt),
+						),
+					)
+					.limit(1);
 
-		if (existingAccount) {
-			const [updatedUser] = await db
-				.update(userTable)
-				.set({
-					lastLoginAt: now,
-					updatedAt: now,
-				})
-				.where(eq(userTable.id, existingAccount.user.id))
-				.returning();
+				if (existingAccount) {
+					const [updatedUser] = await tx
+						.update(userTable)
+						.set({
+							lastLoginAt: now,
+							updatedAt: now,
+						})
+						.where(eq(userTable.id, existingAccount.user.id))
+						.returning();
 
-			if (!updatedUser) {
-				throw applicationError.internal("사용자를 갱신하지 못했습니다.");
-			}
+					if (!updatedUser) {
+						throw applicationError.internal("사용자를 갱신하지 못했습니다.");
+					}
 
-			await db
-				.update(socialAccountTable)
-				.set({
+					await tx
+						.update(socialAccountTable)
+						.set({
+							displayName: payload.displayName,
+							email: payload.email,
+							emailVerified: payload.emailVerified,
+							profileImageUrl: payload.profileImageUrl,
+							rawClaims: payload.rawClaims,
+							updatedAt: now,
+						})
+						.where(
+							and(
+								eq(socialAccountTable.provider, payload.provider),
+								eq(socialAccountTable.providerUserId, payload.providerUserId),
+							),
+						);
+
+					return toAuthenticatedUser(
+						updatedUser,
+						payload.provider,
+						payload.email,
+					);
+				}
+
+				const [existingUserByEmail] = await tx
+					.select()
+					.from(userTable)
+					.where(
+						and(
+							eq(userTable.email, payload.email),
+							isNull(userTable.deletedAt),
+						),
+					)
+					.limit(1);
+
+				const userForSocialAccount =
+					existingUserByEmail ??
+					(
+						await tx
+							.insert(userTable)
+							.values({
+								displayName: payload.displayName,
+								email: payload.email,
+								lastLoginAt: now,
+								name: payload.displayName,
+								profileImageUrl: payload.profileImageUrl,
+							})
+							.returning()
+					)[0];
+
+				if (!userForSocialAccount) {
+					throw applicationError.internal("사용자를 생성하지 못했습니다.");
+				}
+
+				if (existingUserByEmail) {
+					await tx
+						.update(userTable)
+						.set({
+							displayName: payload.displayName,
+							lastLoginAt: now,
+							name: payload.displayName,
+							profileImageUrl: payload.profileImageUrl,
+							updatedAt: now,
+						})
+						.where(eq(userTable.id, existingUserByEmail.id));
+				}
+
+				await tx.insert(socialAccountTable).values({
 					displayName: payload.displayName,
 					email: payload.email,
 					emailVerified: payload.emailVerified,
 					profileImageUrl: payload.profileImageUrl,
+					provider: payload.provider,
+					providerUserId: payload.providerUserId,
 					rawClaims: payload.rawClaims,
-					updatedAt: now,
-				})
-				.where(
-					and(
-						eq(socialAccountTable.provider, payload.provider),
-						eq(socialAccountTable.providerUserId, payload.providerUserId),
-					),
+					userId: userForSocialAccount.id,
+				});
+
+				return toAuthenticatedUser(
+					userForSocialAccount,
+					payload.provider,
+					payload.email,
 				);
-
-			return toAuthenticatedUser(updatedUser, payload.provider, payload.email);
-		}
-
-		const [existingUserByEmail] = await db
-			.select()
-			.from(userTable)
-			.where(
-				and(eq(userTable.email, payload.email), isNull(userTable.deletedAt)),
-			)
-			.limit(1);
-
-		const userForSocialAccount =
-			existingUserByEmail ??
-			(
-				await db
-					.insert(userTable)
-					.values({
-						displayName: payload.displayName,
-						email: payload.email,
-						lastLoginAt: now,
-						name: payload.displayName,
-						profileImageUrl: payload.profileImageUrl,
-					})
-					.returning()
-			)[0];
-
-		if (!userForSocialAccount) {
-			throw applicationError.internal("사용자를 생성하지 못했습니다.");
-		}
-
-		if (existingUserByEmail) {
-			await db
-				.update(userTable)
-				.set({
-					displayName: payload.displayName,
-					lastLoginAt: now,
-					name: payload.displayName,
-					profileImageUrl: payload.profileImageUrl,
-					updatedAt: now,
-				})
-				.where(eq(userTable.id, existingUserByEmail.id));
-		}
-
-		await db.insert(socialAccountTable).values({
-			displayName: payload.displayName,
-			email: payload.email,
-			emailVerified: payload.emailVerified,
-			profileImageUrl: payload.profileImageUrl,
-			provider: payload.provider,
-			providerUserId: payload.providerUserId,
-			rawClaims: payload.rawClaims,
-			userId: userForSocialAccount.id,
-		});
-
-		return toAuthenticatedUser(
-			userForSocialAccount,
-			payload.provider,
-			payload.email,
+			},
+			{ readOnly: false },
 		);
 	}
 }
