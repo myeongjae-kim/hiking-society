@@ -39,7 +39,7 @@ export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 	async createUploadTarget(
 		input: Parameters<ProfileImageStoragePort["createUploadTarget"]>[0],
 	) {
-		const objectKey = `profile-images/users/${input.userId}/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${sanitizeFileName(input.fileName)}`;
+		const objectKey = `profile-images/users/${input.userId}/${input.now.toISOString().slice(0, 10)}/${crypto.randomUUID()}-${sanitizeFileName(input.fileName)}`;
 		const uploadUrl = await getSignedUrl(
 			this.client,
 			new PutObjectCommand({

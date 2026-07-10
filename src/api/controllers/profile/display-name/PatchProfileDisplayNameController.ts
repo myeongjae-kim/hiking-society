@@ -35,7 +35,6 @@ controller.openapi(
 			.get("UpdateDisplayNameUseCase")
 			.updateDisplayName({
 				displayName: values.displayName,
-				now: new Date(),
 				userId: user.id,
 			});
 

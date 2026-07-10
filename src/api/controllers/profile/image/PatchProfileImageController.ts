@@ -32,7 +32,6 @@ controller.openapi(
 		await applicationUseCaseContext()
 			.get("UpdateProfileImageUseCase")
 			.updateProfileImage({
-				now: new Date(),
 				profileImage: values.profileImage,
 				removeProfileImage: values.removeProfileImage,
 				userId: user.id,

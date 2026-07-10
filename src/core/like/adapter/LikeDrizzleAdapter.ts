@@ -1,8 +1,8 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/common/adapter/drizzle.server";
+import { applicationError } from "@/core/common/application/ApplicationError";
 import {
 	articleLikeTable,
 	articleTable,
@@ -27,57 +27,55 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 	) {
 		const articleId = toNumericId(input.articleId);
 
-		return db.transaction(async (tx) => {
-			const [article] = await tx
-				.select({
-					authorUserId: articleTable.authorUserId,
-					body: articleTable.body,
-					id: articleTable.id,
-				})
-				.from(articleTable)
-				.where(
-					and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)),
-				)
-				.limit(1);
+		const [article] = await db
+			.select({
+				authorUserId: articleTable.authorUserId,
+				body: articleTable.body,
+				id: articleTable.id,
+			})
+			.from(articleTable)
+			.where(
+				and(eq(articleTable.id, articleId), isNull(articleTable.deletedAt)),
+			)
+			.limit(1);
 
-			if (!article) {
-				return null;
-			}
+		if (!article) {
+			return null;
+		}
 
-			const [existingLike] = await tx
-				.select({ id: articleLikeTable.id })
-				.from(articleLikeTable)
-				.where(
-					and(
-						eq(articleLikeTable.articleId, articleId),
-						eq(articleLikeTable.userId, input.userId),
-					),
-				)
-				.limit(1);
+		const [existingLike] = await db
+			.select({ id: articleLikeTable.id })
+			.from(articleLikeTable)
+			.where(
+				and(
+					eq(articleLikeTable.articleId, articleId),
+					eq(articleLikeTable.userId, input.userId),
+				),
+			)
+			.limit(1);
 
-			if (existingLike) {
-				await tx
-					.delete(articleLikeTable)
-					.where(eq(articleLikeTable.id, existingLike.id));
-				return {
-					articleAuthorUserId: article.authorUserId,
-					articleBody: article.body,
-					articleId: String(article.id) as ArticleId,
-					liked: false,
-				};
-			}
-
-			await tx
-				.insert(articleLikeTable)
-				.values({ articleId, userId: input.userId });
-
+		if (existingLike) {
+			await db
+				.delete(articleLikeTable)
+				.where(eq(articleLikeTable.id, existingLike.id));
 			return {
 				articleAuthorUserId: article.authorUserId,
 				articleBody: article.body,
 				articleId: String(article.id) as ArticleId,
-				liked: true,
+				liked: false,
 			};
-		});
+		}
+
+		await db
+			.insert(articleLikeTable)
+			.values({ articleId, userId: input.userId });
+
+		return {
+			articleAuthorUserId: article.authorUserId,
+			articleBody: article.body,
+			articleId: String(article.id) as ArticleId,
+			liked: true,
+		};
 	}
 
 	async toggleCommentLike(
@@ -85,64 +83,62 @@ export class LikeDrizzleAdapter implements LikeCommandPort {
 	) {
 		const commentId = toNumericId(input.commentId);
 
-		return db.transaction(async (tx) => {
-			const [comment] = await tx
-				.select({
-					articleId: commentTable.articleId,
-					authorUserId: commentTable.authorUserId,
-					body: commentTable.body,
-					id: commentTable.id,
-				})
-				.from(commentTable)
-				.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
-				.where(
-					and(
-						eq(commentTable.id, commentId),
-						isNull(commentTable.deletedAt),
-						isNull(articleTable.deletedAt),
-					),
-				)
-				.limit(1);
+		const [comment] = await db
+			.select({
+				articleId: commentTable.articleId,
+				authorUserId: commentTable.authorUserId,
+				body: commentTable.body,
+				id: commentTable.id,
+			})
+			.from(commentTable)
+			.innerJoin(articleTable, eq(articleTable.id, commentTable.articleId))
+			.where(
+				and(
+					eq(commentTable.id, commentId),
+					isNull(commentTable.deletedAt),
+					isNull(articleTable.deletedAt),
+				),
+			)
+			.limit(1);
 
-			if (!comment) {
-				return null;
-			}
+		if (!comment) {
+			return null;
+		}
 
-			const [existingLike] = await tx
-				.select({ id: commentLikeTable.id })
-				.from(commentLikeTable)
-				.where(
-					and(
-						eq(commentLikeTable.commentId, commentId),
-						eq(commentLikeTable.userId, input.userId),
-					),
-				)
-				.limit(1);
+		const [existingLike] = await db
+			.select({ id: commentLikeTable.id })
+			.from(commentLikeTable)
+			.where(
+				and(
+					eq(commentLikeTable.commentId, commentId),
+					eq(commentLikeTable.userId, input.userId),
+				),
+			)
+			.limit(1);
 
-			if (existingLike) {
-				await tx
-					.delete(commentLikeTable)
-					.where(eq(commentLikeTable.id, existingLike.id));
-				return {
-					articleId: String(comment.articleId) as ArticleId,
-					commentAuthorUserId: comment.authorUserId,
-					commentBody: comment.body,
-					commentId: String(comment.id) as CommentId,
-					liked: false,
-				};
-			}
-
-			await tx
-				.insert(commentLikeTable)
-				.values({ commentId, userId: input.userId });
-
+		if (existingLike) {
+			await db
+				.delete(commentLikeTable)
+				.where(eq(commentLikeTable.id, existingLike.id));
 			return {
 				articleId: String(comment.articleId) as ArticleId,
 				commentAuthorUserId: comment.authorUserId,
 				commentBody: comment.body,
 				commentId: String(comment.id) as CommentId,
-				liked: true,
+				liked: false,
 			};
-		});
+		}
+
+		await db
+			.insert(commentLikeTable)
+			.values({ commentId, userId: input.userId });
+
+		return {
+			articleId: String(comment.articleId) as ArticleId,
+			commentAuthorUserId: comment.authorUserId,
+			commentBody: comment.body,
+			commentId: String(comment.id) as CommentId,
+			liked: true,
+		};
 	}
 }

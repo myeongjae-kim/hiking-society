@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	ArticleMediaCollection,
 	ArticleOwnership,
+	UploadedArticleMediaOwnership,
 } from "@/core/article/domain/ArticlePolicy";
 
 describe("ArticleMediaCollection", () => {
@@ -38,5 +39,65 @@ describe("ArticleOwnership", () => {
 
 		expect(ownership.canBeManagedBy(1)).toBe(true);
 		expect(ownership.canBeManagedBy(2)).toBe(false);
+	});
+});
+
+describe("UploadedArticleMediaOwnership", () => {
+	const ownershipPolicy = {
+		hasExpectedPublicUrl: ({
+			objectKey,
+			url,
+		}: {
+			objectKey: string;
+			url: string;
+		}) => url === `https://cdn.example.com/${objectKey}`,
+		hasOwnedObjectKey: (objectKey: string) =>
+			objectKey.startsWith("article-media/users/1/"),
+		hasOwnedPublicUrl: (url: string) =>
+			url.startsWith("https://cdn.example.com/article-media/users/1/"),
+	};
+
+	it("accepts uploaded media owned by the current user", () => {
+		const ownership = UploadedArticleMediaOwnership.of({
+			media: [
+				{
+					objectKey: "article-media/users/1/2026-07-10/photo.webp",
+					thumbnailUrl:
+						"https://cdn.example.com/article-media/users/1/2026-07-10/thumb.webp",
+					url: "https://cdn.example.com/article-media/users/1/2026-07-10/photo.webp",
+				},
+			],
+			ownershipPolicy,
+		});
+
+		expect(ownership.findViolation()).toBeNull();
+	});
+
+	it("reports object ownership and thumbnail URL violations separately", () => {
+		expect(
+			UploadedArticleMediaOwnership.of({
+				media: [
+					{
+						objectKey: "article-media/users/2/2026-07-10/photo.webp",
+						url: "https://cdn.example.com/article-media/users/2/2026-07-10/photo.webp",
+					},
+				],
+				ownershipPolicy,
+			}).findViolation(),
+		).toBe("uploaded-media");
+
+		expect(
+			UploadedArticleMediaOwnership.of({
+				media: [
+					{
+						objectKey: "article-media/users/1/2026-07-10/photo.webp",
+						thumbnailUrl:
+							"https://cdn.example.com/article-media/users/2/2026-07-10/thumb.webp",
+						url: "https://cdn.example.com/article-media/users/1/2026-07-10/photo.webp",
+					},
+				],
+				ownershipPolicy,
+			}).findViolation(),
+		).toBe("thumbnail-url");
 	});
 });

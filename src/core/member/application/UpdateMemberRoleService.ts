@@ -1,5 +1,6 @@
 import { UserRolePolicy } from "@/core/auth/model/roles";
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { UpdateMemberRoleUseCase } from "./port/in/UpdateMemberRoleUseCase";
@@ -14,6 +15,8 @@ export class UpdateMemberRoleService implements UpdateMemberRoleUseCase {
 		private memberCommandPort: MemberCommandPort,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async update(input: Parameters<UpdateMemberRoleUseCase["update"]>[0]) {
@@ -40,7 +43,7 @@ export class UpdateMemberRoleService implements UpdateMemberRoleUseCase {
 
 				await this.memberCommandPort.updateActiveMemberRole({
 					nextRole: input.nextRole,
-					now: input.now,
+					now: this.clockPort.now(),
 					userId: input.userId,
 				});
 			},

@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { ArticleId } from "@/core/article/domain";
 import type { CommentId } from "@/core/comment/domain";
-import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
-import { applicationError } from "@/core/common/application/ApplicationError";
 import { db } from "@/core/common/adapter/drizzle.server";
+import { applicationError } from "@/core/common/application/ApplicationError";
+import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
 import type { NotificationCommandPort } from "@/core/notification/application/port/out/NotificationCommandPort";
 import type { NotificationQueryPort } from "@/core/notification/application/port/out/NotificationQueryPort";
 import type { NotificationId } from "@/core/notification/model/Notification";
@@ -114,7 +114,7 @@ export class NotificationDrizzleAdapter
 	) {
 		await db
 			.update(notificationTable)
-			.set({ readAt: new Date() })
+			.set({ readAt: input.now })
 			.where(
 				and(
 					eq(notificationTable.recipientUserId, input.currentUserId),
@@ -126,7 +126,7 @@ export class NotificationDrizzleAdapter
 	async markRead(input: Parameters<NotificationCommandPort["markRead"]>[0]) {
 		await db
 			.update(notificationTable)
-			.set({ readAt: new Date() })
+			.set({ readAt: input.now })
 			.where(
 				and(
 					eq(notificationTable.id, toNumericId(input.notificationId)),

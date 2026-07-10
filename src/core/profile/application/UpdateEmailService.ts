@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { UpdateEmailUseCase } from "./port/in/UpdateEmailUseCase";
@@ -13,6 +14,8 @@ export class UpdateEmailService implements UpdateEmailUseCase {
 		private profileCommandPort: ProfileCommandPort,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async updateEmail(input: Parameters<UpdateEmailUseCase["updateEmail"]>[0]) {
@@ -28,7 +31,11 @@ export class UpdateEmailService implements UpdateEmailUseCase {
 					throw applicationError.conflict("이미 사용 중인 이메일입니다.");
 				}
 
-				await this.profileCommandPort.updateActiveEmail(input);
+				await this.profileCommandPort.updateActiveEmail({
+					email: input.email,
+					now: this.clockPort.now(),
+					userId: input.userId,
+				});
 			},
 			{ readOnly: false },
 		);

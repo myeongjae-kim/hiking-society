@@ -16,6 +16,7 @@ import type { MediaStoragePort } from "../article/application/port/out/MediaStor
 import { AuthCommandAdapter } from "../auth/adapter/AuthCommandAdapter";
 import { AuthQueryAdapter } from "../auth/adapter/AuthQueryAdapter";
 import { GoogleOAuthAdapter } from "../auth/adapter/GoogleOAuthAdapter";
+import { JoseTokenCodecAdapter } from "../auth/adapter/JoseTokenCodecAdapter";
 import { CreateSessionTokenService } from "../auth/application/CreateSessionTokenService";
 import { GetCookieOptionsService } from "../auth/application/GetCookieOptionsService";
 import { LoginWithGoogleCodeService } from "../auth/application/LoginWithGoogleCodeService";
@@ -28,6 +29,7 @@ import type { VerifyRefreshTokenUseCase } from "../auth/application/port/in/Veri
 import type { AuthCommandPort } from "../auth/application/port/out/AuthCommandPort";
 import type { AuthQueryPort } from "../auth/application/port/out/AuthQueryPort";
 import type { GoogleOAuthPort } from "../auth/application/port/out/GoogleOAuthPort";
+import type { TokenCodecPort } from "../auth/application/port/out/TokenCodecPort";
 import { ResolveSessionService } from "../auth/application/ResolveSessionService";
 import { VerifyTokenService } from "../auth/application/VerifyTokenService";
 import { CookieConfig } from "../auth/config/CookieConfig";
@@ -40,6 +42,8 @@ import type { ListArticleCommentsUseCase } from "../comment/application/port/in/
 import type { CommentCommandPort } from "../comment/application/port/out/CommentCommandPort";
 import type { CommentQueryPort } from "../comment/application/port/out/CommentQueryPort";
 import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
+import { SystemClockAdapter } from "../common/adapter/SystemClockAdapter";
+import type { ClockPort } from "../common/application/port/out/ClockPort";
 import type { TransactionPort } from "../common/application/port/out/TransactionPort";
 import { FeedDrizzleAdapter } from "../feed/adapter/FeedDrizzleAdapter";
 import { GetFeedHomeService } from "../feed/application/GetFeedHomeService";
@@ -47,6 +51,10 @@ import { ListFeedService } from "../feed/application/ListFeedService";
 import type { GetFeedHomeUseCase } from "../feed/application/port/in/GetFeedHomeUseCase";
 import type { ListFeedUseCase } from "../feed/application/port/in/ListFeedUseCase";
 import type { FeedQueryPort } from "../feed/application/port/out/FeedQueryPort";
+import { NominatimGeocodingAdapter } from "../geocoding/adapter/NominatimGeocodingAdapter";
+import type { SearchGeocodingUseCase } from "../geocoding/application/port/in/SearchGeocodingUseCase";
+import type { GeocodingSearchPort } from "../geocoding/application/port/out/GeocodingSearchPort";
+import { SearchGeocodingService } from "../geocoding/application/SearchGeocodingService";
 import { HikingDrizzleAdapter } from "../hiking/adapter/HikingDrizzleAdapter";
 import { HikingCommandService } from "../hiking/application/HikingCommandService";
 import type { HikingCommandUseCase } from "../hiking/application/port/in/HikingCommandUseCase";
@@ -78,9 +86,9 @@ import type { NotificationQueryPort } from "../notification/application/port/out
 import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
 import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
 import { ProfileImageUploadService } from "../profile/application/ProfileImageUploadService";
+import type { ProfileImageUploadUseCase } from "../profile/application/port/in/ProfileImageUploadUseCase";
 import type { UpdateDisplayNameUseCase } from "../profile/application/port/in/UpdateDisplayNameUseCase";
 import type { UpdateEmailUseCase } from "../profile/application/port/in/UpdateEmailUseCase";
-import type { ProfileImageUploadUseCase } from "../profile/application/port/in/ProfileImageUploadUseCase";
 import type { UpdateProfileImageUseCase } from "../profile/application/port/in/UpdateProfileImageUseCase";
 import type { ProfileCommandPort } from "../profile/application/port/out/ProfileCommandPort";
 import type { ProfileImageStoragePort } from "../profile/application/port/out/ProfileImageStoragePort";
@@ -118,6 +126,7 @@ export type UseCaseBeans = {
 	UpdateDisplayNameUseCase: UpdateDisplayNameUseCase;
 	UpdateEmailUseCase: UpdateEmailUseCase;
 	UpdateProfileImageUseCase: UpdateProfileImageUseCase;
+	SearchGeocodingUseCase: SearchGeocodingUseCase;
 };
 
 type InfrastructureBeans = {
@@ -128,6 +137,7 @@ type InfrastructureBeans = {
 	CommentCommandPort: CommentCommandPort;
 	CommentQueryPort: CommentQueryPort;
 	FeedQueryPort: FeedQueryPort;
+	GeocodingSearchPort: GeocodingSearchPort;
 	GoogleOAuthPort: GoogleOAuthPort;
 	HikingCommandPort: HikingCommandPort;
 	LikeCommandPort: LikeCommandPort;
@@ -140,7 +150,9 @@ type InfrastructureBeans = {
 	ProfileCommandPort: ProfileCommandPort;
 	ProfileImageStoragePort: ProfileImageStoragePort;
 	ProfileQueryPort: ProfileQueryPort;
+	TokenCodecPort: TokenCodecPort;
 	TransactionPort: TransactionPort;
+	ClockPort: ClockPort;
 	TextEncoder: TextEncoder;
 	JWT_SECRET: string;
 	GOOGLE_LOGIN_CLIENT_ID: string;
@@ -162,6 +174,7 @@ export const beanConfig: BeanConfig<Beans> = {
 	CommentCommandUseCase: (bind) => bind().to(CommentCommandService),
 	CommentQueryPort: (bind) => bind().to(CommentQueryDrizzleAdapter),
 	FeedQueryPort: (bind) => bind().to(FeedDrizzleAdapter),
+	GeocodingSearchPort: (bind) => bind().to(NominatimGeocodingAdapter),
 	GoogleOAuthPort: (bind) => bind().to(GoogleOAuthAdapter),
 	HikingCommandPort: (bind) => bind().to(HikingDrizzleAdapter),
 	HikingCommandUseCase: (bind) => bind().to(HikingCommandService),
@@ -196,10 +209,13 @@ export const beanConfig: BeanConfig<Beans> = {
 	ProfileImageUploadUseCase: (bind) => bind().to(ProfileImageUploadService),
 	ProfileImageStoragePort: (bind) => bind().to(S3ProfileImageStorageAdapter),
 	ProfileQueryPort: (bind) => bind().to(ProfileDrizzleAdapter),
+	TokenCodecPort: (bind) => bind().to(JoseTokenCodecAdapter),
 	TransactionPort: (bind) => bind().to(DrizzleTransactionAdapter),
+	ClockPort: (bind) => bind().to(SystemClockAdapter),
 	UpdateDisplayNameUseCase: (bind) => bind().to(UpdateDisplayNameService),
 	UpdateEmailUseCase: (bind) => bind().to(UpdateEmailService),
 	UpdateProfileImageUseCase: (bind) => bind().to(UpdateProfileImageService),
+	SearchGeocodingUseCase: (bind) => bind().to(SearchGeocodingService),
 	TextEncoder: (bind) => bind().to(TextEncoder),
 	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>

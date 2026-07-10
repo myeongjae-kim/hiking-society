@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import { HikingDeletionPolicy, HikingOwnership } from "../domain";
@@ -11,6 +12,8 @@ export class HikingCommandService implements HikingCommandUseCase {
 		private hikingCommandPort: HikingCommandPort,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async create(input: Parameters<HikingCommandUseCase["create"]>[0]) {
@@ -37,7 +40,7 @@ export class HikingCommandService implements HikingCommandUseCase {
 
 				const updated = await this.hikingCommandPort.update({
 					hikingId: input.hikingId,
-					now: new Date(),
+					now: this.clockPort.now(),
 					values: input.values,
 				});
 
@@ -75,7 +78,7 @@ export class HikingCommandService implements HikingCommandUseCase {
 
 				const deleted = await this.hikingCommandPort.delete({
 					hikingId: input.hikingId,
-					now: new Date(),
+					now: this.clockPort.now(),
 				});
 
 				if (!deleted) {

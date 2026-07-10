@@ -2,13 +2,13 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { ApiError } from "#/api/config/ApiError";
 import { Controller } from "#/api/config/Controller";
-import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
-import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import {
 	cookieOptions,
 	sessionCookieConfig,
 } from "#/api/config/sessionCookies";
+import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
+import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
+import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 const controller = Controller();
 const {
@@ -44,7 +44,6 @@ controller.openapi(
 				.get("LoginWithGoogleCodeUseCase")
 				.login({
 					code: c.req.valid("json").code,
-					now: new Date(),
 				});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "";

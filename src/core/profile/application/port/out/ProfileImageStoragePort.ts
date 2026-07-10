@@ -12,7 +12,7 @@ export type ProfileImageUploadTarget = {
 
 export interface ProfileImageStoragePort {
 	createUploadTarget(
-		input: ProfileImageUploadTargetRequest & { userId: number },
+		input: ProfileImageUploadTargetRequest & { now: Date; userId: number },
 	): Promise<ProfileImageUploadTarget>;
 	deleteObjects(input: {
 		objectKeys: readonly string[];

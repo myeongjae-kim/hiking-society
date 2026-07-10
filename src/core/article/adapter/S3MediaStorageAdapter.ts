@@ -54,7 +54,7 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
 	async createUploadTarget(
 		input: Parameters<MediaStoragePort["createUploadTarget"]>[0],
 	) {
-		const datePath = new Date().toISOString().slice(0, 10);
+		const datePath = input.now.toISOString().slice(0, 10);
 		const objectKey = `article-media/users/${input.userId}/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.fileName)}`;
 		const thumbnailObjectKey = input.thumbnail
 			? `article-media/users/${input.userId}/${datePath}/${crypto.randomUUID()}-${sanitizeFileName(input.thumbnail.fileName)}`

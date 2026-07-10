@@ -1,6 +1,21 @@
 export const ARTICLE_MEDIA_REQUIRED_MESSAGE =
 	"글은 사진이나 동영상 없이 저장할 수 없습니다.";
 
+type UploadedArticleMediaOwnershipTarget = {
+	readonly objectKey: string;
+	readonly thumbnailUrl?: string | null;
+	readonly url: string;
+};
+
+type UploadOwnershipChecker = {
+	hasExpectedPublicUrl(input: {
+		readonly objectKey: string;
+		readonly url: string;
+	}): boolean;
+	hasOwnedObjectKey(objectKey: string): boolean;
+	hasOwnedPublicUrl(url: string): boolean;
+};
+
 export class ArticleMediaCollection<TMedia = unknown> {
 	private constructor(private readonly media: readonly TMedia[]) {}
 
@@ -58,5 +73,44 @@ export class ArticleOwnership {
 
 	canBeManagedBy(userId: number) {
 		return this.authorUserId === userId;
+	}
+}
+
+export class UploadedArticleMediaOwnership {
+	private constructor(
+		private readonly input: {
+			readonly media: readonly UploadedArticleMediaOwnershipTarget[];
+			readonly ownershipPolicy: UploadOwnershipChecker;
+		},
+	) {}
+
+	static of(input: {
+		readonly media: readonly UploadedArticleMediaOwnershipTarget[];
+		readonly ownershipPolicy: UploadOwnershipChecker;
+	}) {
+		return new UploadedArticleMediaOwnership(input);
+	}
+
+	findViolation() {
+		for (const item of this.input.media) {
+			if (
+				!this.input.ownershipPolicy.hasOwnedObjectKey(item.objectKey) ||
+				!this.input.ownershipPolicy.hasExpectedPublicUrl({
+					objectKey: item.objectKey,
+					url: item.url,
+				})
+			) {
+				return "uploaded-media" as const;
+			}
+
+			if (
+				item.thumbnailUrl &&
+				!this.input.ownershipPolicy.hasOwnedPublicUrl(item.thumbnailUrl)
+			) {
+				return "thumbnail-url" as const;
+			}
+		}
+
+		return null;
 	}
 }

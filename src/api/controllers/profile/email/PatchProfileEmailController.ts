@@ -42,7 +42,6 @@ controller.openapi(
 
 		await applicationUseCaseContext().get("UpdateEmailUseCase").updateEmail({
 			email: values.email,
-			now: new Date(),
 			userId: user.id,
 		});
 

@@ -25,7 +25,7 @@ export type ArticleMediaUploadTarget = {
 
 export interface MediaStoragePort {
 	createUploadTarget(
-		input: ArticleMediaUploadTargetRequest & { userId: number },
+		input: ArticleMediaUploadTargetRequest & { now: Date; userId: number },
 	): Promise<ArticleMediaUploadTarget>;
 	deleteObjects(input: {
 		objectKeys: readonly string[];

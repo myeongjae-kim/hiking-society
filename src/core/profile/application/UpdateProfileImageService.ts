@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { UploadOwnershipPolicy } from "@/core/common/domain/UploadOwnershipPolicy";
 import { Autowired } from "@/core/config/Autowired";
@@ -13,6 +14,8 @@ export class UpdateProfileImageService implements UpdateProfileImageUseCase {
 		private s3PublicBaseUrl: string,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async updateProfileImage(
@@ -43,7 +46,7 @@ export class UpdateProfileImageService implements UpdateProfileImageUseCase {
 		await this.transactionPort.run(
 			() =>
 				this.profileCommandPort.updateActiveProfileImage({
-					now: input.now,
+					now: this.clockPort.now(),
 					profileImageUrl: input.profileImage ? input.profileImage.url : null,
 					userId: input.userId,
 				}),

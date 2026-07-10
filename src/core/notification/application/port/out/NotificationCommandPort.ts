@@ -5,9 +5,10 @@ export interface NotificationCommandPort {
 	createMany(input: {
 		notifications: readonly CreateNotificationInput[];
 	}): Promise<void>;
-	markAllRead(input: { currentUserId: number }): Promise<void>;
+	markAllRead(input: { currentUserId: number; now: Date }): Promise<void>;
 	markRead(input: {
 		currentUserId: number;
 		notificationId: NotificationId;
+		now: Date;
 	}): Promise<void>;
 }

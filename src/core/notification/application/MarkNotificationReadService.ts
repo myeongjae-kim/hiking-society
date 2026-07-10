@@ -1,3 +1,4 @@
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { MarkAllNotificationsReadUseCase } from "./port/in/MarkAllNotificationsReadUseCase";
@@ -12,13 +13,19 @@ export class MarkNotificationReadService
 		private notificationCommandPort: NotificationCommandPort,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async markAllRead(
 		input: Parameters<MarkAllNotificationsReadUseCase["markAllRead"]>[0],
 	) {
 		await this.transactionPort.run(
-			() => this.notificationCommandPort.markAllRead(input),
+			() =>
+				this.notificationCommandPort.markAllRead({
+					...input,
+					now: this.clockPort.now(),
+				}),
 			{ readOnly: false },
 		);
 	}
@@ -27,7 +34,11 @@ export class MarkNotificationReadService
 		input: Parameters<MarkNotificationReadUseCase["markRead"]>[0],
 	) {
 		await this.transactionPort.run(
-			() => this.notificationCommandPort.markRead(input),
+			() =>
+				this.notificationCommandPort.markRead({
+					...input,
+					now: this.clockPort.now(),
+				}),
 			{ readOnly: false },
 		);
 	}

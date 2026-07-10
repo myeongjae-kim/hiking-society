@@ -41,7 +41,6 @@ controller.openapi(
 			.update({
 				actorRole: actor.role,
 				nextRole,
-				now: new Date(),
 				userId: Number(c.req.valid("param").userId),
 			});
 

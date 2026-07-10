@@ -7,7 +7,6 @@ export type UploadedProfileImage = {
 
 export interface UpdateProfileImageUseCase {
 	updateProfileImage(input: {
-		readonly now: Date;
 		readonly profileImage?: UploadedProfileImage;
 		readonly removeProfileImage: boolean;
 		readonly userId: number;

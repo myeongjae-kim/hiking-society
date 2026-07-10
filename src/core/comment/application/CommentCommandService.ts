@@ -1,4 +1,5 @@
 import { applicationError } from "@/core/common/application/ApplicationError";
+import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
@@ -14,6 +15,8 @@ export class CommentCommandService implements CommentCommandUseCase {
 		private createNotificationsUseCase: CreateNotificationsUseCase,
 		@Autowired("TransactionPort")
 		private transactionPort: TransactionPort,
+		@Autowired("ClockPort")
+		private clockPort: ClockPort,
 	) {}
 
 	async create(input: Parameters<CommentCommandUseCase["create"]>[0]) {
@@ -88,7 +91,7 @@ export class CommentCommandService implements CommentCommandUseCase {
 				const updated = await this.commentCommandPort.update({
 					body: input.values.body,
 					commentId: input.commentId,
-					now: new Date(),
+					now: this.clockPort.now(),
 				});
 
 				if (!updated) {
@@ -120,7 +123,7 @@ export class CommentCommandService implements CommentCommandUseCase {
 				const deleted = await this.commentCommandPort.delete({
 					body: "삭제된 댓글",
 					commentId: input.commentId,
-					now: new Date(),
+					now: this.clockPort.now(),
 				});
 
 				if (!deleted) {
