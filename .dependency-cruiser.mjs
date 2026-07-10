@@ -112,9 +112,9 @@ export default {
 		{
 			name: "api-config-not-to-controllers",
 			comment:
-				"API config and middleware are lower-level HTTP adapter infrastructure and should not depend on concrete controllers.",
+				"API config and middleware are lower-level HTTP adapter infrastructure and should not depend on concrete controllers; ApiControllerConfig is the explicit composition root.",
 			severity: "error",
-			from: { path: "^src/api/config/" },
+			from: { path: "^src/api/config/(?!ApiControllerConfig[.]server[.]ts$)" },
 			to: { path: "^src/api/controllers/" },
 		},
 		{

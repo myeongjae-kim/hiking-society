@@ -1,12 +1,13 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { createApiControllers } from "./config/ApiControllerConfig.server";
 import { createAuthMiddleware } from "./config/auth";
 import { createApiRuntimeDependencies } from "./config/apiRuntimeDependencies.server";
 import { globalErrorHandler } from "./config/globalErrorHandler";
 import { sessionCookieConfig } from "./config/sessionCookies";
-import { apiControllers } from "./controllers";
 
 export const serverApp = new OpenAPIHono().basePath("/api");
 const apiRuntimeDependencies = createApiRuntimeDependencies();
+const apiControllers = createApiControllers();
 
 serverApp
 	.use("/*", createAuthMiddleware(apiRuntimeDependencies))

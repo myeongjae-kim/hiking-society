@@ -112,7 +112,7 @@ fi
 direct_use_case_context_usage="$(
 	rg -n 'applicationUseCaseContext|getUseCase\(|[.]get\("[^"]*UseCase"' src/api src/routes src/society-app \
 		--glob '*.{ts,tsx}' \
-		--glob '!src/api/controllers/index.ts' \
+		--glob '!src/api/config/ApiControllerConfig.server.ts' \
 		--glob '!src/api/config/apiRuntimeDependencies.server.ts' \
 		--glob '!src/society-app/**/*.functions.ts' || true
 )"
