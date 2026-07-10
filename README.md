@@ -4,12 +4,22 @@
 
 ## Architecture
 
-이 프로젝트의 구조는 다음 원칙을 기준으로 잡습니다.
+이 프로젝트는 핵심 의존성 방향을 지키는 **실용적 모듈러 모놀리스**입니다. 기능별 core와 명시적인 port/adapter 경계를 두되, 작은 팀과 단일 배포 단위에 맞춰 모든 경계를 별도 서비스나 과도한 추상화로 만들지는 않습니다.
+
+다음 원칙을 기준으로 구성합니다.
 
 - **Screaming Architecture**: 최상위 구조가 기술 스택보다 제품의 기능을 먼저 드러내야 합니다.
 - **Port and Adapter Architecture**: 핵심 정책은 `src/core`의 application/domain/model이 소유하고, DB/S3/OAuth 같은 외부 I/O는 adapter 뒤에 둡니다.
 - **Core는 객체지향**: use case service가 객체로 협력하며 정책을 명시합니다.
 - **Web 영역은 함수형**: route, controller, server function, React hook은 요청/응답 변환과 순수 계산, effect orchestration을 분리합니다.
+
+실용성을 위해 다음 선택은 의도적으로 허용합니다.
+
+- core의 `@Autowired`와 DI token 타입: 구현체가 아닌 port에만 의존하도록 하면서, use case 조립의 반복을 줄입니다.
+- route-colocated server function과 `src/society-app`의 typed `getUseCase` 호출: TanStack Start의 SSR/data-loading 흐름을 간결하게 유지합니다.
+- core schema와 read model의 재사용: 내부 API와 UI가 같은 제품 계약을 공유하는 범위에서는 불필요한 DTO 복제를 피합니다.
+
+이 느슨함은 의존성 방향을 바꾸지 않는 범위에서만 허용합니다. core는 concrete DB/SDK/웹 프레임워크를 모르고, adapter만 외부 I/O를 구현하며, 웹 계층은 out-port·DB·concrete adapter에 직접 접근하지 않습니다.
 
 HTTP 경로, OpenAPI wire shape, DB schema는 외부 계약입니다. 구조 변경 시에도 호환성을 유지합니다. 다만 앱 내부의 read model 타입과 런타임 검증 schema는 `src/core`를 canonical source로 삼고, REST/OpenAPI adapter는 그 core schema에서 wire schema를 파생합니다.
 
