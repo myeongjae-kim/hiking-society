@@ -19,63 +19,67 @@ type GetArticleRouteDataDeps = {
 	readonly readCurrentUser: typeof readCurrentUser;
 };
 
-export function createGetArticleRouteData({
+async function getArticleRouteDataHandler({
+	data,
 	getArticlePageUseCase,
 	readCurrentTheme,
 	readCurrentUser,
-}: GetArticleRouteDataDeps) {
-	return createServerFn({ method: "GET" })
-		.validator(articleRouteDataInputSchema)
-		.handler(async ({ data }) => {
-			const currentUser = await readCurrentUser();
-			const currentTheme = await readCurrentTheme();
+}: GetArticleRouteDataDeps & {
+	readonly data: z.infer<typeof articleRouteDataInputSchema>;
+}) {
+	const currentUser = await readCurrentUser();
+	const currentTheme = await readCurrentTheme();
 
-			if (!currentUser) {
-				return { status: "unauthenticated" as const };
-			}
+	if (!currentUser) {
+		return { status: "unauthenticated" as const };
+	}
 
-			const articleId = toNumericSearchId<ArticleId>(data.articleId);
+	const articleId = toNumericSearchId<ArticleId>(data.articleId);
 
-			if (!articleId) {
-				return { status: "notFound" as const };
-			}
+	if (!articleId) {
+		return { status: "notFound" as const };
+	}
 
-			const articlePage = await getArticlePageUseCase.get({
-				articleId,
-				currentUser,
-				includeNotifications: true,
-			});
+	const articlePage = await getArticlePageUseCase.get({
+		articleId,
+		currentUser,
+		includeNotifications: true,
+	});
 
-			if (articlePage.status === "associate") {
-				return {
-					currentTheme,
-					currentUser,
-					status: "associate" as const,
-				};
-			}
+	if (articlePage.status === "associate") {
+		return {
+			currentTheme,
+			currentUser,
+			status: "associate" as const,
+		};
+	}
 
-			if (articlePage.status === "notFound") {
-				return { status: "notFound" as const };
-			}
+	if (articlePage.status === "notFound") {
+		return { status: "notFound" as const };
+	}
 
-			if (!articlePage.notificationSnapshot) {
-				throw new Error("Article route notification snapshot was not loaded.");
-			}
+	if (!articlePage.notificationSnapshot) {
+		throw new Error("Article route notification snapshot was not loaded.");
+	}
 
-			return {
-				article: articlePage.snapshot.article,
-				comments: articlePage.snapshot.comments,
-				currentTheme,
-				currentUser,
-				hiking: articlePage.snapshot.hiking,
-				notificationSnapshot: articlePage.notificationSnapshot,
-				status: "ok" as const,
-			};
-		});
+	return {
+		article: articlePage.snapshot.article,
+		comments: articlePage.snapshot.comments,
+		currentTheme,
+		currentUser,
+		hiking: articlePage.snapshot.hiking,
+		notificationSnapshot: articlePage.notificationSnapshot,
+		status: "ok" as const,
+	};
 }
 
-export const getArticleRouteData = createGetArticleRouteData({
-	getArticlePageUseCase: getUseCase("GetArticlePageUseCase"),
-	readCurrentTheme,
-	readCurrentUser,
-});
+export const getArticleRouteData = createServerFn({ method: "GET" })
+	.validator(articleRouteDataInputSchema)
+	.handler(async ({ data }) =>
+		getArticleRouteDataHandler({
+			data,
+			getArticlePageUseCase: getUseCase("GetArticlePageUseCase"),
+			readCurrentTheme,
+			readCurrentUser,
+		}),
+	);

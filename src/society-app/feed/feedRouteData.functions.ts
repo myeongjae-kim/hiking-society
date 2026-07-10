@@ -12,44 +12,45 @@ type GetFeedRouteDataDeps = {
 	readonly readCurrentUser: typeof readCurrentUser;
 };
 
-export function createGetFeedRouteData({
+async function getFeedRouteDataHandler({
 	getFeedHomeUseCase,
 	readCurrentTheme,
 	readCurrentUser,
 }: GetFeedRouteDataDeps) {
-	return createServerFn({ method: "GET" }).handler(async () => {
-		const user = await readCurrentUser();
-		const currentTheme = await readCurrentTheme();
+	const user = await readCurrentUser();
+	const currentTheme = await readCurrentTheme();
 
-		if (!user) {
-			return { status: "unauthenticated" as const };
-		}
+	if (!user) {
+		return { status: "unauthenticated" as const };
+	}
 
-		const data = await getFeedHomeUseCase.get({
-			currentUser: user,
-			includeNotifications: true,
-		});
+	const data = await getFeedHomeUseCase.get({
+		currentUser: user,
+		includeNotifications: true,
+	});
 
-		if (data.status === "associate") {
-			return {
-				currentTheme,
-				status: "associate" as const,
-				user,
-			};
-		}
-
+	if (data.status === "associate") {
 		return {
 			currentTheme,
-			feedSummary: data.feedSummary,
-			notificationSnapshot: data.notificationSnapshot,
-			status: "ok" as const,
-			user: data.user,
+			status: "associate" as const,
+			user,
 		};
-	});
+	}
+
+	return {
+		currentTheme,
+		feedSummary: data.feedSummary,
+		notificationSnapshot: data.notificationSnapshot,
+		status: "ok" as const,
+		user: data.user,
+	};
 }
 
-export const getFeedRouteData = createGetFeedRouteData({
-	getFeedHomeUseCase: getUseCase("GetFeedHomeUseCase"),
-	readCurrentTheme,
-	readCurrentUser,
-});
+export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
+	async () =>
+		getFeedRouteDataHandler({
+			getFeedHomeUseCase: getUseCase("GetFeedHomeUseCase"),
+			readCurrentTheme,
+			readCurrentUser,
+		}),
+);

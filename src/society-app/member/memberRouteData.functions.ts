@@ -12,32 +12,33 @@ type GetMembersRouteDataDeps = {
 	readonly readCurrentUser: typeof readCurrentUser;
 };
 
-export function createGetMembersRouteData({
+async function getMembersRouteDataHandler({
 	getMemberManagementUseCase,
 	readCurrentUser,
 }: GetMembersRouteDataDeps) {
-	return createServerFn({ method: "GET" }).handler(async () => {
-		const actor = await readCurrentUser();
+	const actor = await readCurrentUser();
 
-		if (!actor) {
-			return { status: "unauthenticated" as const };
-		}
+	if (!actor) {
+		return { status: "unauthenticated" as const };
+	}
 
-		const data = await getMemberManagementUseCase.get({ actor });
+	const data = await getMemberManagementUseCase.get({ actor });
 
-		if (data.status === "forbidden") {
-			return { status: "forbidden" as const };
-		}
+	if (data.status === "forbidden") {
+		return { status: "forbidden" as const };
+	}
 
-		return {
-			actor: toMemberManagementActorContract(data.actor),
-			members: data.members.map(toMemberContract),
-			status: "ok" as const,
-		};
-	});
+	return {
+		actor: toMemberManagementActorContract(data.actor),
+		members: data.members.map(toMemberContract),
+		status: "ok" as const,
+	};
 }
 
-export const getMembersRouteData = createGetMembersRouteData({
-	getMemberManagementUseCase: getUseCase("GetMemberManagementUseCase"),
-	readCurrentUser,
-});
+export const getMembersRouteData = createServerFn({ method: "GET" }).handler(
+	async () =>
+		getMembersRouteDataHandler({
+			getMemberManagementUseCase: getUseCase("GetMemberManagementUseCase"),
+			readCurrentUser,
+		}),
+);
