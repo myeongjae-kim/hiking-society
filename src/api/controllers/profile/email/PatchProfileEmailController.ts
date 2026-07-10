@@ -2,14 +2,12 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
-import {
-	cookieOptions,
-	sessionCookieConfig,
-} from "#/api/config/sessionCookies";
+import { sessionCookieConfig } from "#/api/config/sessionCookies";
 import { okSchema, updateEmailBodySchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
+import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
+import type { UpdateEmailUseCase } from "@/core/profile/application/port/in/UpdateEmailUseCase";
 
-const controller = Controller();
 const {
 	accessTokenCookieName,
 	accessTokenMaxAgeSeconds,
@@ -17,8 +15,18 @@ const {
 	refreshTokenMaxAgeSeconds,
 } = sessionCookieConfig;
 
-controller.openapi(
-	createRoute({
+export function createPatchProfileEmailController({
+	getCookieOptionsUseCase,
+	createSessionTokenUseCase,
+	updateEmailUseCase,
+}: {
+	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
+	readonly createSessionTokenUseCase: CreateSessionTokenUseCase;
+	readonly updateEmailUseCase: UpdateEmailUseCase;
+}) {
+	const controller = Controller();
+
+	const patchProfileEmailRoute = createRoute({
 		method: "patch",
 		path: "/profile/email",
 		request: {
@@ -35,20 +43,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["profile"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchProfileEmailRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext().get("UpdateEmailUseCase").updateEmail({
+		await updateEmailUseCase.updateEmail({
 			email: values.email,
 			userId: user.id,
 		});
 
 		if (values.email !== user.email && user.provider) {
-			const { accessToken, refreshToken } = await applicationUseCaseContext()
-				.get("CreateSessionTokenUseCase")
-				.create({
+			const { accessToken, refreshToken } =
+				await createSessionTokenUseCase.create({
 					email: values.email,
 					provider: user.provider,
 					role: user.role,
@@ -59,18 +67,18 @@ controller.openapi(
 				c,
 				accessTokenCookieName,
 				accessToken,
-				cookieOptions(accessTokenMaxAgeSeconds),
+				getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
 			);
 			setCookie(
 				c,
 				refreshTokenCookieName,
 				refreshToken,
-				cookieOptions(refreshTokenMaxAgeSeconds),
+				getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
 			);
 		}
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

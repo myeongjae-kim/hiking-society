@@ -1,69 +1,163 @@
-import PostArticleMediaUploadTargetsController from "./article-media/upload-targets/PostArticleMediaUploadTargetsController";
-import DeleteArticleMediaUploadsController from "./article-media/uploads/DeleteArticleMediaUploadsController";
-import GetArticleCommentsController from "./articles/{articleId}/comments/GetArticleCommentsController";
-import PostArticleCommentsController from "./articles/{articleId}/comments/PostArticleCommentsController";
-import DeleteArticleController from "./articles/{articleId}/DeleteArticleController";
-import GetArticleController from "./articles/{articleId}/GetArticleController";
-import DeleteArticleLikeController from "./articles/{articleId}/like/DeleteArticleLikeController";
-import PostArticleLikeController from "./articles/{articleId}/like/PostArticleLikeController";
-import PatchArticleController from "./articles/{articleId}/PatchArticleController";
-import PostArticlesController from "./articles/PostArticlesController";
-import PostGoogleLoginController from "./auth/google/login/PostGoogleLoginController";
-import PostLogoutController from "./auth/logout/PostLogoutController";
-import DeleteCommentController from "./comments/{commentId}/DeleteCommentController";
-import DeleteCommentLikeController from "./comments/{commentId}/like/DeleteCommentLikeController";
-import PostCommentLikeController from "./comments/{commentId}/like/PostCommentLikeController";
-import PatchCommentController from "./comments/{commentId}/PatchCommentController";
-import GetFeedController from "./feed/GetFeedController";
-import GetHikingArticlesController from "./feed/hikings/{hikingId}/articles/GetHikingArticlesController";
-import GetGeocodingSearchController from "./geocoding/search/GetGeocodingSearchController";
-import DeleteHikingController from "./hikings/{hikingId}/DeleteHikingController";
-import PatchHikingController from "./hikings/{hikingId}/PatchHikingController";
-import PostHikingsController from "./hikings/PostHikingsController";
-import PatchMemberRoleController from "./members/{userId}/role/PatchMemberRoleController";
-import GetMembersController from "./members/GetMembersController";
-import PatchNotificationReadController from "./notifications/{notificationId}/read/PatchNotificationReadController";
-import GetNotificationsController from "./notifications/GetNotificationsController";
-import PatchNotificationsReadAllController from "./notifications/read-all/PatchNotificationsReadAllController";
-import PatchProfileDisplayNameController from "./profile/display-name/PatchProfileDisplayNameController";
-import PatchProfileEmailController from "./profile/email/PatchProfileEmailController";
-import PatchProfileImageController from "./profile/image/PatchProfileImageController";
-import PostProfileImageUploadTargetController from "./profile-image/upload-target/PostProfileImageUploadTargetController";
-import DeleteProfileImageUploadsController from "./profile-image/uploads/DeleteProfileImageUploadsController";
-import GetCurrentUserController from "./users/me/GetCurrentUserController";
+import { getUseCase } from "#/core/config/getUseCase";
+import { createPostArticleMediaUploadTargetsController } from "./article-media/upload-targets/PostArticleMediaUploadTargetsController";
+import { createDeleteArticleMediaUploadsController } from "./article-media/uploads/DeleteArticleMediaUploadsController";
+import { createPostArticlesController } from "./articles/PostArticlesController";
+import { createGetArticleCommentsController } from "./articles/{articleId}/comments/GetArticleCommentsController";
+import { createPostArticleCommentsController } from "./articles/{articleId}/comments/PostArticleCommentsController";
+import { createDeleteArticleController } from "./articles/{articleId}/DeleteArticleController";
+import { createGetArticleController } from "./articles/{articleId}/GetArticleController";
+import { createDeleteArticleLikeController } from "./articles/{articleId}/like/DeleteArticleLikeController";
+import { createPostArticleLikeController } from "./articles/{articleId}/like/PostArticleLikeController";
+import { createPatchArticleController } from "./articles/{articleId}/PatchArticleController";
+import { createPostGoogleLoginController } from "./auth/google/login/PostGoogleLoginController";
+import { createPostLogoutController } from "./auth/logout/PostLogoutController";
+import { createDeleteCommentController } from "./comments/{commentId}/DeleteCommentController";
+import { createDeleteCommentLikeController } from "./comments/{commentId}/like/DeleteCommentLikeController";
+import { createPostCommentLikeController } from "./comments/{commentId}/like/PostCommentLikeController";
+import { createPatchCommentController } from "./comments/{commentId}/PatchCommentController";
+import { createGetFeedController } from "./feed/GetFeedController";
+import { createGetHikingArticlesController } from "./feed/hikings/{hikingId}/articles/GetHikingArticlesController";
+import { createGetGeocodingSearchController } from "./geocoding/search/GetGeocodingSearchController";
+import { createPostHikingsController } from "./hikings/PostHikingsController";
+import { createDeleteHikingController } from "./hikings/{hikingId}/DeleteHikingController";
+import { createPatchHikingController } from "./hikings/{hikingId}/PatchHikingController";
+import { createGetMembersController } from "./members/GetMembersController";
+import { createPatchMemberRoleController } from "./members/{userId}/role/PatchMemberRoleController";
+import { createGetNotificationsController } from "./notifications/GetNotificationsController";
+import { createPatchNotificationsReadAllController } from "./notifications/read-all/PatchNotificationsReadAllController";
+import { createPatchNotificationReadController } from "./notifications/{notificationId}/read/PatchNotificationReadController";
+import { createPostProfileImageUploadTargetController } from "./profile-image/upload-target/PostProfileImageUploadTargetController";
+import { createDeleteProfileImageUploadsController } from "./profile-image/uploads/DeleteProfileImageUploadsController";
+import { createPatchProfileDisplayNameController } from "./profile/display-name/PatchProfileDisplayNameController";
+import { createPatchProfileEmailController } from "./profile/email/PatchProfileEmailController";
+import { createPatchProfileImageController } from "./profile/image/PatchProfileImageController";
+import { createGetCurrentUserController } from "./users/me/GetCurrentUserController";
+
+const articleCommandUseCase = getUseCase("ArticleCommandUseCase");
+const articleMediaUploadUseCase = getUseCase("ArticleMediaUploadUseCase");
+const commentCommandUseCase = getUseCase("CommentCommandUseCase");
+const createSessionTokenUseCase = getUseCase("CreateSessionTokenUseCase");
+const getArticleDetailUseCase = getUseCase("GetArticleDetailUseCase");
+const getArticlePageUseCase = getUseCase("GetArticlePageUseCase");
+const getCookieOptionsUseCase = getUseCase("GetCookieOptionsUseCase");
+const getFeedHomeUseCase = getUseCase("GetFeedHomeUseCase");
+const getMemberManagementUseCase = getUseCase("GetMemberManagementUseCase");
+const hikingCommandUseCase = getUseCase("HikingCommandUseCase");
+const likeCommandUseCase = getUseCase("LikeCommandUseCase");
+const listArticleCommentsUseCase = getUseCase("ListArticleCommentsUseCase");
+const listFeedUseCase = getUseCase("ListFeedUseCase");
+const listNotificationsUseCase = getUseCase("ListNotificationsUseCase");
+const loginWithGoogleCodeUseCase = getUseCase("LoginWithGoogleCodeUseCase");
+const markAllNotificationsReadUseCase = getUseCase(
+	"MarkAllNotificationsReadUseCase",
+);
+const markNotificationReadUseCase = getUseCase("MarkNotificationReadUseCase");
+const profileImageUploadUseCase = getUseCase("ProfileImageUploadUseCase");
+const searchGeocodingUseCase = getUseCase("SearchGeocodingUseCase");
+const updateDisplayNameUseCase = getUseCase("UpdateDisplayNameUseCase");
+const updateEmailUseCase = getUseCase("UpdateEmailUseCase");
+const updateMemberRoleUseCase = getUseCase("UpdateMemberRoleUseCase");
+const updateProfileImageUseCase = getUseCase("UpdateProfileImageUseCase");
 
 export const apiControllers = [
-	GetCurrentUserController,
-	PostGoogleLoginController,
-	PostLogoutController,
-	GetFeedController,
-	GetHikingArticlesController,
-	PostHikingsController,
-	PatchHikingController,
-	DeleteHikingController,
-	PostArticlesController,
-	GetArticleController,
-	PatchArticleController,
-	DeleteArticleController,
-	PostArticleLikeController,
-	DeleteArticleLikeController,
-	PostArticleMediaUploadTargetsController,
-	DeleteArticleMediaUploadsController,
-	GetArticleCommentsController,
-	PostArticleCommentsController,
-	PatchCommentController,
-	DeleteCommentController,
-	PostCommentLikeController,
-	DeleteCommentLikeController,
-	PatchProfileDisplayNameController,
-	PatchProfileEmailController,
-	PatchProfileImageController,
-	PostProfileImageUploadTargetController,
-	DeleteProfileImageUploadsController,
-	GetNotificationsController,
-	PatchNotificationReadController,
-	PatchNotificationsReadAllController,
-	GetMembersController,
-	PatchMemberRoleController,
-	GetGeocodingSearchController,
+	createGetCurrentUserController(),
+	createPostGoogleLoginController({
+		getCookieOptionsUseCase,
+		createSessionTokenUseCase,
+		loginWithGoogleCodeUseCase,
+	}),
+	createPostLogoutController(),
+	createGetFeedController({
+		getFeedHomeUseCase,
+	}),
+	createGetHikingArticlesController({
+		listFeedUseCase,
+	}),
+	createPostHikingsController({
+		hikingCommandUseCase,
+	}),
+	createPatchHikingController({
+		hikingCommandUseCase,
+	}),
+	createDeleteHikingController({
+		hikingCommandUseCase,
+	}),
+	createPostArticlesController({
+		articleCommandUseCase,
+	}),
+	createGetArticleController({
+		getArticlePageUseCase,
+	}),
+	createPatchArticleController({
+		articleCommandUseCase,
+		getArticleDetailUseCase,
+	}),
+	createDeleteArticleController({
+		articleCommandUseCase,
+	}),
+	createPostArticleLikeController({
+		likeCommandUseCase,
+	}),
+	createDeleteArticleLikeController({
+		likeCommandUseCase,
+	}),
+	createPostArticleMediaUploadTargetsController({
+		articleMediaUploadUseCase,
+	}),
+	createDeleteArticleMediaUploadsController({
+		articleMediaUploadUseCase,
+	}),
+	createGetArticleCommentsController({
+		listArticleCommentsUseCase,
+	}),
+	createPostArticleCommentsController({
+		commentCommandUseCase,
+	}),
+	createPatchCommentController({
+		commentCommandUseCase,
+	}),
+	createDeleteCommentController({
+		commentCommandUseCase,
+	}),
+	createPostCommentLikeController({
+		likeCommandUseCase,
+	}),
+	createDeleteCommentLikeController({
+		likeCommandUseCase,
+	}),
+	createPatchProfileDisplayNameController({
+		updateDisplayNameUseCase,
+	}),
+	createPatchProfileEmailController({
+		getCookieOptionsUseCase,
+		createSessionTokenUseCase,
+		updateEmailUseCase,
+	}),
+	createPatchProfileImageController({
+		updateProfileImageUseCase,
+	}),
+	createPostProfileImageUploadTargetController({
+		profileImageUploadUseCase,
+	}),
+	createDeleteProfileImageUploadsController({
+		profileImageUploadUseCase,
+	}),
+	createGetNotificationsController({
+		listNotificationsUseCase,
+	}),
+	createPatchNotificationReadController({
+		markNotificationReadUseCase,
+	}),
+	createPatchNotificationsReadAllController({
+		markAllNotificationsReadUseCase,
+	}),
+	createGetMembersController({
+		getMemberManagementUseCase,
+	}),
+	createPatchMemberRoleController({
+		updateMemberRoleUseCase,
+	}),
+	createGetGeocodingSearchController({
+		searchGeocodingUseCase,
+	}),
 ] as const;

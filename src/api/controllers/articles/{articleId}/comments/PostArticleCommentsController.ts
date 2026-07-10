@@ -3,12 +3,16 @@ import { toArticleId, toCommentId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-const controller = Controller();
+export function createPostArticleCommentsController({
+	commentCommandUseCase,
+}: {
+	readonly commentCommandUseCase: CommentCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postArticleCommentsRoute = createRoute({
 		method: "post",
 		path: "/articles/{articleId}/comments",
 		request: {
@@ -26,27 +30,26 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["comments"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postArticleCommentsRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const articleId = toArticleId(c.req.valid("param").articleId);
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext()
-			.get("CommentCommandUseCase")
-			.create(
-				values.parentCommentId
-					? {
-							articleId,
-							authorUserId: user.id,
-							body: values.body,
-							parentCommentId: toCommentId(values.parentCommentId),
-						}
-					: { articleId, authorUserId: user.id, body: values.body },
-			);
+		await commentCommandUseCase.create(
+			values.parentCommentId
+				? {
+						articleId,
+						authorUserId: user.id,
+						body: values.body,
+						parentCommentId: toCommentId(values.parentCommentId),
+					}
+				: { articleId, authorUserId: user.id, body: values.body },
+		);
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

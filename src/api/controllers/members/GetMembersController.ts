@@ -3,13 +3,17 @@ import { forbidden } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { membersResponseSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { toMemberDto } from "./_memberDto";
+import type { GetMemberManagementUseCase } from "@/core/member/application/port/in/GetMemberManagementUseCase";
 
-const controller = Controller();
+export function createGetMembersController({
+	getMemberManagementUseCase,
+}: {
+	readonly getMemberManagementUseCase: GetMemberManagementUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getMembersRoute = createRoute({
 		method: "get",
 		path: "/members",
 		responses: {
@@ -20,12 +24,11 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["members"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getMembersRoute, async (c) => {
 		const actor = requireApiUser(c.get("currentUser"));
-		const data = await applicationUseCaseContext()
-			.get("GetMemberManagementUseCase")
-			.get({ actor });
+		const data = await getMemberManagementUseCase.get({ actor });
 
 		if (data.status === "forbidden") {
 			throw forbidden();
@@ -37,7 +40,7 @@ controller.openapi(
 			}),
 			200,
 		);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

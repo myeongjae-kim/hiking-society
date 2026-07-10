@@ -3,13 +3,17 @@ import { toNumericId } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import type { NotificationId } from "@/core/notification/model/Notification";
+import type { MarkNotificationReadUseCase } from "@/core/notification/application/port/in/MarkNotificationReadUseCase";
 
-const controller = Controller();
+export function createPatchNotificationReadController({
+	markNotificationReadUseCase,
+}: {
+	readonly markNotificationReadUseCase: MarkNotificationReadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchNotificationReadRoute = createRoute({
 		method: "patch",
 		path: "/notifications/{notificationId}/read",
 		request: { params: idParamSchema.pick({ notificationId: true }) },
@@ -21,21 +25,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["notifications"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchNotificationReadRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		await applicationUseCaseContext()
-			.get("MarkNotificationReadUseCase")
-			.markRead({
-				currentUserId: user.id,
-				notificationId: toNumericId<NotificationId>(
-					c.req.valid("param").notificationId,
-					"알림 id",
-				),
-			});
+		await markNotificationReadUseCase.markRead({
+			currentUserId: user.id,
+			notificationId: toNumericId<NotificationId>(
+				c.req.valid("param").notificationId,
+				"알림 id",
+			),
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

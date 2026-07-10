@@ -4,11 +4,12 @@ import { Controller } from "#/api/config/Controller";
 import { sessionCookieConfig } from "#/api/config/sessionCookies";
 import { okSchema } from "#/api/schemas";
 
-const controller = Controller();
 const { accessTokenCookieName, refreshTokenCookieName } = sessionCookieConfig;
 
-controller.openapi(
-	createRoute({
+export function createPostLogoutController() {
+	const controller = Controller();
+
+	const postLogoutRoute = createRoute({
 		method: "post",
 		path: "/auth/logout",
 		responses: {
@@ -19,12 +20,13 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["auth"],
-	}),
-	(c) => {
+	});
+
+	controller.openapi(postLogoutRoute, (c) => {
 		deleteCookie(c, accessTokenCookieName, { path: "/" });
 		deleteCookie(c, refreshTokenCookieName, { path: "/" });
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

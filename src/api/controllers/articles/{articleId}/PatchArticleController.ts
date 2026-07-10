@@ -7,12 +7,19 @@ import {
 	articleDetailResponseSchema,
 	idParamSchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
+import type { GetArticleDetailUseCase } from "@/core/article/application/port/in/GetArticleDetailUseCase";
 
-const controller = Controller();
+export function createPatchArticleController({
+	articleCommandUseCase,
+	getArticleDetailUseCase,
+}: {
+	readonly articleCommandUseCase: ArticleCommandUseCase;
+	readonly getArticleDetailUseCase: GetArticleDetailUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchArticleRoute = createRoute({
 		method: "patch",
 		path: "/articles/{articleId}",
 		request: {
@@ -32,13 +39,14 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["articles"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchArticleRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const articleId = toArticleId(c.req.valid("param").articleId);
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext().get("ArticleCommandUseCase").update({
+		await articleCommandUseCase.update({
 			articleId,
 			body: values.body,
 			existingMedia: values.existingMedia,
@@ -46,19 +54,17 @@ controller.openapi(
 			userId: user.id,
 		});
 
-		const snapshot = await applicationUseCaseContext()
-			.get("GetArticleDetailUseCase")
-			.get({
-				articleId,
-				currentUserId: user.id,
-			});
+		const snapshot = await getArticleDetailUseCase.get({
+			articleId,
+			currentUserId: user.id,
+		});
 
 		if (!snapshot) {
 			throw notFound("글을 찾을 수 없습니다.");
 		}
 
 		return c.json(articleDetailResponseSchema.parse(snapshot), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

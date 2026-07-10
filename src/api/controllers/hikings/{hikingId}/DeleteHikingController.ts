@@ -3,12 +3,16 @@ import { toHikingId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-const controller = Controller();
+export function createDeleteHikingController({
+	hikingCommandUseCase,
+}: {
+	readonly hikingCommandUseCase: HikingCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const deleteHikingRoute = createRoute({
 		method: "delete",
 		path: "/hikings/{hikingId}",
 		request: { params: idParamSchema.pick({ hikingId: true }) },
@@ -20,19 +24,18 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["hikings"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(deleteHikingRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationUseCaseContext()
-			.get("HikingCommandUseCase")
-			.delete({
-				hikingId: toHikingId(c.req.valid("param").hikingId),
-				userId: user.id,
-			});
+		await hikingCommandUseCase.delete({
+			hikingId: toHikingId(c.req.valid("param").hikingId),
+			userId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

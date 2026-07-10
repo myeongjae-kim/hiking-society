@@ -3,12 +3,16 @@ import { toHikingId, toHikingValues } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { hikingBodySchema, idParamSchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-const controller = Controller();
+export function createPatchHikingController({
+	hikingCommandUseCase,
+}: {
+	readonly hikingCommandUseCase: HikingCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchHikingRoute = createRoute({
 		method: "patch",
 		path: "/hikings/{hikingId}",
 		request: {
@@ -26,20 +30,19 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["hikings"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchHikingRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationUseCaseContext()
-			.get("HikingCommandUseCase")
-			.update({
-				hikingId: toHikingId(c.req.valid("param").hikingId),
-				userId: user.id,
-				values: toHikingValues(c.req.valid("json")),
-			});
+		await hikingCommandUseCase.update({
+			hikingId: toHikingId(c.req.valid("param").hikingId),
+			userId: user.id,
+			values: toHikingValues(c.req.valid("json")),
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

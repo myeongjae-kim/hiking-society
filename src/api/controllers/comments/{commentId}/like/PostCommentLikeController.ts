@@ -4,12 +4,16 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { LikeCommandUseCase } from "@/core/like/application/port/in/LikeCommandUseCase";
 
-const controller = Controller();
+export function createPostCommentLikeController({
+	likeCommandUseCase,
+}: {
+	readonly likeCommandUseCase: LikeCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postCommentLikeRoute = createRoute({
 		method: "post",
 		path: "/comments/{commentId}/like",
 		request: { params: idParamSchema.pick({ commentId: true }) },
@@ -21,21 +25,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["comments"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postCommentLikeRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		await applicationUseCaseContext()
-			.get("LikeCommandUseCase")
-			.toggleCommentLike({
-				commentId: toNumericId<CommentId>(
-					c.req.valid("param").commentId,
-					"댓글 id",
-				),
-				userId: user.id,
-			});
+		await likeCommandUseCase.toggleCommentLike({
+			commentId: toNumericId<CommentId>(
+				c.req.valid("param").commentId,
+				"댓글 id",
+			),
+			userId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

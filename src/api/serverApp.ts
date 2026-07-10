@@ -1,12 +1,16 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { authMiddleware } from "./config/auth";
+import { createAuthMiddleware } from "./config/auth";
+import { createApiRuntimeDependencies } from "./config/apiRuntimeDependencies.server";
 import { globalErrorHandler } from "./config/globalErrorHandler";
 import { sessionCookieConfig } from "./config/sessionCookies";
 import { apiControllers } from "./controllers";
 
 export const serverApp = new OpenAPIHono().basePath("/api");
+const apiRuntimeDependencies = createApiRuntimeDependencies();
 
-serverApp.use("/*", authMiddleware).onError(globalErrorHandler);
+serverApp
+	.use("/*", createAuthMiddleware(apiRuntimeDependencies))
+	.onError(globalErrorHandler);
 
 serverApp.get("/health", (c) =>
 	c.json({ status: "ok", timestamp: new Date().toISOString() }),

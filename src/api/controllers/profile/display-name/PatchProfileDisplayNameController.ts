@@ -2,12 +2,16 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, updateDisplayNameBodySchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { UpdateDisplayNameUseCase } from "@/core/profile/application/port/in/UpdateDisplayNameUseCase";
 
-const controller = Controller();
+export function createPatchProfileDisplayNameController({
+	updateDisplayNameUseCase,
+}: {
+	readonly updateDisplayNameUseCase: UpdateDisplayNameUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchProfileDisplayNameRoute = createRoute({
 		method: "patch",
 		path: "/profile/display-name",
 		request: {
@@ -26,20 +30,19 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["profile"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchProfileDisplayNameRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext()
-			.get("UpdateDisplayNameUseCase")
-			.updateDisplayName({
-				displayName: values.displayName,
-				userId: user.id,
-			});
+		await updateDisplayNameUseCase.updateDisplayName({
+			displayName: values.displayName,
+			userId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

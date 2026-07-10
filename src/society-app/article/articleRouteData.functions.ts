@@ -1,64 +1,81 @@
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { getUseCase } from "#/core/config/getUseCase";
+import { toNumericSearchId } from "#/routing/searchParams";
 import {
 	readCurrentTheme,
 	readCurrentUser,
 } from "#/society-app/auth/session.functions";
-import { toNumericSearchId } from "#/routing/searchParams";
+import type { GetArticlePageUseCase } from "@/core/article/application/port/in/GetArticlePageUseCase";
 import type { ArticleId } from "@/core/article/domain";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 const articleRouteDataInputSchema = z.object({
 	articleId: z.string(),
 });
 
-export const getArticleRouteData = createServerFn({ method: "GET" })
-	.validator(articleRouteDataInputSchema)
-	.handler(async ({ data }) => {
-		const currentUser = await readCurrentUser();
-		const currentTheme = await readCurrentTheme();
+type GetArticleRouteDataDeps = {
+	readonly getArticlePageUseCase: GetArticlePageUseCase;
+	readonly readCurrentTheme: typeof readCurrentTheme;
+	readonly readCurrentUser: typeof readCurrentUser;
+};
 
-		if (!currentUser) {
-			return { status: "unauthenticated" as const };
-		}
+export function createGetArticleRouteData({
+	getArticlePageUseCase,
+	readCurrentTheme,
+	readCurrentUser,
+}: GetArticleRouteDataDeps) {
+	return createServerFn({ method: "GET" })
+		.validator(articleRouteDataInputSchema)
+		.handler(async ({ data }) => {
+			const currentUser = await readCurrentUser();
+			const currentTheme = await readCurrentTheme();
 
-		const articleId = toNumericSearchId<ArticleId>(data.articleId);
+			if (!currentUser) {
+				return { status: "unauthenticated" as const };
+			}
 
-		if (!articleId) {
-			return { status: "notFound" as const };
-		}
+			const articleId = toNumericSearchId<ArticleId>(data.articleId);
 
-		const articlePage = await applicationUseCaseContext()
-			.get("GetArticlePageUseCase")
-			.get({
+			if (!articleId) {
+				return { status: "notFound" as const };
+			}
+
+			const articlePage = await getArticlePageUseCase.get({
 				articleId,
 				currentUser,
 				includeNotifications: true,
 			});
 
-		if (articlePage.status === "associate") {
+			if (articlePage.status === "associate") {
+				return {
+					currentTheme,
+					currentUser,
+					status: "associate" as const,
+				};
+			}
+
+			if (articlePage.status === "notFound") {
+				return { status: "notFound" as const };
+			}
+
+			if (!articlePage.notificationSnapshot) {
+				throw new Error("Article route notification snapshot was not loaded.");
+			}
+
 			return {
+				article: articlePage.snapshot.article,
+				comments: articlePage.snapshot.comments,
 				currentTheme,
 				currentUser,
-				status: "associate" as const,
+				hiking: articlePage.snapshot.hiking,
+				notificationSnapshot: articlePage.notificationSnapshot,
+				status: "ok" as const,
 			};
-		}
+		});
+}
 
-		if (articlePage.status === "notFound") {
-			return { status: "notFound" as const };
-		}
-
-		if (!articlePage.notificationSnapshot) {
-			throw new Error("Article route notification snapshot was not loaded.");
-		}
-
-		return {
-			article: articlePage.snapshot.article,
-			comments: articlePage.snapshot.comments,
-			currentTheme,
-			currentUser,
-			hiking: articlePage.snapshot.hiking,
-			notificationSnapshot: articlePage.notificationSnapshot,
-			status: "ok" as const,
-		};
-	});
+export const getArticleRouteData = createGetArticleRouteData({
+	getArticlePageUseCase: getUseCase("GetArticlePageUseCase"),
+	readCurrentTheme,
+	readCurrentUser,
+});

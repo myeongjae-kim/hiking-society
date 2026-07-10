@@ -4,10 +4,10 @@ import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { currentUserSchema } from "#/api/schemas";
 
-const controller = Controller();
+export function createGetCurrentUserController() {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getCurrentUserRoute = createRoute({
 		method: "get",
 		path: "/users/me",
 		responses: {
@@ -22,9 +22,11 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["auth"],
-	}),
-	(c) =>
-		c.json(currentUserSchema.parse(requireApiUser(c.get("currentUser"))), 200),
-);
+	});
 
-export default controller;
+	controller.openapi(getCurrentUserRoute, (c) =>
+		c.json(currentUserSchema.parse(requireApiUser(c.get("currentUser"))), 200),
+	);
+
+	return controller;
+}

@@ -2,12 +2,16 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema, profileImageBodySchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { UpdateProfileImageUseCase } from "@/core/profile/application/port/in/UpdateProfileImageUseCase";
 
-const controller = Controller();
+export function createPatchProfileImageController({
+	updateProfileImageUseCase,
+}: {
+	readonly updateProfileImageUseCase: UpdateProfileImageUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchProfileImageRoute = createRoute({
 		method: "patch",
 		path: "/profile/image",
 		request: {
@@ -24,21 +28,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["profile"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchProfileImageRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext()
-			.get("UpdateProfileImageUseCase")
-			.updateProfileImage({
-				profileImage: values.profileImage,
-				removeProfileImage: values.removeProfileImage,
-				userId: user.id,
-			});
+		await updateProfileImageUseCase.updateProfileImage({
+			profileImage: values.profileImage,
+			removeProfileImage: values.removeProfileImage,
+			userId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

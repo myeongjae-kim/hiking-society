@@ -2,12 +2,16 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { cleanupUploadsBodySchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ProfileImageUploadUseCase } from "@/core/profile/application/port/in/ProfileImageUploadUseCase";
 
-const controller = Controller();
+export function createDeleteProfileImageUploadsController({
+	profileImageUploadUseCase,
+}: {
+	readonly profileImageUploadUseCase: ProfileImageUploadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const deleteProfileImageUploadsRoute = createRoute({
 		method: "delete",
 		path: "/profile-image/uploads",
 		request: {
@@ -24,17 +28,16 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["profile"],
-	}),
-	async (c) => {
-		const user = requireApiUser(c.get("currentUser"));
-		await applicationUseCaseContext()
-			.get("ProfileImageUploadUseCase")
-			.deleteUploads({
-				objectKeys: c.req.valid("json").objectKeys,
-				userId: user.id,
-			});
-		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	controller.openapi(deleteProfileImageUploadsRoute, async (c) => {
+		const user = requireApiUser(c.get("currentUser"));
+		await profileImageUploadUseCase.deleteUploads({
+			objectKeys: c.req.valid("json").objectKeys,
+			userId: user.id,
+		});
+		return c.json({ ok: true } as const, 200);
+	});
+
+	return controller;
+}

@@ -3,12 +3,16 @@ import { toHikingId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { hikingArticlesResponseSchema, idParamSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ListFeedUseCase } from "@/core/feed/application/port/in/ListFeedUseCase";
 
-const controller = Controller();
+export function createGetHikingArticlesController({
+	listFeedUseCase,
+}: {
+	readonly listFeedUseCase: ListFeedUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getHikingArticlesRoute = createRoute({
 		method: "get",
 		path: "/feed/hikings/{hikingId}/articles",
 		request: { params: idParamSchema.pick({ hikingId: true }) },
@@ -22,18 +26,17 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["feed"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getHikingArticlesRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const snapshot = await applicationUseCaseContext()
-			.get("ListFeedUseCase")
-			.listHikingArticles({
-				currentUserId: user.id,
-				hikingId: toHikingId(c.req.valid("param").hikingId),
-			});
+		const snapshot = await listFeedUseCase.listHikingArticles({
+			currentUserId: user.id,
+			hikingId: toHikingId(c.req.valid("param").hikingId),
+		});
 
 		return c.json(hikingArticlesResponseSchema.parse(snapshot), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

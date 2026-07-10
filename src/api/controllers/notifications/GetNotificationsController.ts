@@ -5,12 +5,16 @@ import {
 	notificationListResponseSchema,
 	notificationsQuerySchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ListNotificationsUseCase } from "@/core/notification/application/port/in/ListNotificationsUseCase";
 
-const controller = Controller();
+export function createGetNotificationsController({
+	listNotificationsUseCase,
+}: {
+	readonly listNotificationsUseCase: ListNotificationsUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getNotificationsRoute = createRoute({
 		method: "get",
 		path: "/notifications",
 		request: { query: notificationsQuerySchema },
@@ -24,20 +28,19 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["notifications"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getNotificationsRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const query = c.req.valid("query");
-		const snapshot = await applicationUseCaseContext()
-			.get("ListNotificationsUseCase")
-			.list({
-				currentUserId: user.id,
-				limit: query.limit,
-				offset: query.offset,
-			});
+		const snapshot = await listNotificationsUseCase.list({
+			currentUserId: user.id,
+			limit: query.limit,
+			offset: query.offset,
+		});
 
 		return c.json(notificationListResponseSchema.parse(snapshot), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

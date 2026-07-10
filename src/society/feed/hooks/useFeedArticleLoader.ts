@@ -3,6 +3,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { $api } from "#/api/client/$api";
+import {
+	toCommentsSnapshotViewModel,
+	toHikingArticlesSnapshotViewModel,
+} from "#/society/shared/apiContractMappers";
 import type { Article, ArticleId } from "@/core/article/domain";
 import type { Comment } from "@/core/comment/domain";
 import type { Hiking, HikingId } from "@/core/hiking/domain";
@@ -124,8 +128,8 @@ export function useFeedArticleLoader({
 					}),
 				)
 				.then((data) => {
-					const articles = data.articles as unknown as readonly Article[];
-					const comments = data.comments as unknown as readonly Comment[];
+					const { articles, comments } =
+						toHikingArticlesSnapshotViewModel(data);
 
 					setArticlesByHikingId((currentArticles) => ({
 						...currentArticles,
@@ -172,7 +176,7 @@ export function useFeedArticleLoader({
 					params: { path: { articleId } },
 				}),
 			);
-			const comments = result.comments as unknown as readonly Comment[];
+			const { comments } = toCommentsSnapshotViewModel(result);
 
 			setCommentsByHikingId((currentComments) => {
 				const hikingComments = currentComments[hikingId];

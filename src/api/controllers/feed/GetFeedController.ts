@@ -4,12 +4,16 @@ import { forbidden } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { feedResponseSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { GetFeedHomeUseCase } from "@/core/feed/application/port/in/GetFeedHomeUseCase";
 
-const controller = Controller();
+export function createGetFeedController({
+	getFeedHomeUseCase,
+}: {
+	readonly getFeedHomeUseCase: GetFeedHomeUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getFeedRoute = createRoute({
 		method: "get",
 		path: "/feed",
 		responses: {
@@ -24,19 +28,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["feed"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getFeedRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		const feedHome = await applicationUseCaseContext()
-			.get("GetFeedHomeUseCase")
-			.get({ currentUser: user });
+		const feedHome = await getFeedHomeUseCase.get({
+			currentUser: user,
+		});
 
 		if (feedHome.status === "associate") {
 			throw forbidden();
 		}
 
 		return c.json(feedResponseSchema.parse(feedHome.feedSummary), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

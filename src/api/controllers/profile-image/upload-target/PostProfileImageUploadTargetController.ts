@@ -5,12 +5,16 @@ import {
 	profileImageUploadTargetBodySchema,
 	profileImageUploadTargetResponseSchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ProfileImageUploadUseCase } from "@/core/profile/application/port/in/ProfileImageUploadUseCase";
 
-const controller = Controller();
+export function createPostProfileImageUploadTargetController({
+	profileImageUploadUseCase,
+}: {
+	readonly profileImageUploadUseCase: ProfileImageUploadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postProfileImageUploadTargetRoute = createRoute({
 		method: "post",
 		path: "/profile-image/upload-target",
 		request: {
@@ -33,18 +37,17 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["profile"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postProfileImageUploadTargetRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		const target = await applicationUseCaseContext()
-			.get("ProfileImageUploadUseCase")
-			.createUploadTarget({
-				...c.req.valid("json"),
-				userId: user.id,
-			});
+		const target = await profileImageUploadUseCase.createUploadTarget({
+			...c.req.valid("json"),
+			userId: user.id,
+		});
 
 		return c.json(profileImageUploadTargetResponseSchema.parse(target), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

@@ -109,4 +109,28 @@ if [[ -n "$direct_fetch_client_usage" ]]; then
 	exit 1
 fi
 
+direct_use_case_context_usage="$(
+	rg -n 'applicationUseCaseContext|getUseCase\(|[.]get\("[^"]*UseCase"' src/api src/routes src/society-app \
+		--glob '*.{ts,tsx}' \
+		--glob '!src/api/controllers/index.ts' \
+		--glob '!src/api/config/apiRuntimeDependencies.server.ts' \
+		--glob '!src/society-app/**/*.functions.ts' || true
+)"
+
+if [[ -n "$direct_use_case_context_usage" ]]; then
+	echo "Routes, API controllers, API middleware, and society-app server functions should receive explicit dependencies from their composition modules instead of looking up use cases directly:" >&2
+	echo "$direct_use_case_context_usage" >&2
+	exit 1
+fi
+
+unsafe_api_model_casts="$(
+	rg -n 'as unknown as (readonly )?(Article|Comment|NotificationListSnapshot|[{])' src/society/feed src/society/notification --glob '*.{ts,tsx}' || true
+)"
+
+if [[ -n "$unsafe_api_model_casts" ]]; then
+	echo "Feed and notification UI must map API contracts through society/shared/apiContractMappers instead of casting API data into core-shaped models:" >&2
+	echo "$unsafe_api_model_casts" >&2
+	exit 1
+fi
+
 ./node_modules/.bin/depcruise --config .dependency-cruiser.mjs src

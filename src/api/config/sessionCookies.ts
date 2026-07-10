@@ -1,10 +1,14 @@
+import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
 import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 
 export { sessionCookieConfig };
 
-export function cookieOptions(maxAge: number) {
-	return applicationUseCaseContext()
-		.get("GetCookieOptionsUseCase")
-		.getCookieOptions(maxAge);
+export type CookieOptionsFactory = (
+	maxAge: number,
+) => ReturnType<GetCookieOptionsUseCase["getCookieOptions"]>;
+
+export function createCookieOptions(deps: {
+	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
+}): CookieOptionsFactory {
+	return (maxAge) => deps.getCookieOptionsUseCase.getCookieOptions(maxAge);
 }

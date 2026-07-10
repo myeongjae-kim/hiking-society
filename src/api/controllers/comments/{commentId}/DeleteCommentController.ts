@@ -4,12 +4,16 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-const controller = Controller();
+export function createDeleteCommentController({
+	commentCommandUseCase,
+}: {
+	readonly commentCommandUseCase: CommentCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const deleteCommentRoute = createRoute({
 		method: "delete",
 		path: "/comments/{commentId}",
 		request: { params: idParamSchema.pick({ commentId: true }) },
@@ -21,22 +25,21 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["comments"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(deleteCommentRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationUseCaseContext()
-			.get("CommentCommandUseCase")
-			.delete({
-				commentId: toNumericId<CommentId>(
-					c.req.valid("param").commentId,
-					"댓글 id",
-				),
-				userId: user.id,
-			});
+		await commentCommandUseCase.delete({
+			commentId: toNumericId<CommentId>(
+				c.req.valid("param").commentId,
+				"댓글 id",
+			),
+			userId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

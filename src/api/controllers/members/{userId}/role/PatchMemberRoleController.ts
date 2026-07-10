@@ -7,17 +7,23 @@ import {
 	okSchema,
 	updateMemberRoleBodySchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { UpdateMemberRoleUseCase } from "@/core/member/application/port/in/UpdateMemberRoleUseCase";
 
-const controller = Controller();
+export function createPatchMemberRoleController({
+	updateMemberRoleUseCase,
+}: {
+	readonly updateMemberRoleUseCase: UpdateMemberRoleUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchMemberRoleRoute = createRoute({
 		method: "patch",
 		path: "/members/{userId}/role",
 		request: {
 			body: {
-				content: { "application/json": { schema: updateMemberRoleBodySchema } },
+				content: {
+					"application/json": { schema: updateMemberRoleBodySchema },
+				},
 				required: true,
 			},
 			params: idParamSchema.pick({ userId: true }),
@@ -30,22 +36,21 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["members"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchMemberRoleRoute, async (c) => {
 		const actor = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const nextRole = c.req.valid("json").role;
 		assertMutableRole(nextRole);
 
-		await applicationUseCaseContext()
-			.get("UpdateMemberRoleUseCase")
-			.update({
-				actorRole: actor.role,
-				nextRole,
-				userId: Number(c.req.valid("param").userId),
-			});
+		await updateMemberRoleUseCase.update({
+			actorRole: actor.role,
+			nextRole,
+			userId: Number(c.req.valid("param").userId),
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

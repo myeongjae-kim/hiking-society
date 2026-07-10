@@ -1,14 +1,18 @@
-import { createRoute } from "@hono/zod-openapi";
 import { toHikingValues } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { hikingBodySchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import { createRoute } from "@hono/zod-openapi";
+import type { HikingCommandUseCase } from "@/core/hiking/application/port/in/HikingCommandUseCase";
 
-const controller = Controller();
+export function createPostHikingsController({
+	hikingCommandUseCase,
+}: {
+	readonly hikingCommandUseCase: HikingCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postHikingsRoute = createRoute({
 		method: "post",
 		path: "/hikings",
 		request: {
@@ -25,20 +29,19 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["hikings"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postHikingsRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const values = toHikingValues(c.req.valid("json"));
 
-		await applicationUseCaseContext()
-			.get("HikingCommandUseCase")
-			.create({
-				...values,
-				authorUserId: user.id,
-			});
+		await hikingCommandUseCase.create({
+			...values,
+			authorUserId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

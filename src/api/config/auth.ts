@@ -2,10 +2,10 @@ import { getCookie, setCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
 import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { UserRole } from "@/core/auth/model/roles";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
 import { ApiError } from "./ApiError";
+import type { ApiRuntimeDependencies } from "./apiRuntimeDependencies.server";
 import type { ApiVariables } from "./Controller";
-import { cookieOptions, sessionCookieConfig } from "./sessionCookies";
+import { sessionCookieConfig } from "./sessionCookies";
 
 const {
 	accessTokenCookieName,
@@ -36,24 +36,30 @@ function forbidden(message = "권한이 없습니다.") {
 	return new ApiError({ error: "FORBIDDEN", message, status: 403 });
 }
 
-async function getUserByToken(accessToken: string | undefined) {
-	return applicationUseCaseContext().get("ResolveSessionUseCase").resolve({
+async function getUserByToken(
+	deps: Pick<ApiRuntimeDependencies, "resolveSessionUseCase">,
+	accessToken: string | undefined,
+) {
+	return deps.resolveSessionUseCase.resolve({
 		accessToken,
 		refreshToken: null,
 	});
 }
 
-export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
-	async (c, next) => {
-		let session = await getUserByToken(getCookie(c, accessTokenCookieName));
+export function createAuthMiddleware(
+	deps: Pick<ApiRuntimeDependencies, "cookieOptions" | "resolveSessionUseCase">,
+) {
+	return createMiddleware<{ Variables: ApiVariables }>(async (c, next) => {
+		let session = await getUserByToken(
+			deps,
+			getCookie(c, accessTokenCookieName),
+		);
 
 		if (!session.user) {
-			session = await applicationUseCaseContext()
-				.get("ResolveSessionUseCase")
-				.resolve({
-					accessToken: null,
-					refreshToken: getCookie(c, refreshTokenCookieName),
-				});
+			session = await deps.resolveSessionUseCase.resolve({
+				accessToken: null,
+				refreshToken: getCookie(c, refreshTokenCookieName),
+			});
 		}
 
 		if (session.refreshedTokens) {
@@ -61,13 +67,13 @@ export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
 				c,
 				accessTokenCookieName,
 				session.refreshedTokens.accessToken,
-				cookieOptions(accessTokenMaxAgeSeconds),
+				deps.cookieOptions(accessTokenMaxAgeSeconds),
 			);
 			setCookie(
 				c,
 				refreshTokenCookieName,
 				session.refreshedTokens.refreshToken,
-				cookieOptions(refreshTokenMaxAgeSeconds),
+				deps.cookieOptions(refreshTokenMaxAgeSeconds),
 			);
 		}
 
@@ -78,8 +84,8 @@ export const authMiddleware = createMiddleware<{ Variables: ApiVariables }>(
 		c.set("currentUser", session.user);
 
 		return next();
-	},
-);
+	});
+}
 
 export function requireApiUser(user: AuthenticatedUser | null) {
 	if (!user) {

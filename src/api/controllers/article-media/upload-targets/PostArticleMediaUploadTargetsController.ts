@@ -5,12 +5,16 @@ import {
 	articleMediaUploadTargetsBodySchema,
 	articleMediaUploadTargetsResponseSchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ArticleMediaUploadUseCase } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
 
-const controller = Controller();
+export function createPostArticleMediaUploadTargetsController({
+	articleMediaUploadUseCase,
+}: {
+	readonly articleMediaUploadUseCase: ArticleMediaUploadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postArticleMediaUploadTargetsRoute = createRoute({
 		method: "post",
 		path: "/article-media/upload-targets",
 		request: {
@@ -33,21 +37,20 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["articles"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postArticleMediaUploadTargetsRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const targets = await applicationUseCaseContext()
-			.get("ArticleMediaUploadUseCase")
-			.createUploadTargets({
-				targets: c.req.valid("json"),
-				userId: user.id,
-			});
+		const targets = await articleMediaUploadUseCase.createUploadTargets({
+			targets: c.req.valid("json"),
+			userId: user.id,
+		});
 
 		return c.json(
 			articleMediaUploadTargetsResponseSchema.parse({ targets }),
 			200,
 		);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

@@ -2,12 +2,16 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { MarkAllNotificationsReadUseCase } from "@/core/notification/application/port/in/MarkAllNotificationsReadUseCase";
 
-const controller = Controller();
+export function createPatchNotificationsReadAllController({
+	markAllNotificationsReadUseCase,
+}: {
+	readonly markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchNotificationsReadAllRoute = createRoute({
 		method: "patch",
 		path: "/notifications/read-all",
 		responses: {
@@ -18,17 +22,16 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["notifications"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchNotificationsReadAllRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
-		await applicationUseCaseContext()
-			.get("MarkAllNotificationsReadUseCase")
-			.markAllRead({
-				currentUserId: user.id,
-			});
+		await markAllNotificationsReadUseCase.markAllRead({
+			currentUserId: user.id,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

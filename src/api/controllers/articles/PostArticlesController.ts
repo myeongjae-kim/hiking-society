@@ -3,12 +3,16 @@ import { toHikingId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleBodySchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
 
-const controller = Controller();
+export function createPostArticlesController({
+	articleCommandUseCase,
+}: {
+	readonly articleCommandUseCase: ArticleCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const postArticlesRoute = createRoute({
 		method: "post",
 		path: "/articles",
 		request: {
@@ -31,22 +35,21 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["articles"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postArticlesRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 		const values = c.req.valid("json");
 
-		await applicationUseCaseContext()
-			.get("ArticleCommandUseCase")
-			.create({
-				authorUserId: user.id,
-				body: values.body,
-				hikingId: toHikingId(values.hikingId),
-				media: values.uploadedMedia,
-			});
+		await articleCommandUseCase.create({
+			authorUserId: user.id,
+			body: values.body,
+			hikingId: toHikingId(values.hikingId),
+			media: values.uploadedMedia,
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

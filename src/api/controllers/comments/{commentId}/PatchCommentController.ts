@@ -4,12 +4,16 @@ import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentBodySchema, idParamSchema, okSchema } from "#/api/schemas";
 import type { CommentId } from "@/core/comment/domain";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { CommentCommandUseCase } from "@/core/comment/application/port/in/CommentCommandUseCase";
 
-const controller = Controller();
+export function createPatchCommentController({
+	commentCommandUseCase,
+}: {
+	readonly commentCommandUseCase: CommentCommandUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const patchCommentRoute = createRoute({
 		method: "patch",
 		path: "/comments/{commentId}",
 		request: {
@@ -31,23 +35,22 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["comments"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(patchCommentRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
 
-		await applicationUseCaseContext()
-			.get("CommentCommandUseCase")
-			.update({
-				commentId: toNumericId<CommentId>(
-					c.req.valid("param").commentId,
-					"댓글 id",
-				),
-				userId: user.id,
-				values: { body: c.req.valid("json").body },
-			});
+		await commentCommandUseCase.update({
+			commentId: toNumericId<CommentId>(
+				c.req.valid("param").commentId,
+				"댓글 id",
+			),
+			userId: user.id,
+			values: { body: c.req.valid("json").body },
+		});
 
 		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

@@ -5,5 +5,4 @@ export type ApiVariables = {
 	currentUser: AuthenticatedUser | null;
 };
 
-export const Controller = <T extends object = object>() =>
-	new OpenAPIHono<{ Variables: ApiVariables & T }>();
+export const Controller = () => new OpenAPIHono<{ Variables: ApiVariables }>();

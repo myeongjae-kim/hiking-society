@@ -1,57 +1,93 @@
-import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
+import { getUseCase } from "#/core/config/getUseCase";
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from "#/theme/webtuiThemes";
-import type { RefreshedSessionTokens } from "@/core/auth/application/port/in/ResolveSessionUseCase";
+import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
+import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
+import type {
+	RefreshedSessionTokens,
+	ResolveSessionUseCase,
+} from "@/core/auth/application/port/in/ResolveSessionUseCase";
 import { sessionCookieConfig } from "@/core/auth/config/sessionCookieConfig";
+import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
 import type { UserRole } from "@/core/auth/model/roles";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 
-export const readCurrentTheme = createServerOnlyFn(async () => {
-	const { getCookie } = await import("@tanstack/react-start/server");
+type SessionCookieWriterDeps = {
+	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
+};
 
-	return getWebtuiTheme(getCookie(WEBTUI_THEME_COOKIE_NAME));
-});
+type SetSessionCookiesDeps = SessionCookieWriterDeps & {
+	readonly createSessionTokenUseCase: CreateSessionTokenUseCase;
+};
 
-export const getCurrentTheme = createServerFn({ method: "GET" }).handler(
-	async () => await readCurrentTheme(),
-);
+type ReadCurrentUserDeps = SessionCookieWriterDeps & {
+	readonly resolveSessionUseCase: ResolveSessionUseCase;
+};
 
-async function writeSessionCookies(tokens: RefreshedSessionTokens) {
-	const { setCookie } = await import("@tanstack/react-start/server");
-	const services = applicationUseCaseContext();
-	const {
-		accessTokenCookieName,
-		accessTokenMaxAgeSeconds,
-		refreshTokenCookieName,
-		refreshTokenMaxAgeSeconds,
-	} = sessionCookieConfig;
-	const getCookieOptionsUseCase = services.get("GetCookieOptionsUseCase");
+type ReadCurrentTheme = () => Promise<string>;
+type ReadCurrentUser = () => Promise<AuthenticatedUser | null>;
 
-	setCookie(
-		accessTokenCookieName,
-		tokens.accessToken,
-		getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
-	);
-	setCookie(
-		refreshTokenCookieName,
-		tokens.refreshToken,
-		getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+export function createReadCurrentTheme(): ReadCurrentTheme {
+	return createServerOnlyFn(async () => {
+		const { getCookie } = await import("@tanstack/react-start/server");
+
+		return getWebtuiTheme(getCookie(WEBTUI_THEME_COOKIE_NAME));
+	});
+}
+
+export function createGetCurrentTheme(deps: {
+	readonly readCurrentTheme: ReadCurrentTheme;
+}) {
+	return createServerFn({ method: "GET" }).handler(
+		async () => await deps.readCurrentTheme(),
 	);
 }
 
-export const setSessionCookies = createServerOnlyFn(
-	async (input: {
-		email: string;
-		provider: string;
-		role: UserRole;
-		userId: number;
-	}) => {
-		const tokens = await applicationUseCaseContext()
-			.get("CreateSessionTokenUseCase")
-			.create(input);
+function createWriteSessionCookies({
+	getCookieOptionsUseCase,
+}: SessionCookieWriterDeps) {
+	return async (tokens: RefreshedSessionTokens) => {
+		const { setCookie } = await import("@tanstack/react-start/server");
+		const {
+			accessTokenCookieName,
+			accessTokenMaxAgeSeconds,
+			refreshTokenCookieName,
+			refreshTokenMaxAgeSeconds,
+		} = sessionCookieConfig;
 
-		await writeSessionCookies(tokens);
-	},
-);
+		setCookie(
+			accessTokenCookieName,
+			tokens.accessToken,
+			getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
+		);
+		setCookie(
+			refreshTokenCookieName,
+			tokens.refreshToken,
+			getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
+		);
+	};
+}
+
+export function createSetSessionCookies({
+	createSessionTokenUseCase,
+	getCookieOptionsUseCase,
+}: SetSessionCookiesDeps) {
+	const writeSessionCookies = createWriteSessionCookies({
+		getCookieOptionsUseCase,
+	});
+
+	return createServerOnlyFn(
+		async (input: {
+			email: string;
+			provider: string;
+			role: UserRole;
+			userId: number;
+		}) => {
+			const tokens = await createSessionTokenUseCase.create(input);
+
+			await writeSessionCookies(tokens);
+		},
+	);
+}
 
 export const clearSessionCookies = createServerOnlyFn(async () => {
 	const { deleteCookie } = await import("@tanstack/react-start/server");
@@ -61,22 +97,51 @@ export const clearSessionCookies = createServerOnlyFn(async () => {
 	deleteCookie(refreshTokenCookieName, { path: "/" });
 });
 
-export const readCurrentUser = createServerOnlyFn(async () => {
-	const { getCookie } = await import("@tanstack/react-start/server");
-	const services = applicationUseCaseContext();
-	const { accessTokenCookieName, refreshTokenCookieName } = sessionCookieConfig;
-	const result = await services.get("ResolveSessionUseCase").resolve({
-		accessToken: getCookie(accessTokenCookieName),
-		refreshToken: getCookie(refreshTokenCookieName),
+export function createReadCurrentUser({
+	getCookieOptionsUseCase,
+	resolveSessionUseCase,
+}: ReadCurrentUserDeps): ReadCurrentUser {
+	const writeSessionCookies = createWriteSessionCookies({
+		getCookieOptionsUseCase,
 	});
 
-	if (result.refreshedTokens) {
-		await writeSessionCookies(result.refreshedTokens);
-	}
+	return createServerOnlyFn(async () => {
+		const { getCookie } = await import("@tanstack/react-start/server");
+		const { accessTokenCookieName, refreshTokenCookieName } =
+			sessionCookieConfig;
+		const result = await resolveSessionUseCase.resolve({
+			accessToken: getCookie(accessTokenCookieName),
+			refreshToken: getCookie(refreshTokenCookieName),
+		});
 
-	return result.user;
+		if (result.refreshedTokens) {
+			await writeSessionCookies(result.refreshedTokens);
+		}
+
+		return result.user;
+	});
+}
+
+export function createGetCurrentUser(deps: {
+	readonly readCurrentUser: ReadCurrentUser;
+}) {
+	return createServerFn({ method: "GET" }).handler(
+		async () => await deps.readCurrentUser(),
+	);
+}
+
+const createSessionTokenUseCase = getUseCase("CreateSessionTokenUseCase");
+const getCookieOptionsUseCase = getUseCase("GetCookieOptionsUseCase");
+const resolveSessionUseCase = getUseCase("ResolveSessionUseCase");
+
+export const readCurrentTheme = createReadCurrentTheme();
+export const getCurrentTheme = createGetCurrentTheme({ readCurrentTheme });
+export const setSessionCookies = createSetSessionCookies({
+	createSessionTokenUseCase,
+	getCookieOptionsUseCase,
 });
-
-export const getCurrentUser = createServerFn({ method: "GET" }).handler(
-	async () => await readCurrentUser(),
-);
+export const readCurrentUser = createReadCurrentUser({
+	getCookieOptionsUseCase,
+	resolveSessionUseCase,
+});
+export const getCurrentUser = createGetCurrentUser({ readCurrentUser });

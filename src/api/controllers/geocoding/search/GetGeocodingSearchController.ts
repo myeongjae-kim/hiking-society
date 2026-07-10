@@ -6,12 +6,16 @@ import {
 	geocodingSearchQuerySchema,
 	geocodingSearchResponseSchema,
 } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { SearchGeocodingUseCase } from "@/core/geocoding/application/port/in/SearchGeocodingUseCase";
 
-const controller = Controller();
+export function createGetGeocodingSearchController({
+	searchGeocodingUseCase,
+}: {
+	readonly searchGeocodingUseCase: SearchGeocodingUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getGeocodingSearchRoute = createRoute({
 		method: "get",
 		path: "/geocoding/search",
 		request: { query: geocodingSearchQuerySchema },
@@ -33,18 +37,17 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["geocoding"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getGeocodingSearchRoute, async (c) => {
 		requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const value = await applicationUseCaseContext()
-			.get("SearchGeocodingUseCase")
-			.search({
-				query: c.req.valid("query").q,
-				referer: new URL(c.req.url).origin,
-			});
+		const value = await searchGeocodingUseCase.search({
+			query: c.req.valid("query").q,
+			referer: new URL(c.req.url).origin,
+		});
 
 		return c.json(geocodingSearchResponseSchema.parse(value), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

@@ -2,15 +2,13 @@ import { createRoute } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import { ApiError } from "#/api/config/ApiError";
 import { Controller } from "#/api/config/Controller";
-import {
-	cookieOptions,
-	sessionCookieConfig,
-} from "#/api/config/sessionCookies";
+import { sessionCookieConfig } from "#/api/config/sessionCookies";
 import { currentUserSchema, loginWithGoogleBodySchema } from "#/api/schemas";
 import type { LoginWithGoogleCodeResult } from "@/core/auth/model/LoginWithGoogleCodeResult";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { GetCookieOptionsUseCase } from "@/core/auth/application/port/in/GetCookieOptionsUseCase";
+import type { CreateSessionTokenUseCase } from "@/core/auth/application/port/in/CreateSessionTokenUseCase";
+import type { LoginWithGoogleCodeUseCase } from "@/core/auth/application/port/in/LoginWithGoogleCodeUseCase";
 
-const controller = Controller();
 const {
 	accessTokenCookieName,
 	accessTokenMaxAgeSeconds,
@@ -18,13 +16,25 @@ const {
 	refreshTokenMaxAgeSeconds,
 } = sessionCookieConfig;
 
-controller.openapi(
-	createRoute({
+export function createPostGoogleLoginController({
+	getCookieOptionsUseCase,
+	createSessionTokenUseCase,
+	loginWithGoogleCodeUseCase,
+}: {
+	readonly getCookieOptionsUseCase: GetCookieOptionsUseCase;
+	readonly createSessionTokenUseCase: CreateSessionTokenUseCase;
+	readonly loginWithGoogleCodeUseCase: LoginWithGoogleCodeUseCase;
+}) {
+	const controller = Controller();
+
+	const postGoogleLoginRoute = createRoute({
 		method: "post",
 		path: "/auth/google/login",
 		request: {
 			body: {
-				content: { "application/json": { schema: loginWithGoogleBodySchema } },
+				content: {
+					"application/json": { schema: loginWithGoogleBodySchema },
+				},
 				required: true,
 			},
 		},
@@ -35,16 +45,15 @@ controller.openapi(
 			},
 		},
 		tags: ["auth"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(postGoogleLoginRoute, async (c) => {
 		let result: LoginWithGoogleCodeResult;
 
 		try {
-			result = await applicationUseCaseContext()
-				.get("LoginWithGoogleCodeUseCase")
-				.login({
-					code: c.req.valid("json").code,
-				});
+			result = await loginWithGoogleCodeUseCase.login({
+				code: c.req.valid("json").code,
+			});
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "";
 
@@ -59,25 +68,24 @@ controller.openapi(
 
 			throw error;
 		}
-		const { accessToken, refreshToken } = await applicationUseCaseContext()
-			.get("CreateSessionTokenUseCase")
-			.create(result.session);
+		const { accessToken, refreshToken } =
+			await createSessionTokenUseCase.create(result.session);
 
 		setCookie(
 			c,
 			accessTokenCookieName,
 			accessToken,
-			cookieOptions(accessTokenMaxAgeSeconds),
+			getCookieOptionsUseCase.getCookieOptions(accessTokenMaxAgeSeconds),
 		);
 		setCookie(
 			c,
 			refreshTokenCookieName,
 			refreshToken,
-			cookieOptions(refreshTokenMaxAgeSeconds),
+			getCookieOptionsUseCase.getCookieOptions(refreshTokenMaxAgeSeconds),
 		);
 
 		return c.json(currentUserSchema.parse(result.user), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

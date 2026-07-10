@@ -14,6 +14,6 @@ export default defineConfig({
 	},
 	test: {
 		environment: "node",
-		include: ["src/core/**/*.test.ts"],
+		include: ["src/core/**/*.test.ts", "src/society/shared/**/*.test.ts"],
 	},
 });

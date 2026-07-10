@@ -2,12 +2,16 @@ import { createRoute } from "@hono/zod-openapi";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { cleanupUploadsBodySchema, okSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ArticleMediaUploadUseCase } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
 
-const controller = Controller();
+export function createDeleteArticleMediaUploadsController({
+	articleMediaUploadUseCase,
+}: {
+	readonly articleMediaUploadUseCase: ArticleMediaUploadUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const deleteArticleMediaUploadsRoute = createRoute({
 		method: "delete",
 		path: "/article-media/uploads",
 		request: {
@@ -24,17 +28,16 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["articles"],
-	}),
-	async (c) => {
-		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		await applicationUseCaseContext()
-			.get("ArticleMediaUploadUseCase")
-			.deleteUploads({
-				objectKeys: c.req.valid("json").objectKeys,
-				userId: user.id,
-			});
-		return c.json({ ok: true } as const, 200);
-	},
-);
+	});
 
-export default controller;
+	controller.openapi(deleteArticleMediaUploadsRoute, async (c) => {
+		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
+		await articleMediaUploadUseCase.deleteUploads({
+			objectKeys: c.req.valid("json").objectKeys,
+			userId: user.id,
+		});
+		return c.json({ ok: true } as const, 200);
+	});
+
+	return controller;
+}

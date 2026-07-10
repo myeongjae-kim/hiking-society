@@ -3,12 +3,16 @@ import { toArticleId } from "#/api/config/apiUtils";
 import { requireApiRole } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { commentsResponseSchema, idParamSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { ListArticleCommentsUseCase } from "@/core/comment/application/port/in/ListArticleCommentsUseCase";
 
-const controller = Controller();
+export function createGetArticleCommentsController({
+	listArticleCommentsUseCase,
+}: {
+	readonly listArticleCommentsUseCase: ListArticleCommentsUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getArticleCommentsRoute = createRoute({
 		method: "get",
 		path: "/articles/{articleId}/comments",
 		request: { params: idParamSchema.pick({ articleId: true }) },
@@ -20,18 +24,17 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["comments"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getArticleCommentsRoute, async (c) => {
 		const user = requireApiRole(c.get("currentUser"), ["admin", "member"]);
-		const comments = await applicationUseCaseContext()
-			.get("ListArticleCommentsUseCase")
-			.listArticleComments({
-				articleId: toArticleId(c.req.valid("param").articleId),
-				currentUserId: user.id,
-			});
+		const comments = await listArticleCommentsUseCase.listArticleComments({
+			articleId: toArticleId(c.req.valid("param").articleId),
+			currentUserId: user.id,
+		});
 
 		return c.json(commentsResponseSchema.parse({ comments }), 200);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}

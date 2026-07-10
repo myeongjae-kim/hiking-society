@@ -9,6 +9,7 @@ import { apiQueryKeys } from "#/api/client/queryKeys";
 import { DateTimeLabel } from "#/society/shared/components/DateTimeLabel";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { useRouter } from "#/society/shared/hooks/useRouter";
+import { toNotificationListSnapshotViewModel } from "#/society/shared/apiContractMappers";
 import type {
 	NotificationListSnapshot,
 	NotificationSummary,
@@ -133,8 +134,9 @@ export function NotificationPopover({
 	const [isPending, startTransition] = useTransition();
 	const notificationPages = useMemo(
 		() =>
-			(notificationsQuery.data?.pages ??
-				[]) as unknown as readonly NotificationListSnapshot[],
+			(notificationsQuery.data?.pages ?? []).map(
+				toNotificationListSnapshotViewModel,
+			),
 		[notificationsQuery.data?.pages],
 	);
 	const lastPage = notificationPages.at(-1) ?? emptyNotificationSnapshot;

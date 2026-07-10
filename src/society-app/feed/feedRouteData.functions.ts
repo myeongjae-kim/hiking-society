@@ -1,12 +1,23 @@
-import { createServerFn } from "@tanstack/react-start";
+import { getUseCase } from "#/core/config/getUseCase";
 import {
 	readCurrentTheme,
 	readCurrentUser,
 } from "#/society-app/auth/session.functions";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { GetFeedHomeUseCase } from "@/core/feed/application/port/in/GetFeedHomeUseCase";
+import { createServerFn } from "@tanstack/react-start";
 
-export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
-	async () => {
+type GetFeedRouteDataDeps = {
+	readonly getFeedHomeUseCase: GetFeedHomeUseCase;
+	readonly readCurrentTheme: typeof readCurrentTheme;
+	readonly readCurrentUser: typeof readCurrentUser;
+};
+
+export function createGetFeedRouteData({
+	getFeedHomeUseCase,
+	readCurrentTheme,
+	readCurrentUser,
+}: GetFeedRouteDataDeps) {
+	return createServerFn({ method: "GET" }).handler(async () => {
 		const user = await readCurrentUser();
 		const currentTheme = await readCurrentTheme();
 
@@ -14,12 +25,10 @@ export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 			return { status: "unauthenticated" as const };
 		}
 
-		const data = await applicationUseCaseContext()
-			.get("GetFeedHomeUseCase")
-			.get({
-				currentUser: user,
-				includeNotifications: true,
-			});
+		const data = await getFeedHomeUseCase.get({
+			currentUser: user,
+			includeNotifications: true,
+		});
 
 		if (data.status === "associate") {
 			return {
@@ -36,5 +45,11 @@ export const getFeedRouteData = createServerFn({ method: "GET" }).handler(
 			status: "ok" as const,
 			user: data.user,
 		};
-	},
-);
+	});
+}
+
+export const getFeedRouteData = createGetFeedRouteData({
+	getFeedHomeUseCase: getUseCase("GetFeedHomeUseCase"),
+	readCurrentTheme,
+	readCurrentUser,
+});

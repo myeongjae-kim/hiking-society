@@ -4,12 +4,16 @@ import { forbidden, notFound, toArticleId } from "#/api/config/apiUtils";
 import { requireApiUser } from "#/api/config/auth";
 import { Controller } from "#/api/config/Controller";
 import { articleDetailResponseSchema, idParamSchema } from "#/api/schemas";
-import { applicationUseCaseContext } from "@/core/config/applicationUseCases.server";
+import type { GetArticlePageUseCase } from "@/core/article/application/port/in/GetArticlePageUseCase";
 
-const controller = Controller();
+export function createGetArticleController({
+	getArticlePageUseCase,
+}: {
+	readonly getArticlePageUseCase: GetArticlePageUseCase;
+}) {
+	const controller = Controller();
 
-controller.openapi(
-	createRoute({
+	const getArticleRoute = createRoute({
 		method: "get",
 		path: "/articles/{articleId}",
 		request: { params: idParamSchema.pick({ articleId: true }) },
@@ -27,16 +31,15 @@ controller.openapi(
 		},
 		security: [{ cookieAuth: [] }],
 		tags: ["articles"],
-	}),
-	async (c) => {
+	});
+
+	controller.openapi(getArticleRoute, async (c) => {
 		const user = requireApiUser(c.get("currentUser"));
 		const articleId = toArticleId(c.req.valid("param").articleId);
-		const articlePage = await applicationUseCaseContext()
-			.get("GetArticlePageUseCase")
-			.get({
-				articleId,
-				currentUser: user,
-			});
+		const articlePage = await getArticlePageUseCase.get({
+			articleId,
+			currentUser: user,
+		});
 
 		if (articlePage.status === "associate") {
 			throw forbidden();
@@ -53,7 +56,7 @@ controller.openapi(
 			}),
 			200,
 		);
-	},
-);
+	});
 
-export default controller;
+	return controller;
+}
