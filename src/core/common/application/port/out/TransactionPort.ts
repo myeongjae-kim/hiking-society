@@ -1,5 +1,8 @@
+export type TransactionPropagation = "REQUIRED" | "REQUIRES_NEW";
+
 export type TransactionOptions = {
 	readOnly?: boolean;
+	propagation?: TransactionPropagation;
 };
 
 export interface TransactionPort {

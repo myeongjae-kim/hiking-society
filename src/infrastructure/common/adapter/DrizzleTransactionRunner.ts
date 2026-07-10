@@ -1,8 +1,9 @@
 import "dotenv/config";
-import { Autowired } from "@/core/config/Autowired";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
-import { AsyncLocalStorage } from "node:async_hooks";
+import type { TransactionPropagation } from "@/core/common/application/port/out/TransactionPort";
+import { Autowired } from "@/core/config/Autowired";
 
 export type DrizzleExecutor = Pick<
 	ReturnType<typeof drizzle>,
@@ -16,6 +17,11 @@ export type DrizzleExecutor = Pick<
 
 export type DrizzleTransactionOptions = {
 	readOnly?: boolean;
+	/**
+	 * REQUIRED joins the active transaction when one exists. REQUIRES_NEW always
+	 * starts an independent transaction and temporarily suspends the active one.
+	 */
+	propagation?: TransactionPropagation;
 	transactionConfig?: PgTransactionConfig;
 };
 
@@ -68,7 +74,11 @@ export class DrizzleTransactionRunner {
 		const readOnly = options.readOnly ?? true;
 		const currentContext = this.currentTransactionStorage.getStore();
 
-		if (currentContext) {
+		// REQUIRES_NEW는 아래 rootDb.transaction()에서 새 DB 트랜잭션을 엽니다.
+		// 그 안의 AsyncLocalStorage.run()은 콜백 동안에만 새 컨텍스트를 사용하고,
+		// 콜백이 끝나면 중첩되기 전의 현재 컨텍스트를 자동으로 복원합니다.
+		// 따라서 바깥 트랜잭션은 사라지지 않고, 안쪽 트랜잭션이 완료된 뒤 다시 이어집니다.
+		if (currentContext && options.propagation !== "REQUIRES_NEW") {
 			if (currentContext.readOnly && !readOnly) {
 				throw new Error(
 					"Cannot start a read-write transaction inside a read-only transaction.",
