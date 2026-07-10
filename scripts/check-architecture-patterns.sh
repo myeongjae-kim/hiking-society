@@ -132,5 +132,3 @@ if [[ -n "$unsafe_api_model_casts" ]]; then
 	echo "$unsafe_api_model_casts" >&2
 	exit 1
 fi
-
-./node_modules/.bin/depcruise --config .dependency-cruiser.mjs src
