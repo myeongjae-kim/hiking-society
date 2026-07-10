@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import type { Article } from "@/core/article/domain";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 type UseFeedLinkActionsInput = {
 	selectedHikingId: HikingId | null;

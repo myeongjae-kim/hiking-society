@@ -3,7 +3,7 @@ import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
 import type { CreateNotificationsUseCase } from "@/core/notification/application/port/in/CreateNotificationsUseCase";
-import { CommentOwnership, CommentReplyTarget } from "../domain";
+import { CommentEntity } from "../domain";
 import type { CommentCommandUseCase } from "./port/in/CommentCommandUseCase";
 import type { CommentCommandPort } from "./port/out/CommentCommandPort";
 
@@ -38,10 +38,13 @@ export class CommentCommandService implements CommentCommandUseCase {
 					? await this.commentCommandPort.findCommentById(parentCommentId)
 					: null;
 
-				if (
-					parentCommentId !== null &&
-					!CommentReplyTarget.of(parent).canReceiveReplyFor(input.articleId)
-				) {
+					if (
+						parentCommentId !== null &&
+						(!parent ||
+							!CommentEntity.rehydrate(parent).canReceiveReplyFor(
+								input.articleId,
+							))
+					) {
 					throw applicationError.notFound(
 						"답글을 작성할 댓글을 찾을 수 없습니다.",
 					);
@@ -79,10 +82,10 @@ export class CommentCommandService implements CommentCommandUseCase {
 					input.commentId,
 				);
 
-				if (
-					!comment ||
-					!CommentOwnership.of(comment).canBeManagedBy(input.userId)
-				) {
+					if (
+						!comment ||
+						!CommentEntity.rehydrate(comment).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"댓글을 수정할 권한이 없거나 댓글을 찾을 수 없습니다.",
 					);
@@ -111,10 +114,10 @@ export class CommentCommandService implements CommentCommandUseCase {
 					input.commentId,
 				);
 
-				if (
-					!comment ||
-					!CommentOwnership.of(comment).canBeManagedBy(input.userId)
-				) {
+					if (
+						!comment ||
+						!CommentEntity.rehydrate(comment).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"댓글을 삭제할 권한이 없거나 댓글을 찾을 수 없습니다.",
 					);

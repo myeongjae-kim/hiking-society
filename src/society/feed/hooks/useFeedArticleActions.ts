@@ -11,9 +11,9 @@ import type { ArticleFormValues } from "#/society/article/components/articleForm
 import { useArticleMediaUploader } from "#/society/article/hooks/useArticleMediaUploader";
 import { createArticleMutationPayload } from "#/society/article/utils/articleMutationPayload";
 import { toArticleDetailSnapshotViewModel } from "#/society/shared/apiContractMappers";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment } from "@/core/comment/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import type { ActiveArticleForm } from "../utils/feedCrudTypes";
 import type { FeedActionDeps } from "./feedActionTypes";

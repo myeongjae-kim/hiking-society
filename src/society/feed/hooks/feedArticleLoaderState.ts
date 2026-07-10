@@ -1,6 +1,6 @@
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export function createHikingArticleCountById(
 	hikingArticleCounts: readonly {

@@ -1,4 +1,4 @@
-import { getUseCase } from "#/core/config/getUseCase";
+import { getUseCase } from "#/infrastructure/config/getUseCase";
 import { readCurrentUser } from "#/society-app/auth/session.functions";
 import type { GetMemberManagementUseCase } from "@/core/member/application/port/in/GetMemberManagementUseCase";
 import { createServerFn } from "@tanstack/react-start";

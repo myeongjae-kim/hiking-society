@@ -1,4 +1,4 @@
-import type { Hiking } from "@/core/hiking/domain";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import type { HikingFormValues } from "./hikingFormTypes";
 

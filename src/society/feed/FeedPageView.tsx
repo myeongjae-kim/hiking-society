@@ -1,7 +1,7 @@
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import type { FeedSummarySnapshot } from "@/core/feed/model/FeedSnapshot";
-import type { HikingId } from "@/core/hiking/domain";
-import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
+import type { FeedSummaryViewModel as FeedSummarySnapshot } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
+import type { NotificationListViewModel as NotificationListSnapshot } from "#/society/shared/viewModels";
 import { AssociateFeedNotice } from "./components/AssociateFeedNotice";
 import { FeedCrudClient } from "./components/FeedCrudClient";
 

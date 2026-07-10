@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 export type MediaViewerProps = {
 	articleId: string;

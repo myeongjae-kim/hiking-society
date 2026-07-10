@@ -1,5 +1,6 @@
 export type {
 	Comment,
+	CommentEntitySnapshot,
 	CommentId,
 	CreateCommentInput,
 	CreateReplyInput,
@@ -7,4 +8,4 @@ export type {
 	TopLevelComment,
 	UpdateCommentInput,
 } from "./Comment";
-export { CommentOwnership, CommentReplyTarget } from "./CommentPolicy";
+export { CommentEntity } from "./Comment";

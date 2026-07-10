@@ -2,7 +2,7 @@
 
 `src/society-app`는 TanStack Start route가 호출하는 앱 기능 단위의 서버 경계입니다.
 
-이 디렉터리는 서버에서 실행되는 코드를 모두 모아두는 곳이 아닙니다. REST API adapter는 `src/api`, 핵심 정책과 use case는 `src/core`, DB/S3/OAuth 같은 외부 I/O 구현은 `src/core/**/adapter`에 둡니다.
+이 디렉터리는 서버에서 실행되는 코드를 모두 모아두는 곳이 아닙니다. REST API adapter는 `src/api`, 핵심 정책과 use case는 `src/core`, DB/S3/OAuth 같은 외부 I/O 구현은 `src/infrastructure/**/adapter`에 둡니다.
 
 ## 이름
 

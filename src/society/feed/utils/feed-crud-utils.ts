@@ -1,7 +1,7 @@
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment } from "@/core/comment/domain";
-import type { AuthorName, IsoDateTimeString } from "@/core/common/domain";
-import type { Hiking } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { AuthorNameView as AuthorName, IsoDateTimeStringView as IsoDateTimeString } from "#/society/shared/viewModels";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 export type FeedGroup = {
 	articles: Article[];

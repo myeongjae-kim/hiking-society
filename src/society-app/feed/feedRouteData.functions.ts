@@ -1,4 +1,4 @@
-import { getUseCase } from "#/core/config/getUseCase";
+import { getUseCase } from "#/infrastructure/config/getUseCase";
 import {
 	readCurrentTheme,
 	readCurrentUser,

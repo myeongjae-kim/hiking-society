@@ -5,6 +5,7 @@ import {
 } from "#/society-app/auth/session.functions";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
 import MyPageView from "#/society/profile/ProfilePageView";
+import { toAuthenticatedUserViewModel } from "#/society/shared/apiContractMappers";
 
 export const Route = createFileRoute("/me")({
 	component: MyRoute,
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/me")({
 
 		return {
 			theme: await getCurrentTheme(),
-			user,
+			user: toAuthenticatedUserViewModel(user),
 		};
 	},
 });

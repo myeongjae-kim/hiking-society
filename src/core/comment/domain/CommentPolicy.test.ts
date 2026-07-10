@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { ArticleId } from "@/core/article/domain";
-import { CommentOwnership, CommentReplyTarget } from "@/core/comment/domain";
+import { CommentEntity } from "@/core/comment/domain";
 import type { CommentId } from "@/core/comment/domain/Comment";
 
 const articleId = "1" as ArticleId;
 const otherArticleId = "2" as ArticleId;
 const commentId = "10" as CommentId;
 
-describe("CommentReplyTarget", () => {
+describe("CommentEntity reply target", () => {
 	it("allows replies only to active top-level comments in the same article", () => {
 		expect(
-			CommentReplyTarget.of({
+			CommentEntity.rehydrate({
 				articleId,
 				authorUserId: 1,
 				deleted: false,
@@ -19,7 +19,7 @@ describe("CommentReplyTarget", () => {
 		).toBe(true);
 
 		expect(
-			CommentReplyTarget.of({
+			CommentEntity.rehydrate({
 				articleId: otherArticleId,
 				authorUserId: 1,
 				deleted: false,
@@ -28,7 +28,7 @@ describe("CommentReplyTarget", () => {
 		).toBe(false);
 
 		expect(
-			CommentReplyTarget.of({
+			CommentEntity.rehydrate({
 				articleId,
 				authorUserId: 1,
 				deleted: true,
@@ -37,7 +37,7 @@ describe("CommentReplyTarget", () => {
 		).toBe(false);
 
 		expect(
-			CommentReplyTarget.of({
+			CommentEntity.rehydrate({
 				articleId,
 				authorUserId: 1,
 				deleted: false,
@@ -45,19 +45,18 @@ describe("CommentReplyTarget", () => {
 			}).canReceiveReplyFor(articleId),
 		).toBe(false);
 	});
-
-	it("rejects missing reply targets", () => {
-		expect(CommentReplyTarget.of(null).canReceiveReplyFor(articleId)).toBe(
-			false,
-		);
-	});
 });
 
-describe("CommentOwnership", () => {
+describe("CommentEntity ownership", () => {
 	it("allows only the comment author to manage the comment", () => {
-		const ownership = CommentOwnership.of({ authorUserId: 1 });
+		const comment = CommentEntity.rehydrate({
+			articleId,
+			authorUserId: 1,
+			deleted: false,
+			parentCommentId: null,
+		});
 
-		expect(ownership.canBeManagedBy(1)).toBe(true);
-		expect(ownership.canBeManagedBy(2)).toBe(false);
+		expect(comment.canBeManagedBy(1)).toBe(true);
+		expect(comment.canBeManagedBy(2)).toBe(false);
 	});
 });

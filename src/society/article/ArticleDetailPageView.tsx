@@ -1,9 +1,9 @@
 import { ArticleDetailClient } from "#/society/article/components/ArticleDetailClient";
-import type { Article } from "@/core/article/domain";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import type { Comment, CommentId } from "@/core/comment/domain";
-import type { Hiking } from "@/core/hiking/domain";
-import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
+import type { NotificationListViewModel as NotificationListSnapshot } from "#/society/shared/viewModels";
 
 type ArticleDetailPageViewProps = {
 	article: Article;

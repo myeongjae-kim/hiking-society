@@ -3,7 +3,12 @@ import { getFeedRouteData } from "#/society-app/feed/feedRouteData.functions";
 import { getLoginRedirectHref } from "#/society/auth/session.shared";
 import FeedPageView from "#/society/feed/FeedPageView";
 import { toNumericSearchId } from "#/routing/searchParams";
-import type { HikingId } from "@/core/hiking/domain";
+import {
+	toAuthenticatedUserViewModel,
+	toFeedSummaryViewModel,
+	toNotificationListSnapshotViewModel,
+} from "#/society/shared/apiContractMappers";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export const Route = createFileRoute("/feed")({
 	component: FeedRoute,
@@ -20,16 +25,18 @@ export const Route = createFileRoute("/feed")({
 				feedSummary: null,
 				notificationSnapshot: null,
 				selectedHikingId: null,
-				user: data.user,
+				user: toAuthenticatedUserViewModel(data.user),
 			};
 		}
 
 		return {
 			currentTheme: data.currentTheme,
-			feedSummary: data.feedSummary,
-			notificationSnapshot: data.notificationSnapshot,
+			feedSummary: toFeedSummaryViewModel(data.feedSummary),
+			notificationSnapshot: data.notificationSnapshot
+				? toNotificationListSnapshotViewModel(data.notificationSnapshot)
+				: null,
 			selectedHikingId: null,
-			user: data.user,
+			user: toAuthenticatedUserViewModel(data.user),
 		};
 	},
 	validateSearch: (search) => ({

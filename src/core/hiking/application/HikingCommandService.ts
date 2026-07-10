@@ -2,7 +2,7 @@ import { applicationError } from "@/core/common/application/ApplicationError";
 import type { ClockPort } from "@/core/common/application/port/out/ClockPort";
 import type { TransactionPort } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
-import { HikingDeletionPolicy, HikingOwnership } from "../domain";
+import { HikingEntity } from "../domain";
 import type { HikingCommandUseCase } from "./port/in/HikingCommandUseCase";
 import type { HikingCommandPort } from "./port/out/HikingCommandPort";
 
@@ -29,10 +29,10 @@ export class HikingCommandService implements HikingCommandUseCase {
 					input.hikingId,
 				);
 
-				if (
-					!hiking ||
-					!HikingOwnership.of(hiking).canBeManagedBy(input.userId)
-				) {
+					if (
+						!hiking ||
+						!HikingEntity.rehydrate(hiking).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"산행을 수정할 권한이 없거나 산행을 찾을 수 없습니다.",
 					);
@@ -61,16 +61,16 @@ export class HikingCommandService implements HikingCommandUseCase {
 					input.hikingId,
 				);
 
-				if (
-					!hiking ||
-					!HikingOwnership.of(hiking).canBeManagedBy(input.userId)
-				) {
+					if (
+						!hiking ||
+						!HikingEntity.rehydrate(hiking).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"산행을 삭제할 권한이 없거나 산행을 찾을 수 없습니다.",
 					);
 				}
 
-				if (!HikingDeletionPolicy.of(hiking).canDelete()) {
+				if (!HikingEntity.rehydrate(hiking).canBeDeleted()) {
 					throw applicationError.badRequest(
 						"글이 있는 산행은 삭제할 수 없습니다.",
 					);

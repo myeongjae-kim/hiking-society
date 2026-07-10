@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { ArticleEntity } from "./Article";
 import {
 	ArticleMediaCollection,
-	ArticleOwnership,
 	UploadedArticleMediaOwnership,
 } from "@/core/article/domain/ArticlePolicy";
 
@@ -33,12 +33,12 @@ describe("ArticleMediaCollection", () => {
 	});
 });
 
-describe("ArticleOwnership", () => {
+describe("ArticleEntity", () => {
 	it("allows only the article author to manage the article", () => {
-		const ownership = ArticleOwnership.of({ authorUserId: 1 });
+		const article = ArticleEntity.rehydrate({ authorUserId: 1 });
 
-		expect(ownership.canBeManagedBy(1)).toBe(true);
-		expect(ownership.canBeManagedBy(2)).toBe(false);
+		expect(article.canBeManagedBy(1)).toBe(true);
+		expect(article.canBeManagedBy(2)).toBe(false);
 	});
 });
 

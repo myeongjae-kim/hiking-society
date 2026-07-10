@@ -1,4 +1,4 @@
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 import { InlineMediaFrame } from "./MediaPrimitives";
 import { getMediaTakenTimeLabel } from "./metadata";
 import type { InlineSwipeTrack, SwipeGesture } from "./types";

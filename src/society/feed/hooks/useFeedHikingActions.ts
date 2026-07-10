@@ -2,7 +2,7 @@
 
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
+import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import type { FeedActionDeps } from "./feedActionTypes";
 

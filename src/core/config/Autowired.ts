@@ -1,4 +1,4 @@
 import { returnAutowired } from "inversify-typesafe-spring-like";
-import type { Beans } from "./BeanConfig.server";
+import type { AutowiredBeans } from "./DependencyTokens";
 
-export const { Autowired } = returnAutowired<Beans>();
+export const { Autowired } = returnAutowired<AutowiredBeans>();

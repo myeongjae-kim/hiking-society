@@ -6,7 +6,7 @@ import {
 import Link from "#/society/shared/components/AppLink";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { ThemeSelector } from "#/society/shared/components/ThemeSelector";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
 import { LogoutButton } from "../auth/components/LogoutButton";
 import {
 	DisplayNameEditDialog,

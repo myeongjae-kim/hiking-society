@@ -1,4 +1,4 @@
-import type { Comment, CommentId } from "@/core/comment/domain";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
 
 export function getThreadedComments(comments: readonly Comment[]) {
 	const repliesByParentId = new Map<CommentId, Comment[]>();

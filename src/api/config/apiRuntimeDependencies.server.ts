@@ -1,4 +1,4 @@
-import { getUseCase } from "#/core/config/getUseCase";
+import { getUseCase } from "#/infrastructure/config/getUseCase";
 import type { ResolveSessionUseCase } from "@/core/auth/application/port/in/ResolveSessionUseCase";
 import {
 	type CookieOptionsFactory,

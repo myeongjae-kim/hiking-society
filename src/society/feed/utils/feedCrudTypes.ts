@@ -1,6 +1,6 @@
-import type { ArticleId } from "@/core/article/domain";
-import type { CommentId } from "@/core/comment/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export type ActiveArticleForm =
 	| { hikingId: HikingId; type: "create" }

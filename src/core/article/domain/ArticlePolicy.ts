@@ -64,18 +64,6 @@ export class PublishableArticleMedia<TMedia = unknown> {
 	}
 }
 
-export class ArticleOwnership {
-	private constructor(private readonly authorUserId: number) {}
-
-	static of(article: { readonly authorUserId: number }) {
-		return new ArticleOwnership(article.authorUserId);
-	}
-
-	canBeManagedBy(userId: number) {
-		return this.authorUserId === userId;
-	}
-}
-
 export class UploadedArticleMediaOwnership {
 	private constructor(
 		private readonly input: {

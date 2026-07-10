@@ -1,7 +1,7 @@
 import { ActionButton } from "#/society/shared/components/ActionButton";
 import { Command } from "#/society/shared/components/Command";
 import { boxBorderClassName } from "#/society/shared/components/styles";
-import type { HikingId } from "@/core/hiking/domain";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import type { HikingArticleLoadState } from "../utils/feedCrudTypes";
 

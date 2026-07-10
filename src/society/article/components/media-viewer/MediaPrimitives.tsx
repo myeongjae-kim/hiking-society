@@ -1,4 +1,4 @@
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 type InlineMediaFrameProps = {
 	authorName: string;

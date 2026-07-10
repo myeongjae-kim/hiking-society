@@ -63,3 +63,19 @@ export type UpdateArticleInput = {
 	readonly media?: ArticleMediaItems;
 	readonly body?: string;
 };
+
+export type ArticleEntitySnapshot = {
+	readonly authorUserId: number;
+};
+
+export class ArticleEntity {
+	private constructor(private readonly snapshot: ArticleEntitySnapshot) {}
+
+	static rehydrate(snapshot: ArticleEntitySnapshot) {
+		return new ArticleEntity(snapshot);
+	}
+
+	canBeManagedBy(userId: number) {
+		return this.snapshot.authorUserId === userId;
+	}
+}

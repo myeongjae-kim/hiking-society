@@ -21,6 +21,14 @@ export default {
 			to: { path: "^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))" },
 		},
 		{
+			name: "core-not-to-infrastructure",
+			comment:
+				"Core owns policy and ports, but concrete adapters and composition live in infrastructure.",
+			severity: "error",
+			from: { path: "^src/core/" },
+			to: { path: "^src/infrastructure/" },
+		},
+		{
 			name: "core-domain-model-independent",
 			comment:
 				"Domain and model code should stay independent from application, adapters, config, database, and web modules.",
@@ -28,8 +36,9 @@ export default {
 			from: { path: "^src/core/[^/]+/(domain|model)/" },
 			to: {
 				path: [
-					"^src/core/[^/]+/(application|adapter|config)/",
+					"^src/core/[^/]+/application/",
 					"^src/core/config/",
+					"^src/infrastructure/",
 					"^drizzle/",
 					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
@@ -44,8 +53,8 @@ export default {
 			from: { path: "^src/core/[^/]+/application/port/" },
 			to: {
 				path: [
-					"^src/core/[^/]+/adapter/",
 					"^src/core/config/",
+					"^src/infrastructure/",
 					"^drizzle/",
 					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
@@ -60,7 +69,7 @@ export default {
 			from: { path: "^src/core/[^/]+/application/[^/]+[.]ts$" },
 			to: {
 				path: [
-					"^src/core/[^/]+/adapter/",
+					"^src/infrastructure/",
 					"^drizzle/",
 					"^src/(api|config|integrations|routes|society|society-app|styles|theme)/",
 					"^(react($|/)|react-dom($|/)|@tanstack/|hono($|/))",
@@ -83,8 +92,18 @@ export default {
 			to: {
 				path: [
 					"^drizzle/",
-					"^src/core/common/adapter/drizzle[.]server[.]ts$",
+					"^src/infrastructure/common/adapter/",
 				],
+			},
+		},
+		{
+			name: "web-not-to-infrastructure-internals",
+			comment:
+				"Web adapters may use the typed getUseCase boundary, but not concrete infrastructure internals.",
+			severity: "error",
+			from: { path: "^src/(api|routes|society|society-app)/" },
+			to: {
+				path: "^src/infrastructure/(?!config/getUseCase[.]ts$)",
 			},
 		},
 		{
@@ -95,9 +114,9 @@ export default {
 			from: { path: "^src/(api|routes|society|society-app)/" },
 			to: {
 				path: [
-					"^src/core/config/applicationContext[.]server[.]ts$",
+					"^src/infrastructure/config/applicationContext[.]server[.]ts$",
 					"^src/core/config/Autowired[.]ts$",
-					"^src/core/config/BeanConfig[.]server[.]ts$",
+					"^src/infrastructure/config/BeanConfig[.]server[.]ts$",
 				],
 			},
 		},

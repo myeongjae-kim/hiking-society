@@ -1,4 +1,4 @@
-import type { ArticleMediaMetadataSummary } from "@/core/article/domain";
+import type { ArticleMediaMetadataViewModel as ArticleMediaMetadataSummary } from "#/society/shared/viewModels";
 
 const binaryTagNames = new Set([
 	"Thumbnail",

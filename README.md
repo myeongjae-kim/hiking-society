@@ -25,9 +25,12 @@ src/
         *Service.ts      # use case 정책
         port/in/         # 웹/외부에서 호출하는 use case 인터페이스
         port/out/        # application이 필요로 하는 I/O 인터페이스
-      adapter/           # Drizzle, S3, OAuth 등 구체 구현
     common/              # 공통 domain/application 타입
-    config/              # DI wiring
+    config/              # DI token 타입과 @Autowired
+  infrastructure/
+    {feature}/adapter/   # Drizzle, S3, OAuth 등 구체 구현
+    common/adapter/      # transaction, clock 등 공통 adapter
+    config/              # DI wiring과 environment binding
   routes/                # TanStack Start file routes
   society-app/           # route-facing server functions와 앱 서버 context
   api/                   # Hono/OpenAPI HTTP adapter
@@ -61,7 +64,7 @@ src/core/{feature}/application service
 src/core/{feature}/application/port/out
         ^
         |
-src/core/{feature}/adapter
+src/infrastructure/{feature}/adapter
 ```
 
 application service가 판단해야 하는 정책 예시는 다음과 같습니다.
@@ -144,9 +147,9 @@ DB schema의 source of truth는 `drizzle/schema.ts`입니다.
 
 ## Dependency Injection
 
-core wiring은 `src/core/config/BeanConfig.server.ts`에서 관리합니다.
+core의 DI token 타입과 `@Autowired` helper는 `src/core/config`에 둡니다. 실제 wiring과 환경값 binding은 `src/infrastructure/config/BeanConfig.server.ts`에서 관리합니다.
 
-웹 영역은 `applicationContext().get('*UseCase')`로 in-port를 호출합니다. `src/**`에서 `application/port/out` 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
+웹 영역은 `src/infrastructure/config/getUseCase.ts`의 typed boundary로 in-port를 호출합니다. `src/**`에서 `application/port/out`, concrete adapter, 또는 `applicationContext().get('*Port')`를 직접 쓰지 않습니다.
 
 ## Architecture Checks
 
@@ -155,6 +158,7 @@ core wiring은 `src/core/config/BeanConfig.server.ts`에서 관리합니다.
 검사 내용:
 
 - `src/core`가 웹/프레임워크 모듈과 client config를 import하지 않는지 확인합니다.
+- `src/core`가 `src/infrastructure`를 import하지 않는지 확인합니다.
 - `src/society/shared`가 다른 feature를 import하지 않는지 확인합니다.
 - `src/routes`, `src/api`, `src/society-app`, `src/society`가 outbound port 또는 `applicationContext().get('*Port')`를 직접 쓰지 않는지 확인합니다.
 - `src/society-app`가 UI feature에 의존하지 않고, `src/society`가 server-function boundary에 의존하지 않는지 확인합니다.

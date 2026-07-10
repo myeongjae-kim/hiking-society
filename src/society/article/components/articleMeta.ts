@@ -2,7 +2,7 @@ import Link from "#/society/shared/components/AppLink";
 import { createElement, type ReactNode } from "react";
 
 import { DateTimeLabel } from "#/society/shared/components/DateTimeLabel";
-import type { Article } from "@/core/article/domain";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
 
 export function getArticleMeta(
 	article: Article,

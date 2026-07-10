@@ -47,3 +47,30 @@ export type CreateReplyInput = {
 export type UpdateCommentInput = {
 	readonly body?: string;
 };
+
+export type CommentEntitySnapshot = {
+	readonly articleId: ArticleId;
+	readonly authorUserId: number;
+	readonly deleted: boolean;
+	readonly parentCommentId: CommentId | null;
+};
+
+export class CommentEntity {
+	private constructor(private readonly snapshot: CommentEntitySnapshot) {}
+
+	static rehydrate(snapshot: CommentEntitySnapshot) {
+		return new CommentEntity(snapshot);
+	}
+
+	canBeManagedBy(userId: number) {
+		return this.snapshot.authorUserId === userId;
+	}
+
+	canReceiveReplyFor(articleId: ArticleId) {
+		return (
+			this.snapshot.articleId === articleId &&
+			!this.snapshot.deleted &&
+			this.snapshot.parentCommentId === null
+		);
+	}
+}

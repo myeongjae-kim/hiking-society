@@ -1,5 +1,6 @@
 export type {
 	Article,
+	ArticleEntitySnapshot,
 	ArticleId,
 	ArticleMedia,
 	ArticleMediaItems,
@@ -8,3 +9,4 @@ export type {
 	CreateArticleInput,
 	UpdateArticleInput,
 } from "./Article";
+export { ArticleEntity } from "./Article";

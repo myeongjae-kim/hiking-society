@@ -1,5 +1,5 @@
-import type { ArticleId } from "@/core/article/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import { $api } from "./$api";
 

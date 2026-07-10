@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 import { mediaMinScale } from "./constants";
 import { MediaMetadata } from "./MediaMetadata";

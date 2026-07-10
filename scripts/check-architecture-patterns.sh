@@ -21,6 +21,16 @@ if [[ -n "$app_feature_ui_files" ]]; then
 	exit 1
 fi
 
+core_adapter_dirs="$(
+	find src/core -type d -name adapter -print
+)"
+
+if [[ -n "$core_adapter_dirs" ]]; then
+	echo "Concrete adapters must live under src/infrastructure, not src/core:" >&2
+	echo "$core_adapter_dirs" >&2
+	exit 1
+fi
+
 society_to_society_app_imports="$(
 	rg -n 'from ["'\'']#/society-app/' src/society --glob '*.{ts,tsx}' || true
 )"
@@ -90,7 +100,8 @@ if [[ -n "$route_never_assertions" ]]; then
 fi
 
 boundary_brand_id_casts="$(
-	rg -n 'as (ArticleId|HikingId|CommentId|NotificationId)\b' src/api/controllers src/routes src/society-app --glob '*.{ts,tsx}' || true
+	(rg -n 'as (ArticleId|HikingId|CommentId|NotificationId)\b' src/api/controllers src/routes src/society-app --glob '*.{ts,tsx}' || true) \
+		| (rg -v '^[^:]+:[0-9]+:import type ' || true)
 )"
 
 if [[ -n "$boundary_brand_id_casts" ]]; then

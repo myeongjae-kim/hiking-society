@@ -3,7 +3,7 @@
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
 import type { HikingFormValues } from "#/society/hiking/components/hikingFormTypes";
-import type { HikingId } from "@/core/hiking/domain";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import type { ActiveHikingForm } from "../utils/feedCrudTypes";
 import type { FeedActionDeps } from "./feedActionTypes";

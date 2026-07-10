@@ -1,6 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 import { VideoPlayOverlay } from "./MediaPrimitives";
 import { getMediaTakenTimeLabel } from "./metadata";
 

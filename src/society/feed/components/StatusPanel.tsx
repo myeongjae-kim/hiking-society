@@ -1,7 +1,7 @@
 import { Command } from "#/society/shared/components/Command";
 import { StatusRow } from "#/society/shared/components/StatusRow";
 import { boxBorderClassName } from "#/society/shared/components/styles";
-import type { AuthorName } from "@/core/common/domain";
+import type { AuthorNameView as AuthorName } from "#/society/shared/viewModels";
 
 type StatusPanelProps = {
 	articleCount: number;

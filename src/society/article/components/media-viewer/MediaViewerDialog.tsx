@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import type { MouseEvent } from "react";
 
 import { photoDialogOverlayClassName } from "#/society/shared/components/styles";
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 import { mediaControlClassName } from "./constants";
 import { MediaStage } from "./MediaStage";

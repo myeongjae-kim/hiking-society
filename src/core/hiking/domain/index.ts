@@ -1,7 +1,8 @@
 export type {
 	CreateHikingInput,
 	Hiking,
+	HikingEntitySnapshot,
 	HikingId,
 	UpdateHikingInput,
 } from "./Hiking";
-export { HikingDeletionPolicy, HikingOwnership } from "./HikingPolicy";
+export { HikingEntity } from "./Hiking";

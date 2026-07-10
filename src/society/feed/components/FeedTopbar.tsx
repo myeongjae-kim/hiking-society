@@ -5,9 +5,9 @@ import Link from "#/society/shared/components/AppLink";
 import { Command } from "#/society/shared/components/Command";
 import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { ThemeSelector } from "#/society/shared/components/ThemeSelector";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import type { AuthorName } from "@/core/common/domain";
-import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
+import type { AuthorNameView as AuthorName } from "#/society/shared/viewModels";
+import type { NotificationListViewModel as NotificationListSnapshot } from "#/society/shared/viewModels";
 
 type FeedTopbarProps = {
 	currentAuthorName: AuthorName;

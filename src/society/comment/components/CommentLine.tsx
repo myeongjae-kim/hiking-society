@@ -4,7 +4,7 @@ import {
 	AuthorBadge,
 } from "#/society/shared/components/AuthorBadge";
 import { DateTimeLabel } from "#/society/shared/components/DateTimeLabel";
-import type { Comment, CommentId } from "@/core/comment/domain";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
 
 import { CommentForm } from "./CommentForm";
 

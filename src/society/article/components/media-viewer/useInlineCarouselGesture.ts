@@ -6,7 +6,7 @@ import type {
 } from "react";
 import { useCallback } from "react";
 
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 import {
 	mediaHorizontalSwipeRatio,

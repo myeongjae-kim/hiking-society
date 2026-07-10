@@ -8,7 +8,7 @@ import {
 	readOriginalPhotoMetadata,
 } from "#/society/media/photoMetadata";
 import { createCompressedMp4File } from "#/society/media/videoCompression";
-import type { Article } from "@/core/article/domain";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
 import type { DraftMedia } from "./articleFormTypes";
 
 const maxCompressedPhotoWidth = 2048;

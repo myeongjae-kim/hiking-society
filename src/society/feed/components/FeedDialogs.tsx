@@ -4,8 +4,8 @@ import { ArticleFormDialog } from "#/society/article/components/ArticleFormDialo
 import { HikingFormDialog } from "#/society/hiking/components/HikingFormDialog";
 import { ConfirmDialog } from "#/society/shared/components/ConfirmDialog";
 import { LoadingOverlay } from "#/society/shared/components/LoadingOverlay";
-import type { Article } from "@/core/article/domain";
-import type { Hiking } from "@/core/hiking/domain";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import type {
 	FeedActionEnvironment,

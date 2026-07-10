@@ -4,9 +4,9 @@ import { type Dispatch, type SetStateAction, useState } from "react";
 
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { CommentId } from "@/core/comment/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import type { LikePendingKey } from "../utils/feedCrudTypes";
 import type { FeedActionDeps } from "./feedActionTypes";

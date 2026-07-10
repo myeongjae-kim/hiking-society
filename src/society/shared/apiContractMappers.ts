@@ -6,28 +6,19 @@ import type {
 	NotificationContract,
 } from "#/api/contracts";
 import type {
-	Article,
-	ArticleId,
-	ArticleMedia,
-	ArticleMediaItems,
-	ArticleMediaMetadataSummary,
-} from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
-import type {
-	Altitude,
-	AuthorName,
-	IsoDateString,
-	IsoDateTimeString,
-	Latitude,
-	Longitude,
-	Timezone,
-} from "@/core/common/domain";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
-import type {
-	NotificationId,
-	NotificationListSnapshot,
-	NotificationSummary,
-} from "@/core/notification/model/Notification";
+	ArticleDetailViewModel,
+	ArticleMediaItemsViewModel,
+	ArticleMediaMetadataViewModel,
+	ArticleMediaViewModel,
+	ArticleViewModel,
+	AuthenticatedUserViewModel,
+	CommentViewModel,
+	FeedSummaryViewModel,
+	HikingArticlesViewModel,
+	HikingViewModel,
+	NotificationListViewModel,
+	NotificationViewModel,
+} from "./viewModels";
 
 type ArticleApiModel = Omit<
 	ArticleContract,
@@ -76,14 +67,31 @@ type NotificationListResponseApiModel = {
 	readonly notifications: readonly NotificationApiModel[];
 };
 
-function toArticleMedia(input: ArticleMediaContract): ArticleMedia {
+type AuthenticatedUserApiModel = AuthenticatedUserViewModel;
+
+export function toAuthenticatedUserViewModel(
+	input: AuthenticatedUserApiModel,
+): AuthenticatedUserViewModel {
+	return {
+		displayName: input.displayName,
+		email: input.email,
+		id: input.id,
+		lastLoginAt: input.lastLoginAt,
+		name: input.name,
+		profileImageUrl: input.profileImageUrl,
+		provider: input.provider,
+		role: input.role,
+	};
+}
+
+function toArticleMedia(input: ArticleMediaContract): ArticleMediaViewModel {
 	return {
 		byteSize: input.byteSize,
 		contentType: input.contentType,
 		durationMs: input.durationMs,
 		height: input.height,
 		mediaType: input.mediaType,
-		metadata: input.metadata as ArticleMediaMetadataSummary | undefined,
+		metadata: input.metadata as ArticleMediaMetadataViewModel | undefined,
 		objectKey: input.objectKey,
 		order: input.order,
 		thumbnailUrl: input.thumbnailUrl,
@@ -94,7 +102,7 @@ function toArticleMedia(input: ArticleMediaContract): ArticleMedia {
 
 function toArticleMediaItems(
 	input: readonly ArticleMediaContract[],
-): ArticleMediaItems {
+): ArticleMediaItemsViewModel {
 	const [firstMedia, ...remainingMedia] = input;
 
 	if (!firstMedia) {
@@ -104,70 +112,84 @@ function toArticleMediaItems(
 	return [toArticleMedia(firstMedia), ...remainingMedia.map(toArticleMedia)];
 }
 
-export function toArticleViewModel(input: ArticleApiModel): Article {
+export function toArticleViewModel(input: ArticleApiModel): ArticleViewModel {
 	return {
-		authorName: input.authorName as AuthorName,
+		authorName: input.authorName,
 		authorProfileImageUrl: input.authorProfileImageUrl ?? null,
 		authorUserId: input.authorUserId,
 		body: input.body,
-		createdAt: input.createdAt as IsoDateTimeString,
-		deletedAt: (input.deletedAt ?? null) as IsoDateTimeString | null,
+		createdAt: input.createdAt,
+		deletedAt: input.deletedAt ?? null,
 		edited: input.edited,
-		hikingId: input.hikingId as HikingId,
-		id: input.id as ArticleId,
+		hikingId: input.hikingId,
+		id: input.id,
 		likeCount: input.likeCount,
 		likedByCurrentUser: input.likedByCurrentUser,
 		media: toArticleMediaItems(input.media),
-		updatedAt: input.updatedAt as IsoDateTimeString,
+		updatedAt: input.updatedAt,
 	};
 }
 
-export function toCommentViewModel(input: CommentApiModel): Comment {
+export function toCommentViewModel(input: CommentApiModel): CommentViewModel {
 	const base = {
-		articleId: input.articleId as ArticleId,
-		authorName: input.authorName as AuthorName,
+		articleId: input.articleId,
+		authorName: input.authorName,
 		authorProfileImageUrl: input.authorProfileImageUrl ?? null,
 		authorUserId: input.authorUserId,
 		body: input.body,
-		createdAt: input.createdAt as IsoDateTimeString,
-		deletedAt: (input.deletedAt ?? null) as IsoDateTimeString | null,
-		id: input.id as CommentId,
+		createdAt: input.createdAt,
+		deletedAt: input.deletedAt ?? null,
+		id: input.id,
 		likeCount: input.likeCount,
 		likedByCurrentUser: input.likedByCurrentUser,
-		updatedAt: input.updatedAt as IsoDateTimeString,
+		updatedAt: input.updatedAt,
 	};
 
 	if (input.parentCommentId == null) {
 		return { ...base, parentCommentId: null };
 	}
 
-	return { ...base, parentCommentId: input.parentCommentId as CommentId };
+	return { ...base, parentCommentId: input.parentCommentId };
 }
 
-export function toHikingViewModel(input: HikingContract): Hiking {
+export function toHikingViewModel(input: HikingContract): HikingViewModel {
 	return {
-		altitude: input.altitude as Altitude | null,
-		authorName: input.authorName as AuthorName,
+		altitude: input.altitude,
+		authorName: input.authorName,
 		authorUserId: input.authorUserId,
-		completedAt: input.completedAt as IsoDateTimeString,
-		createdAt: input.createdAt as IsoDateTimeString,
-		hikingDate: input.hikingDate as IsoDateString,
-		id: input.id as HikingId,
-		latitude: input.latitude as Latitude,
-		longitude: input.longitude as Longitude,
+		completedAt: input.completedAt,
+		createdAt: input.createdAt,
+		hikingDate: input.hikingDate,
+		id: input.id,
+		latitude: input.latitude,
+		longitude: input.longitude,
 		mountainName: input.mountainName,
 		order: input.order,
 		participantsCsv: input.participantsCsv,
 		restaurantAddress: input.restaurantAddress,
-		startedAt: input.startedAt as IsoDateTimeString,
-		timezone: input.timezone as Timezone,
-		updatedAt: input.updatedAt as IsoDateTimeString,
+		startedAt: input.startedAt,
+		timezone: input.timezone,
+		updatedAt: input.updatedAt,
+	};
+}
+
+export function toFeedSummaryViewModel(
+	input: FeedSummaryViewModel,
+): FeedSummaryViewModel {
+	return {
+		articleCount: input.articleCount,
+		commentCount: input.commentCount,
+		hikingArticleCounts: input.hikingArticleCounts.map((item) => ({
+			articleCount: item.articleCount,
+			hikingId: item.hikingId,
+		})),
+		hikings: input.hikings.map(toHikingViewModel),
 	};
 }
 
 export function toHikingArticlesSnapshotViewModel(
 	input: HikingArticlesResponseApiModel,
-) {
+): HikingArticlesViewModel {
 	return {
 		articles: input.articles.map(toArticleViewModel),
 		comments: input.comments.map(toCommentViewModel),
@@ -176,7 +198,7 @@ export function toHikingArticlesSnapshotViewModel(
 
 export function toArticleDetailSnapshotViewModel(
 	input: ArticleDetailResponseApiModel,
-) {
+): Omit<ArticleDetailViewModel, "hiking"> {
 	return {
 		article: toArticleViewModel(input.article),
 		comments: input.comments.map(toCommentViewModel),
@@ -191,24 +213,24 @@ export function toCommentsSnapshotViewModel(input: CommentsResponseApiModel) {
 
 function toNotificationSummaryViewModel(
 	input: NotificationApiModel,
-): NotificationSummary {
+): NotificationViewModel {
 	return {
-		actorName: input.actorName as AuthorName,
+		actorName: input.actorName,
 		actorProfileImageUrl: input.actorProfileImageUrl ?? null,
 		actorUserId: input.actorUserId,
-		articleId: input.articleId as ArticleId,
-		commentId: input.commentId == null ? null : (input.commentId as CommentId),
+		articleId: input.articleId,
+		commentId: input.commentId == null ? null : input.commentId,
 		contentExcerpt: input.contentExcerpt,
-		createdAt: input.createdAt as IsoDateTimeString,
-		id: input.id as NotificationId,
-		readAt: (input.readAt ?? null) as NotificationSummary["readAt"],
+		createdAt: input.createdAt,
+		id: input.id,
+		readAt: input.readAt ?? null,
 		type: input.type,
 	};
 }
 
 export function toNotificationListSnapshotViewModel(
 	input: NotificationListResponseApiModel,
-): NotificationListSnapshot {
+): NotificationListViewModel {
 	return {
 		hasMoreNotifications: input.hasMoreNotifications,
 		hasUnreadNotifications: input.hasUnreadNotifications,

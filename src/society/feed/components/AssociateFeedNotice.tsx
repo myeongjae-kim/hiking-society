@@ -2,7 +2,7 @@ import Link from "#/society/shared/components/AppLink";
 
 import { Command } from "#/society/shared/components/Command";
 import { boxBorderClassName } from "#/society/shared/components/styles";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
 
 import { getAuthorName } from "../utils/feed-crud-utils";
 import { FeedTopbar } from "./FeedTopbar";

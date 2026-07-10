@@ -7,10 +7,10 @@ import type { ConfirmState } from "#/society/shared/components/ConfirmDialog";
 import { gridStackClassName } from "#/society/shared/components/styles";
 import { useMutationRunner } from "#/society/shared/hooks/useMutationRunner";
 import { useRouter } from "#/society/shared/hooks/useRouter";
-import type { AuthenticatedUser } from "@/core/auth/model/AuthenticatedUser";
-import type { CommentId } from "@/core/comment/domain";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
-import type { NotificationListSnapshot } from "@/core/notification/model/Notification";
+import type { AuthenticatedUserViewModel as AuthenticatedUser } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
+import type { NotificationListViewModel as NotificationListSnapshot } from "#/society/shared/viewModels";
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import type {

@@ -3,9 +3,9 @@
 import { ArticlePanel } from "#/society/article/components/ArticlePanel";
 import { HikingHeader } from "#/society/hiking/components/HikingHeader";
 import { gridStackClassName } from "#/society/shared/components/styles";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment } from "@/core/comment/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 import type {
 	FeedActionEnvironment,

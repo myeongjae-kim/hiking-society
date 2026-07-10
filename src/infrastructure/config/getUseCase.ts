@@ -1,0 +1,8 @@
+import { applicationContext } from "./applicationContext.server";
+import type { UseCaseBeans } from "@/core/config/DependencyTokens";
+
+export function getUseCase<TUseCaseName extends keyof UseCaseBeans>(
+	useCaseName: TUseCaseName,
+): UseCaseBeans[TUseCaseName] {
+	return applicationContext().get(useCaseName);
+}

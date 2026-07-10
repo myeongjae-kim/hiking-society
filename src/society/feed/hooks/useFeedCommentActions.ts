@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { $api } from "#/api/client/$api";
 import { apiQueryKeys } from "#/api/client/queryKeys";
-import type { ArticleId } from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
+import type { ArticleViewId as ArticleId } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
 
 import {
 	getCommentCreateSingleFlightKey,

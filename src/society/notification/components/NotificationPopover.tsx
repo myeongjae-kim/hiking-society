@@ -11,9 +11,9 @@ import { inlineButtonClassName } from "#/society/shared/components/styles";
 import { useRouter } from "#/society/shared/hooks/useRouter";
 import { toNotificationListSnapshotViewModel } from "#/society/shared/apiContractMappers";
 import type {
-	NotificationListSnapshot,
-	NotificationSummary,
-} from "@/core/notification/model/Notification";
+	NotificationListViewModel as NotificationListSnapshot,
+	NotificationViewModel as NotificationSummary,
+} from "#/society/shared/viewModels";
 
 type NotificationPopoverProps = {
 	notificationSnapshot?: NotificationListSnapshot;

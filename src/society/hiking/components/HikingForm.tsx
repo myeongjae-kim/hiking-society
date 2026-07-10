@@ -12,7 +12,7 @@ import {
 	hiddenFileInputClassName,
 	inlineButtonClassName,
 } from "#/society/shared/components/styles";
-import type { Hiking } from "@/core/hiking/domain";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import { readPhotoMetadataFromFile } from "./exifGps";
 import type { HikingFormValues } from "./hikingFormTypes";

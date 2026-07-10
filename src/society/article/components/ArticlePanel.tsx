@@ -18,8 +18,8 @@ import {
 	boxBorderClassName,
 	inlineButtonClassName,
 } from "#/society/shared/components/styles";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
 
 import { getArticleMeta } from "./articleMeta";
 

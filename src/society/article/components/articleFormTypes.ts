@@ -1,5 +1,5 @@
 import type { PreparedImageSource } from "#/society/media/imageCompression";
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 export type DraftMedia = ArticleMedia & {
 	readonly file?: File;

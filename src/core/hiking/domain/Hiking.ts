@@ -56,3 +56,24 @@ export type UpdateHikingInput = {
 	readonly participantsCsv?: string;
 	readonly restaurantAddress?: string | null;
 };
+
+export type HikingEntitySnapshot = {
+	readonly activeArticleCount: number;
+	readonly authorUserId: number;
+};
+
+export class HikingEntity {
+	private constructor(private readonly snapshot: HikingEntitySnapshot) {}
+
+	static rehydrate(snapshot: HikingEntitySnapshot) {
+		return new HikingEntity(snapshot);
+	}
+
+	canBeManagedBy(userId: number) {
+		return this.snapshot.authorUserId === userId;
+	}
+
+	canBeDeleted() {
+		return this.snapshot.activeArticleCount === 0;
+	}
+}

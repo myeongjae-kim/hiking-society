@@ -1,7 +1,7 @@
 import { useCallback, useReducer, useRef } from "react";
 import { toast } from "sonner";
 
-import type { ArticleMedia } from "@/core/article/domain";
+import type { ArticleMediaViewModel as ArticleMedia } from "#/society/shared/viewModels";
 
 import {
 	initialMediaTransform,

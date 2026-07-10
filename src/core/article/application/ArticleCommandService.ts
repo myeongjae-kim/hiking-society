@@ -7,9 +7,9 @@ import type { CreateNotificationsUseCase } from "@/core/notification/application
 import {
 	ARTICLE_MEDIA_REQUIRED_MESSAGE,
 	ArticleMediaCollection,
-	ArticleOwnership,
 	UploadedArticleMediaOwnership,
 } from "../domain/ArticlePolicy";
+import { ArticleEntity } from "../domain";
 import type { ArticleMediaUpload } from "../model/ArticleMediaCommand";
 import type { ArticleCommandUseCase } from "./port/in/ArticleCommandUseCase";
 import type { ArticleCommandPort } from "./port/out/ArticleCommandPort";
@@ -110,10 +110,10 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 					input.articleId,
 				);
 
-				if (
-					!article ||
-					!ArticleOwnership.of(article).canBeManagedBy(input.userId)
-				) {
+					if (
+						!article ||
+						!ArticleEntity.rehydrate(article).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"글을 수정할 권한이 없거나 글을 찾을 수 없습니다.",
 					);
@@ -145,10 +145,10 @@ export class ArticleCommandService implements ArticleCommandUseCase {
 					input.articleId,
 				);
 
-				if (
-					!article ||
-					!ArticleOwnership.of(article).canBeManagedBy(input.userId)
-				) {
+					if (
+						!article ||
+						!ArticleEntity.rehydrate(article).canBeManagedBy(input.userId)
+					) {
 					throw applicationError.notFound(
 						"글을 삭제할 권한이 없거나 글을 찾을 수 없습니다.",
 					);

@@ -7,9 +7,9 @@ import {
 	toCommentsSnapshotViewModel,
 	toHikingArticlesSnapshotViewModel,
 } from "#/society/shared/apiContractMappers";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment } from "@/core/comment/domain";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import {
 	getCommentsByArticleId,

@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 
 import { dialogOverlayClassName } from "#/society/shared/components/styles";
-import type { Hiking } from "@/core/hiking/domain";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import { HikingForm } from "./HikingForm";
 import type { HikingFormValues } from "./hikingFormTypes";

@@ -1,4 +1,4 @@
-import { getUseCase } from "#/core/config/getUseCase";
+import { getUseCase } from "#/infrastructure/config/getUseCase";
 import { createPostArticleMediaUploadTargetsController } from "../controllers/article-media/upload-targets/PostArticleMediaUploadTargetsController";
 import { createDeleteArticleMediaUploadsController } from "../controllers/article-media/uploads/DeleteArticleMediaUploadsController";
 import { createPostArticlesController } from "../controllers/articles/PostArticlesController";

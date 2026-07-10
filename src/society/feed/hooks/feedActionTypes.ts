@@ -2,9 +2,9 @@ import type { QueryKey } from "@tanstack/react-query";
 import type { Dispatch, SetStateAction } from "react";
 import type { ConfirmState } from "#/society/shared/components/ConfirmDialog";
 import type { useMutationRunner } from "#/society/shared/hooks/useMutationRunner";
-import type { Article, ArticleId } from "@/core/article/domain";
-import type { Comment, CommentId } from "@/core/comment/domain";
-import type { Hiking, HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId, ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { CommentViewId as CommentId, CommentViewModel as Comment } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId, HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import type {
 	ActiveArticleForm,

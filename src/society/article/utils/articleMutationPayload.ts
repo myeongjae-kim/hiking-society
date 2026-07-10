@@ -1,7 +1,7 @@
 import type { ArticleFormValues } from "#/society/article/components/articleFormTypes";
 import type { UploadedArticleMedia } from "#/society/article/utils/article-media-upload";
-import type { ArticleId } from "@/core/article/domain";
-import type { HikingId } from "@/core/hiking/domain";
+import type { ArticleViewId as ArticleId } from "#/society/shared/viewModels";
+import type { HikingViewId as HikingId } from "#/society/shared/viewModels";
 
 export type ExistingArticleMutationMedia = {
 	byteSize?: number;

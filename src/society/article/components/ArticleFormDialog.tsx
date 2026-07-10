@@ -7,8 +7,8 @@ import {
 	dialogOverlayClassName,
 	inlineButtonClassName,
 } from "#/society/shared/components/styles";
-import type { Article } from "@/core/article/domain";
-import type { Hiking } from "@/core/hiking/domain";
+import type { ArticleViewModel as Article } from "#/society/shared/viewModels";
+import type { HikingViewModel as Hiking } from "#/society/shared/viewModels";
 
 import { ArticleForm } from "./ArticleForm";
 import type { ArticleFormValues } from "./articleFormTypes";
