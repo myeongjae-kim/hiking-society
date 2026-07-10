@@ -6,9 +6,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 const primaryDb = drizzle(env.DATABASE_URL);
 const replicaDb = drizzle(env.DATABASE_URL);
-type DrizzleDatabase = typeof primaryDb;
 export type DrizzleExecutor = Pick<
-	DrizzleDatabase,
+	ReturnType<typeof drizzle>,
 	| "delete"
 	| "execute"
 	| "insert"
