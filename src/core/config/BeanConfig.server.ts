@@ -156,6 +156,8 @@ type InfrastructureBeans = {
 	DrizzleTransactionRunner: DrizzleTransactionRunner;
 	ClockPort: ClockPort;
 	TextEncoder: TextEncoder;
+	DATABASE_PRIMARY_URL: string;
+	DATABASE_REPLICA_URL: string;
 	JWT_SECRET: string;
 	GOOGLE_LOGIN_CLIENT_ID: string;
 	GOOGLE_LOGIN_CLIENT_SECRET: string;
@@ -220,6 +222,8 @@ export const beanConfig: BeanConfig<Beans> = {
 	UpdateProfileImageUseCase: (bind) => bind().to(UpdateProfileImageService),
 	SearchGeocodingUseCase: (bind) => bind().to(SearchGeocodingService),
 	TextEncoder: (bind) => bind().to(TextEncoder),
+	DATABASE_PRIMARY_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
+	DATABASE_REPLICA_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
 	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>
 		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_ID),

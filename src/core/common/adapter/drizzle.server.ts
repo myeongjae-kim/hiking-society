@@ -1,11 +1,9 @@
-import { env } from "@/core/config/env.server";
 import "dotenv/config";
+import { Autowired } from "@/core/config/Autowired";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import { AsyncLocalStorage } from "node:async_hooks";
 
-const primaryDb = drizzle(env.DATABASE_URL);
-const replicaDb = drizzle(env.DATABASE_URL);
 export type DrizzleExecutor = Pick<
 	ReturnType<typeof drizzle>,
 	| "delete"
@@ -27,6 +25,19 @@ type DrizzleTransactionContext = {
 };
 
 export class DrizzleTransactionRunner {
+	private readonly primaryDb: ReturnType<typeof drizzle>;
+	private readonly replicaDb: ReturnType<typeof drizzle>;
+
+	constructor(
+		@Autowired("DATABASE_PRIMARY_URL")
+		databasePrimaryUrl: string,
+		@Autowired("DATABASE_REPLICA_URL")
+		databaseReplicaUrl: string,
+	) {
+		this.primaryDb = drizzle(databasePrimaryUrl);
+		this.replicaDb = drizzle(databaseReplicaUrl);
+	}
+
 	// AsyncLocalStorage는 같은 Node 프로세스 안에서도 요청/async chain별로
 	// 현재 트랜잭션 컨텍스트를 분리해 저장합니다.
 	// 중첩 호출에서는 getStore()로 이미 열린 tx를 찾아 새 트랜잭션 대신 재사용합니다.
@@ -67,7 +78,7 @@ export class DrizzleTransactionRunner {
 			return work(currentContext.database);
 		}
 
-		const rootDb = readOnly ? replicaDb : primaryDb;
+		const rootDb = readOnly ? this.replicaDb : this.primaryDb;
 
 		return rootDb.transaction(
 			(tx) => {
