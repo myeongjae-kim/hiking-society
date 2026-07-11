@@ -1,9 +1,9 @@
-import "dotenv/config";
-import { AsyncLocalStorage } from "node:async_hooks";
-import { drizzle } from "drizzle-orm/node-postgres";
-import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { TransactionPropagation } from "@/core/common/application/port/out/TransactionPort";
 import { Autowired } from "@/core/config/Autowired";
+import "dotenv/config";
+import { drizzle } from "drizzle-orm/node-postgres";
+import type { PgTransactionConfig } from "drizzle-orm/pg-core";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 export type DrizzleExecutor = Pick<
 	ReturnType<typeof drizzle>,
@@ -50,7 +50,7 @@ export class DrizzleTransactionRunner {
 	private readonly currentTransactionStorage =
 		new AsyncLocalStorage<DrizzleTransactionContext>();
 
-	read<T>(work: (tx: DrizzleExecutor) => Promise<T>) {
+	read<T>(work: (tx: Pick<DrizzleExecutor, "select">) => Promise<T>) {
 		return this.run(work);
 	}
 
