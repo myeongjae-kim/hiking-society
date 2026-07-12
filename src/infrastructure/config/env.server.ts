@@ -1,3 +1,4 @@
+import { createServerOnlyFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -13,10 +14,12 @@ const envSchema = z.object({
 	S3_SECRET_ACCESS_KEY: z.string(),
 });
 
-export const env = envSchema.parse({
-	...process.env,
-	GOOGLE_LOGIN_CLIENT_ID:
-		process.env.GOOGLE_LOGIN_CLIENT_ID ??
-		process.env.VITE_GOOGLE_LOGIN_CLIENT_ID ??
-		process.env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID,
-});
+export const env = createServerOnlyFn(() =>
+	envSchema.parse({
+		...process.env,
+		GOOGLE_LOGIN_CLIENT_ID:
+			process.env.GOOGLE_LOGIN_CLIENT_ID ??
+			process.env.VITE_GOOGLE_LOGIN_CLIENT_ID ??
+			process.env.NEXT_PUBLIC_GOOGLE_LOGIN_CLIENT_ID,
+	}),
+);

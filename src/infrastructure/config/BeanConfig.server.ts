@@ -1,52 +1,52 @@
-import type { BeanConfig } from "inversify-typesafe-spring-like";
-import type { AutowiredBeans } from "@/core/config/DependencyTokens";
-import { ArticleCommandDrizzleAdapter } from "../article/adapter/ArticleCommandDrizzleAdapter";
-import { ArticleDetailDrizzleAdapter } from "../article/adapter/ArticleDetailDrizzleAdapter";
-import { S3MediaStorageAdapter } from "../article/adapter/S3MediaStorageAdapter";
 import { ArticleCommandService } from "@/core/article/application/ArticleCommandService";
 import { ArticleMediaUploadService } from "@/core/article/application/ArticleMediaUploadService";
 import { GetArticleDetailService } from "@/core/article/application/GetArticleDetailService";
 import { GetArticlePageService } from "@/core/article/application/GetArticlePageService";
-import { AuthCommandAdapter } from "../auth/adapter/AuthCommandAdapter";
-import { AuthQueryAdapter } from "../auth/adapter/AuthQueryAdapter";
-import { GoogleOAuthAdapter } from "../auth/adapter/GoogleOAuthAdapter";
-import { JoseTokenCodecAdapter } from "../auth/adapter/JoseTokenCodecAdapter";
 import { CreateSessionTokenService } from "@/core/auth/application/CreateSessionTokenService";
 import { LoginWithGoogleCodeService } from "@/core/auth/application/LoginWithGoogleCodeService";
 import { ResolveSessionService } from "@/core/auth/application/ResolveSessionService";
 import { VerifyTokenService } from "@/core/auth/application/VerifyTokenService";
 import { CookieConfig } from "@/core/auth/config/CookieConfig";
-import { CommentCommandDrizzleAdapter } from "../comment/adapter/CommentCommandDrizzleAdapter";
-import { CommentQueryDrizzleAdapter } from "../comment/adapter/CommentQueryDrizzleAdapter";
 import { CommentCommandService } from "@/core/comment/application/CommentCommandService";
 import { ListArticleCommentsService } from "@/core/comment/application/ListArticleCommentsService";
-import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
-import { DrizzleTransactionRunner } from "../common/adapter/DrizzleTransactionRunner";
-import { SystemClockAdapter } from "../common/adapter/SystemClockAdapter";
-import { FeedDrizzleAdapter } from "../feed/adapter/FeedDrizzleAdapter";
+import type { AutowiredBeans } from "@/core/config/DependencyTokens";
 import { GetFeedHomeService } from "@/core/feed/application/GetFeedHomeService";
 import { ListFeedService } from "@/core/feed/application/ListFeedService";
-import { NominatimGeocodingAdapter } from "../geocoding/adapter/NominatimGeocodingAdapter";
 import { SearchGeocodingService } from "@/core/geocoding/application/SearchGeocodingService";
-import { HikingDrizzleAdapter } from "../hiking/adapter/HikingDrizzleAdapter";
 import { HikingCommandService } from "@/core/hiking/application/HikingCommandService";
-import { LikeDrizzleAdapter } from "../like/adapter/LikeDrizzleAdapter";
 import { LikeCommandService } from "@/core/like/application/LikeCommandService";
-import { MemberCommandAdapter } from "../member/adapter/MemberCommandAdapter";
-import { MemberQueryAdapter } from "../member/adapter/MemberQueryAdapter";
 import { GetMemberManagementService } from "@/core/member/application/GetMemberManagementService";
 import { ListMembersService } from "@/core/member/application/ListMembersService";
 import { UpdateMemberRoleService } from "@/core/member/application/UpdateMemberRoleService";
-import { NotificationDrizzleAdapter } from "../notification/adapter/NotificationDrizzleAdapter";
 import { CreateNotificationsService } from "@/core/notification/application/CreateNotificationsService";
 import { ListNotificationsService } from "@/core/notification/application/ListNotificationsService";
 import { MarkNotificationReadService } from "@/core/notification/application/MarkNotificationReadService";
-import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
-import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
 import { ProfileImageUploadService } from "@/core/profile/application/ProfileImageUploadService";
 import { UpdateDisplayNameService } from "@/core/profile/application/UpdateDisplayNameService";
 import { UpdateEmailService } from "@/core/profile/application/UpdateEmailService";
 import { UpdateProfileImageService } from "@/core/profile/application/UpdateProfileImageService";
+import type { BeanConfig } from "inversify-typesafe-spring-like";
+import { ArticleCommandDrizzleAdapter } from "../article/adapter/ArticleCommandDrizzleAdapter";
+import { ArticleDetailDrizzleAdapter } from "../article/adapter/ArticleDetailDrizzleAdapter";
+import { S3MediaStorageAdapter } from "../article/adapter/S3MediaStorageAdapter";
+import { AuthCommandAdapter } from "../auth/adapter/AuthCommandAdapter";
+import { AuthQueryAdapter } from "../auth/adapter/AuthQueryAdapter";
+import { GoogleOAuthAdapter } from "../auth/adapter/GoogleOAuthAdapter";
+import { JoseTokenCodecAdapter } from "../auth/adapter/JoseTokenCodecAdapter";
+import { CommentCommandDrizzleAdapter } from "../comment/adapter/CommentCommandDrizzleAdapter";
+import { CommentQueryDrizzleAdapter } from "../comment/adapter/CommentQueryDrizzleAdapter";
+import { DrizzleTransactionAdapter } from "../common/adapter/DrizzleTransactionAdapter";
+import { DrizzleTransactionRunner } from "../common/adapter/DrizzleTransactionRunner";
+import { SystemClockAdapter } from "../common/adapter/SystemClockAdapter";
+import { FeedDrizzleAdapter } from "../feed/adapter/FeedDrizzleAdapter";
+import { NominatimGeocodingAdapter } from "../geocoding/adapter/NominatimGeocodingAdapter";
+import { HikingDrizzleAdapter } from "../hiking/adapter/HikingDrizzleAdapter";
+import { LikeDrizzleAdapter } from "../like/adapter/LikeDrizzleAdapter";
+import { MemberCommandAdapter } from "../member/adapter/MemberCommandAdapter";
+import { MemberQueryAdapter } from "../member/adapter/MemberQueryAdapter";
+import { NotificationDrizzleAdapter } from "../notification/adapter/NotificationDrizzleAdapter";
+import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
+import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
 import { env } from "./env.server";
 
 export type Beans = Omit<AutowiredBeans, "DrizzleTransactionRunner"> & {
@@ -107,14 +107,14 @@ export const beanConfig: BeanConfig<Beans> = {
 	UpdateProfileImageUseCase: (bind) => bind().to(UpdateProfileImageService),
 	SearchGeocodingUseCase: (bind) => bind().to(SearchGeocodingService),
 	TextEncoder: (bind) => bind().to(TextEncoder),
-	DATABASE_PRIMARY_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
-	DATABASE_REPLICA_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
-	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
+	DATABASE_PRIMARY_URL: (bind) => bind().toConstantValue(env().DATABASE_URL),
+	DATABASE_REPLICA_URL: (bind) => bind().toConstantValue(env().DATABASE_URL),
+	JWT_SECRET: (bind) => bind().toConstantValue(env().JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>
-		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_ID),
+		bind().toConstantValue(env().GOOGLE_LOGIN_CLIENT_ID),
 	GOOGLE_LOGIN_CLIENT_SECRET: (bind) =>
-		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_SECRET),
+		bind().toConstantValue(env().GOOGLE_LOGIN_CLIENT_SECRET),
 	NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),
 	PUBLIC_MEDIA_BASE_URL: (bind) =>
-		bind().toConstantValue(env.S3_PUBLIC_BASE_URL),
+		bind().toConstantValue(env().S3_PUBLIC_BASE_URL),
 };
