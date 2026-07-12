@@ -1,4 +1,3 @@
-"use client";
 
 import { $api } from "#/api/client/$api";
 import { useRouter } from "#/society/shared/hooks/useRouter";

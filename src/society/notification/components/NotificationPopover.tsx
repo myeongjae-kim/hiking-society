@@ -1,4 +1,3 @@
-"use client";
 
 import * as Popover from "@radix-ui/react-popover";
 import { useQueryClient } from "@tanstack/react-query";

@@ -1,3 +1,4 @@
+import { env } from "#/config/env.server";
 import { getUseCase } from "#/infrastructure/config/getUseCase";
 import { getWebtuiTheme, WEBTUI_THEME_COOKIE_NAME } from "#/theme/webtuiThemes";
 import type { RefreshedSessionTokens } from "@/core/auth/application/port/in/ResolveSessionUseCase";
@@ -10,7 +11,7 @@ import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 type ReadCurrentTheme = () => Promise<string>;
 type ReadCurrentUser = () => Promise<AuthenticatedUser | null>;
 const getSessionCookieOptions = createSessionCookieOptionsFactory(
-	process.env.NODE_ENV,
+	env.NODE_ENV,
 );
 
 async function writeSessionCookies(tokens: RefreshedSessionTokens) {

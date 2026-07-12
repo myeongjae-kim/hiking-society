@@ -1,5 +1,5 @@
+import { env } from "#/config/env.server";
 import { getUseCase } from "#/infrastructure/config/getUseCase";
-import { createCookieOptions } from "./sessionCookies";
 import { createPostArticleMediaUploadTargetsController } from "../controllers/article-media/upload-targets/PostArticleMediaUploadTargetsController";
 import { createDeleteArticleMediaUploadsController } from "../controllers/article-media/uploads/DeleteArticleMediaUploadsController";
 import { createPostArticlesController } from "../controllers/articles/PostArticlesController";
@@ -33,9 +33,10 @@ import { createPatchProfileDisplayNameController } from "../controllers/profile/
 import { createPatchProfileEmailController } from "../controllers/profile/email/PatchProfileEmailController";
 import { createPatchProfileImageController } from "../controllers/profile/image/PatchProfileImageController";
 import { createGetCurrentUserController } from "../controllers/users/me/GetCurrentUserController";
+import { createCookieOptions } from "./sessionCookies";
 
 export function createApiControllers() {
-	const cookieOptions = createCookieOptions(process.env.NODE_ENV);
+	const cookieOptions = createCookieOptions(env.NODE_ENV);
 
 	return [
 		createGetCurrentUserController(),

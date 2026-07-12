@@ -47,7 +47,7 @@ import { MemberQueryAdapter } from "../member/adapter/MemberQueryAdapter";
 import { NotificationDrizzleAdapter } from "../notification/adapter/NotificationDrizzleAdapter";
 import { ProfileDrizzleAdapter } from "../profile/adapter/ProfileDrizzleAdapter";
 import { S3ProfileImageStorageAdapter } from "../profile/adapter/S3ProfileImageStorageAdapter";
-import { env } from "./env.server";
+import { env } from "#/config/env.server";
 
 export type Beans = Omit<AutowiredBeans, "DrizzleTransactionRunner"> & {
 	DrizzleTransactionRunner: DrizzleTransactionRunner;
@@ -107,14 +107,14 @@ export const beanConfig: BeanConfig<Beans> = {
 	UpdateProfileImageUseCase: (bind) => bind().to(UpdateProfileImageService),
 	SearchGeocodingUseCase: (bind) => bind().to(SearchGeocodingService),
 	TextEncoder: (bind) => bind().to(TextEncoder),
-	DATABASE_PRIMARY_URL: (bind) => bind().toConstantValue(env().DATABASE_URL),
-	DATABASE_REPLICA_URL: (bind) => bind().toConstantValue(env().DATABASE_URL),
-	JWT_SECRET: (bind) => bind().toConstantValue(env().JWT_SECRET),
+	DATABASE_PRIMARY_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
+	DATABASE_REPLICA_URL: (bind) => bind().toConstantValue(env.DATABASE_URL),
+	JWT_SECRET: (bind) => bind().toConstantValue(env.JWT_SECRET),
 	GOOGLE_LOGIN_CLIENT_ID: (bind) =>
-		bind().toConstantValue(env().GOOGLE_LOGIN_CLIENT_ID),
+		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_ID),
 	GOOGLE_LOGIN_CLIENT_SECRET: (bind) =>
-		bind().toConstantValue(env().GOOGLE_LOGIN_CLIENT_SECRET),
-	NODE_ENV: (bind) => bind().toConstantValue(process.env.NODE_ENV),
+		bind().toConstantValue(env.GOOGLE_LOGIN_CLIENT_SECRET),
+	NODE_ENV: (bind) => bind().toConstantValue(env.NODE_ENV),
 	PUBLIC_MEDIA_BASE_URL: (bind) =>
-		bind().toConstantValue(env().S3_PUBLIC_BASE_URL),
+		bind().toConstantValue(env.S3_PUBLIC_BASE_URL),
 };

@@ -1,3 +1,4 @@
+import { env } from "#/config/env.server";
 import { getUseCase } from "#/infrastructure/config/getUseCase";
 import type { ResolveSessionUseCase } from "@/core/auth/application/port/in/ResolveSessionUseCase";
 import {
@@ -12,7 +13,7 @@ export type ApiRuntimeDependencies = {
 
 export function createApiRuntimeDependencies(): ApiRuntimeDependencies {
 	return {
-		cookieOptions: createCookieOptions(process.env.NODE_ENV),
+		cookieOptions: createCookieOptions(env.NODE_ENV),
 		resolveSessionUseCase: getUseCase("ResolveSessionUseCase"),
 	};
 }

@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/refs */
-"use client";
 
 import type * as GeoJSON from "geojson";
 import { Loader2, Locate, Maximize, Minus, Plus, X } from "lucide-react";

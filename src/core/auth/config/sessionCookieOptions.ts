@@ -1,3 +1,5 @@
+import type { env } from "#/config/env.server";
+
 export type SessionCookieOptions = {
 	readonly httpOnly: true;
 	readonly maxAge: number;
@@ -11,7 +13,7 @@ export type SessionCookieOptionsFactory = (
 ) => SessionCookieOptions;
 
 export function createSessionCookieOptionsFactory(
-	nodeEnv: typeof process.env.NODE_ENV,
+	nodeEnv: (typeof env)["NODE_ENV"],
 ): SessionCookieOptionsFactory {
 	return (maxAge) => ({
 		httpOnly: true,

@@ -1,4 +1,3 @@
-"use client";
 
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";

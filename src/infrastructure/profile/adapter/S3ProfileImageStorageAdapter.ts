@@ -1,4 +1,4 @@
-import { env } from "#/infrastructure/config/env.server";
+import { env } from "#/config/env.server";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import type { ProfileImageStoragePort } from "@/core/profile/application/port/out/ProfileImageStoragePort";
 import {
@@ -22,12 +22,12 @@ function joinPublicUrl(baseUrl: string, objectKey: string) {
 export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 	private readonly client = new S3Client({
 		credentials: {
-			accessKeyId: env().S3_ACCESS_KEY_ID,
-			secretAccessKey: env().S3_SECRET_ACCESS_KEY,
+			accessKeyId: env.S3_ACCESS_KEY_ID,
+			secretAccessKey: env.S3_SECRET_ACCESS_KEY,
 		},
-		endpoint: env().S3_ENDPOINT,
+		endpoint: env.S3_ENDPOINT,
 		forcePathStyle: true,
-		region: env().S3_REGION,
+		region: env.S3_REGION,
 	});
 
 	private assertOwnedObjectKey(objectKey: string, userId: number) {
@@ -43,7 +43,7 @@ export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 		const uploadUrl = await getSignedUrl(
 			this.client,
 			new PutObjectCommand({
-				Bucket: env().S3_BUCKET,
+				Bucket: env.S3_BUCKET,
 				ContentType: input.contentType,
 				Key: objectKey,
 			}),
@@ -53,7 +53,7 @@ export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 		return {
 			objectKey,
 			uploadUrl,
-			url: joinPublicUrl(env().S3_PUBLIC_BASE_URL, objectKey),
+			url: joinPublicUrl(env.S3_PUBLIC_BASE_URL, objectKey),
 		};
 	}
 
@@ -68,7 +68,7 @@ export class S3ProfileImageStorageAdapter implements ProfileImageStoragePort {
 
 				await this.client.send(
 					new DeleteObjectCommand({
-						Bucket: env().S3_BUCKET,
+						Bucket: env.S3_BUCKET,
 						Key: objectKey,
 					}),
 				);

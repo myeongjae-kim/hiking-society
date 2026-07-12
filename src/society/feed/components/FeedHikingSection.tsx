@@ -1,4 +1,3 @@
-"use client";
 
 import { ArticlePanel } from "#/society/article/components/ArticlePanel";
 import { HikingHeader } from "#/society/hiking/components/HikingHeader";

@@ -1,3 +1,4 @@
+import type { env } from "#/config/env.server";
 import type { ArticleCommandUseCase } from "@/core/article/application/port/in/ArticleCommandUseCase";
 import type { ArticleMediaUploadUseCase } from "@/core/article/application/port/in/ArticleMediaUploadUseCase";
 import type { GetArticleDetailUseCase } from "@/core/article/application/port/in/GetArticleDetailUseCase";
@@ -112,7 +113,7 @@ export type ConfigurationBeans = {
 	JWT_SECRET: string;
 	GOOGLE_LOGIN_CLIENT_ID: string;
 	GOOGLE_LOGIN_CLIENT_SECRET: string;
-	NODE_ENV: typeof process.env.NODE_ENV;
+	NODE_ENV: (typeof env)["NODE_ENV"];
 	PUBLIC_MEDIA_BASE_URL: string;
 };
 

@@ -1,4 +1,3 @@
-"use client";
 
 import { FeedFooter } from "#/society/feed/components/FeedFooter";
 import { FeedTopbar } from "#/society/feed/components/FeedTopbar";

@@ -1,4 +1,3 @@
-"use client";
 
 import { ArticleFormDialog } from "#/society/article/components/ArticleFormDialog";
 import { HikingFormDialog } from "#/society/hiking/components/HikingFormDialog";

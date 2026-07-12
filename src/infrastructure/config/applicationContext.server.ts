@@ -1,5 +1,5 @@
 import { ApplicationContext } from "inversify-typesafe-spring-like";
-import { lazy } from "./lazy";
 import { beanConfig } from "./BeanConfig.server";
+import { lazy } from "./lazy";
 
 export const applicationContext = lazy(() => ApplicationContext(beanConfig));

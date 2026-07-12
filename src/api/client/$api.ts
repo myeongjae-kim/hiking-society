@@ -1,4 +1,3 @@
-"use client";
 
 import createFetchClient from "openapi-fetch";
 import createClient from "openapi-react-query";

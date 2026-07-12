@@ -1,4 +1,3 @@
-"use client";
 
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";

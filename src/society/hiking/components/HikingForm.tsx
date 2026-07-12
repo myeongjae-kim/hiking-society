@@ -1,4 +1,3 @@
-"use client";
 
 import type { ChangeEvent, DragEvent, FormEvent } from "react";
 import { lazy, Suspense, useState } from "react";

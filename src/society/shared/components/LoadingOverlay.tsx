@@ -1,4 +1,3 @@
-"use client";
 
 type LoadingOverlayProps = {
 	label?: string;

@@ -1,4 +1,4 @@
-import { env } from "#/infrastructure/config/env.server";
+import { env } from "#/config/env.server";
 import type { MediaStoragePort } from "@/core/article/application/port/out/MediaStoragePort";
 import { applicationError } from "@/core/common/application/ApplicationError";
 import {
@@ -22,12 +22,12 @@ function joinPublicUrl(baseUrl: string, objectKey: string) {
 export class S3MediaStorageAdapter implements MediaStoragePort {
 	private readonly client = new S3Client({
 		credentials: {
-			accessKeyId: env().S3_ACCESS_KEY_ID,
-			secretAccessKey: env().S3_SECRET_ACCESS_KEY,
+			accessKeyId: env.S3_ACCESS_KEY_ID,
+			secretAccessKey: env.S3_SECRET_ACCESS_KEY,
 		},
-		endpoint: env().S3_ENDPOINT,
+		endpoint: env.S3_ENDPOINT,
 		forcePathStyle: true,
-		region: env().S3_REGION,
+		region: env.S3_REGION,
 	});
 
 	private assertOwnedObjectKey(objectKey: string, userId: number) {
@@ -43,7 +43,7 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
 		return getSignedUrl(
 			this.client,
 			new PutObjectCommand({
-				Bucket: env().S3_BUCKET,
+				Bucket: env.S3_BUCKET,
 				ContentType: input.contentType,
 				Key: input.objectKey,
 			}),
@@ -78,10 +78,10 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
 					? {
 							objectKey: thumbnailObjectKey,
 							uploadUrl: thumbnailUploadUrl,
-							url: joinPublicUrl(env().S3_PUBLIC_BASE_URL, thumbnailObjectKey),
+							url: joinPublicUrl(env.S3_PUBLIC_BASE_URL, thumbnailObjectKey),
 						}
 					: undefined,
-			url: joinPublicUrl(env().S3_PUBLIC_BASE_URL, objectKey),
+			url: joinPublicUrl(env.S3_PUBLIC_BASE_URL, objectKey),
 		};
 	}
 
@@ -94,7 +94,7 @@ export class S3MediaStorageAdapter implements MediaStoragePort {
 
 				await this.client.send(
 					new DeleteObjectCommand({
-						Bucket: env().S3_BUCKET,
+						Bucket: env.S3_BUCKET,
 						Key: objectKey,
 					}),
 				);

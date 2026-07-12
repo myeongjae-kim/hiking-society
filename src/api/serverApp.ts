@@ -1,7 +1,8 @@
+import { env } from "#/config/env.server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { createApiControllers } from "./config/ApiControllerConfig.server";
-import { createAuthMiddleware } from "./config/auth";
 import { createApiRuntimeDependencies } from "./config/apiRuntimeDependencies.server";
+import { createAuthMiddleware } from "./config/auth";
 import { globalErrorHandler } from "./config/globalErrorHandler";
 import { sessionCookieConfig } from "./config/sessionCookies";
 
@@ -23,7 +24,7 @@ serverApp.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
 	type: "apiKey",
 });
 
-if (process.env.NODE_ENV !== "production") {
+if (env.NODE_ENV !== "production") {
 	serverApp.doc("/swagger", (c) => ({
 		info: {
 			title: "Hiking Society API",

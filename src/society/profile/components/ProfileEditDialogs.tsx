@@ -1,4 +1,3 @@
-"use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQueryClient } from "@tanstack/react-query";

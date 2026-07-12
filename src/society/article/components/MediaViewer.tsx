@@ -1,4 +1,3 @@
-"use client";
 
 import { MediaViewerRoot } from "./media-viewer/MediaViewerRoot";
 import { getMediaTakenTimeLabel } from "./media-viewer/metadata";
